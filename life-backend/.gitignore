@@ -1,0 +1,22 @@
+# Salida de compilación
+bin/
+obj/
+
+# Archivos de entorno y secretos
+.env
+.env.*
+appsettings.Development.local.json
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.key
+
+# Pruebas y cobertura
+TestResults/
+coverage/
+
+# IDE
+.idea/
+.vs/
+*.user
+*.suo
