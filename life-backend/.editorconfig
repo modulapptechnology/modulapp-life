@@ -1,0 +1,76 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{csproj,slnx,props,targets,json,yml,yaml,xml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+# Orden de using
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace:warning
+
+# Namespaces y estilo de llaves
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_prefer_braces = true:warning
+
+# Preferencias de lenguaje
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+dotnet_style_predefined_type_for_locals_parameters_members = true:warning
+dotnet_style_predefined_type_for_member_access = true:warning
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
+
+# Nombres
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+dotnet_naming_style.camel_case.capitalization = camel_case
+dotnet_naming_style.interface_style.capitalization = pascal_case
+dotnet_naming_style.interface_style.required_prefix = I
+dotnet_naming_style.private_field_style.capitalization = camel_case
+dotnet_naming_style.private_field_style.required_prefix = _
+
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private, private_protected
+dotnet_naming_symbols.types.applicable_kinds = class, struct, enum, delegate
+dotnet_naming_symbols.members.applicable_kinds = property, method, event
+dotnet_naming_symbols.parameters_locals.applicable_kinds = parameter, local
+
+dotnet_naming_rule.interfaces_con_i.symbols = interfaces
+dotnet_naming_rule.interfaces_con_i.style = interface_style
+dotnet_naming_rule.interfaces_con_i.severity = warning
+
+dotnet_naming_rule.campos_privados.symbols = private_fields
+dotnet_naming_rule.campos_privados.style = private_field_style
+dotnet_naming_rule.campos_privados.severity = warning
+
+dotnet_naming_rule.tipos_pascal.symbols = types
+dotnet_naming_rule.tipos_pascal.style = pascal_case
+dotnet_naming_rule.tipos_pascal.severity = warning
+
+dotnet_naming_rule.miembros_pascal.symbols = members
+dotnet_naming_rule.miembros_pascal.style = pascal_case
+dotnet_naming_rule.miembros_pascal.severity = warning
+
+dotnet_naming_rule.parametros_locales_camel.symbols = parameters_locals
+dotnet_naming_rule.parametros_locales_camel.style = camel_case
+dotnet_naming_rule.parametros_locales_camel.severity = warning

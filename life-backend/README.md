@@ -25,6 +25,24 @@ Las dependencias apuntan hacia adentro: `Domain` no referencia a ningún proyect
 - El código de un módulo de negocio se organiza por funcionalidad dentro de cada capa (por ejemplo `Tareas/`), no por tipo técnico.
 - Los secretos, cadenas de conexión y archivos de entorno no se versionan: se usan `user-secrets` o `appsettings.Development.local.json`.
 
+## Formato y estilo
+
+Las reglas están en `.editorconfig` (indentación de 4 espacios, finales de línea LF, UTF-8, `using` fuera del namespace con `System` primero, namespaces con alcance de archivo, llaves siempre y nombres: PascalCase para tipos y miembros, camelCase para parámetros y variables, `_camelCase` para campos privados e `I` para interfaces). Visual Studio, Rider y VS Code las leen sin configuración adicional; `.vscode/settings.json` activa el formato al guardar.
+
+Desde `life-backend`:
+
+```powershell
+# Aplicar el formato
+dotnet format life-backend.slnx
+
+# Comprobar sin modificar archivos
+dotnet format life-backend.slnx --verify-no-changes
+```
+
+### Comentarios
+
+No se agregan comentarios salvo que sean necesarios: solo cuando explican un porqué que el código no deja claro por sí mismo. No se comenta lo que el código ya expresa y no se deja código comentado.
+
 ## Compilar y ejecutar
 
 Desde `life-backend`:
