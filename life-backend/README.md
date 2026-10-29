@@ -71,7 +71,7 @@ dotnet build life-backend.slnx
 dotnet run --project API
 ```
 
-La API escucha en `http://localhost:5041` y, con el perfil `https`, también en `https://localhost:7183`. Para levantar la base de datos local antes de ejecutarla, ver "Docker para desarrollo local".
+La API escucha en `http://localhost:5187` y, con el perfil `https`, también en `https://localhost:7183`. Para levantar la base de datos local antes de ejecutarla, ver "Docker para desarrollo local".
 
 ## Entornos y configuración
 
@@ -79,7 +79,7 @@ El backend tiene tres entornos, que se eligen con la variable `ASPNETCORE_ENVIRO
 
 | Entorno | `ASPNETCORE_ENVIRONMENT` | Archivo | Base de datos (`Database:Name`) | URL local |
 |---|---|---|---|---|
-| Desarrollo | `Development` | `appsettings.Development.json` | `ModulLifeDev` | `http://localhost:5041` |
+| Desarrollo | `Development` | `appsettings.Development.json` | `ModulLifeDev` | `http://localhost:5187` |
 | Pruebas | `Testing` | `appsettings.Testing.json` | `ModulLifeApiTest` | `http://localhost:5042` |
 | Producción | `Production` | `appsettings.Production.json` | `ModulLifeProd` | La define el despliegue |
 
@@ -109,7 +109,7 @@ La configuración se lee de las fuentes estándar de ASP.NET Core, de menor a ma
 
 | Clave | Qué es | Dónde se define |
 |---|---|---|
-| `ConnectionStrings:Default` | Cadena de conexión a SQL Server | `user-secrets` o `appsettings.Development.local.json` en desarrollo; variable `ConnectionStrings__Default` en el resto |
+| `ConnectionStrings:Default` | Cadena de conexión a la base de datos | `user-secrets` o `appsettings.Development.local.json` en desarrollo; variable `ConnectionStrings__Default` en el resto |
 | `ConnectionStrings:Test` | Cadena del servidor para las pruebas de integración | `user-secrets` de `Support` o variable `ConnectionStrings__Test` |
 | `Database:Name` | Nombre de la base de cada entorno | Se versiona en `appsettings.<Entorno>.json` |
 | `Cors:AllowedOrigins` | Orígenes permitidos por CORS | Se versiona en `appsettings.<Entorno>.json`; en producción, variable `Cors__AllowedOrigins__0`, etc. |
@@ -142,51 +142,82 @@ Los secretos de producción se gestionan fuera de este repositorio.
 
 ## Docker para desarrollo local
 
-`docker-compose.yml` define los servicios que el proyecto necesita en desarrollo. Hoy tiene uno:
+Todo lo de Docker vive en la carpeta `docker/` de la raíz de `modulapp-life`:
 
-| Servicio | Imagen | Contenedor | Puerto | Datos |
-|---|---|---|---|---|
-| `sqlserver` | `mcr.microsoft.com/mssql/server:2022-latest` | `life-sqlserver` | `1433` | Volumen `sqlserver-data` (se conservan al detener el contenedor) |
+| Archivo | Para qué |
+|---|---|
+| `docker/docker-compose-local.yml` | Desarrollo: base de datos, API, web, móvil, escritorio y pruebas |
+| `docker/docker-compose-prod.yml` | Producción: base de datos, API y web compilados |
+| `docker/backend/Dockerfile` | Imagen de la API (etapas `build`, `test` y `runtime`) |
+| `docker/frontend/Dockerfile` | Imágenes del frontend (etapas `web-dev`, `mobile-dev`, `test`, `desktop-check` y `web`) |
+| `docker/web/nginx.conf` | Servidor de la web de producción |
+| `docker/.env.example` | Plantilla de variables (se copia a `docker/.env`, que no se versiona) |
 
 Requisito: Docker Desktop (o Docker Engine con el plugin Compose).
 
-### Contraseña
+### Servicios locales
 
-La contraseña del usuario `sa` se lee de la variable `MSSQL_SA_PASSWORD`, definida en un `.env` local que no se versiona. La plantilla `.env.example` sí se versiona y no lleva valores reales. Desde `life-backend`:
+| Servicio | Qué hace | Puerto |
+|---|---|---|
+| `postgres` | PostgreSQL 17 con la base `ModulLifeDev` (volumen `postgres-data`) | `5432` |
+| `migrations` | Aplica las migraciones de EF Core a la base (`dotnet ef database update`) y termina; la `api` espera a que termine bien | — |
+| `api` | La API en Desarrollo, con Swagger UI en `/swagger` | `5187` |
+| `web` | La web con Vite | `5173` |
+| `mobile` | El servidor de Expo para la app móvil | `8081` |
+| `desktop` | Comprueba el TypeScript del escritorio (`typecheck` y `lint`); la ventana nativa de Tauri necesita una sesión de escritorio y no corre en un contenedor | — |
+| `tests-backend` | Pruebas unitarias del backend (`Life.Domain.Tests` y `Life.Application.Tests`) | — |
+| `tests-frontend` | Pruebas del frontend (`npm test`: móvil, web, escritorio y paquetes) | — |
+
+Los servicios `migrations`, `desktop`, `tests-backend` y `tests-frontend` terminan al acabar; los demás quedan en ejecución. Las migraciones son las de `Persistence/Migrations`: mientras EF Core use el proveedor de SQL Server, `migrations` falla contra PostgreSQL y la `api` no inicia; el cambio de proveedor y de las migraciones se hace aparte. En producción las migraciones no se aplican automáticamente. Las pruebas de integración y de flujos críticos (`API.Tests`, `Infrastructure.Tests`, `Flows.Tests`) no se ejecutan aquí porque usan una base SQL Server de pruebas.
+
+### Variables
+
+Desde la carpeta `docker`:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Se edita `.env` con una contraseña que cumpla la política de SQL Server (8 o más caracteres con mayúsculas, minúsculas, números y símbolos). Sin esa variable, `docker compose` se detiene con un mensaje de error.
+Se edita `.env`: `POSTGRES_PASSWORD` (contraseña del usuario `postgres`, que se fija al crear el volumen), `ACCESS_TOKEN_SIGNING_KEY` (32 caracteres o más) y, para abrir la app móvil desde un celular, `HOST_IP` con la IP de la PC. Sin las variables obligatorias, `docker compose` se detiene con un mensaje de error.
 
 ### Iniciar y detener
 
-Desde `life-backend`:
+Desde la carpeta `docker`:
 
 ```powershell
-docker compose up -d          # inicia los contenedores
-docker compose ps             # muestra el estado de cada contenedor
-docker compose down           # detiene y elimina los contenedores (conserva los datos)
-docker compose down -v        # además borra el volumen con los datos
+docker compose -f docker-compose-local.yml up --build        # construye e inicia todo
+docker compose -f docker-compose-local.yml ps -a             # estado de cada servicio (las pruebas terminan con "Exited (0)" si pasaron)
+docker compose -f docker-compose-local.yml logs tests-backend tests-frontend
+docker compose -f docker-compose-local.yml down              # detiene y elimina los contenedores (conserva los datos)
+docker compose -f docker-compose-local.yml down -v           # además borra el volumen con los datos
 ```
 
-### Apuntar la API a la base del contenedor
+Para ejecutar un solo servicio, por ejemplo las pruebas del backend: `docker compose -f docker-compose-local.yml run --rm tests-backend`.
 
-Se guarda la cadena de conexión con `user-secrets` (la misma contraseña de `.env`). Desde `life-backend`:
+### Producción
+
+`docker-compose-prod.yml` levanta `postgres` (sin puerto publicado), `api` y `web` (nginx), con `restart: unless-stopped`. Además de las variables locales necesita `WEB_PUBLIC_URL` (origen permitido por CORS) y `API_PUBLIC_URL` (se incrusta en la web al compilarla); `EMAIL_PROVIDER`, `API_PORT` y `WEB_PORT` son opcionales. La app móvil y la de escritorio no se despliegan como contenedores: se distribuyen como aplicaciones.
 
 ```powershell
-dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost,1433;Database=master;User Id=sa;Password=<contraseña de .env>;TrustServerCertificate=True" --project API
+docker compose -f docker-compose-prod.yml up -d --build
 ```
 
-Se usa `Database=master` porque la base `ModulLifeDev` se crea con las migraciones, que no forman parte de esta configuración. Con la API en marcha (`dotnet run --project API`), en Desarrollo:
+### Apuntar la API local a la base del contenedor
 
-- `http://localhost:5041/swagger` abre Swagger UI (el documento está en `/openapi/v1.json`).
-- `GET http://localhost:5041/house/database` responde `200` con `{"database":"master","status":"connected"}` cuando la API alcanza SQL Server, y `500` si no puede.
+El servicio `api` ya recibe la cadena de conexión del contenedor. Para ejecutar la API fuera de Docker (`dotnet run --project API`) contra el contenedor, se guarda la cadena con `user-secrets`. Desde `life-backend`:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Port=5432;Database=ModulLifeDev;Username=postgres;Password=<contraseña de .env>" --project API
+```
+
+- `http://localhost:5187/swagger` abre Swagger UI (el documento está en `/openapi/v1.json`).
+- `GET http://localhost:5187/house/database` (con el `accessToken` en la cabecera `Authorization: Bearer`) responde `200` con `{"database":"ModulLifeDev","status":"connected"}` cuando la API alcanza PostgreSQL, y `500` si no puede.
+
+Esta configuración levanta los servicios y comprueba la conexión desde la API; el acceso de EF Core a PostgreSQL y las migraciones se configuran aparte.
 
 ### Ampliar los servicios
 
-Cuando el proyecto necesite otro servicio (caché, cola de mensajes, correo de pruebas), se agrega un bloque bajo `services:` en `docker-compose.yml`, con imagen fija, puerto, volumen si guarda datos y sus variables en `.env` y `.env.example`. Después se agrega una fila a la tabla de arriba. Los Dockerfiles de la API y de la app, y los contenedores en CI y producción, no forman parte de esta configuración.
+Cuando el proyecto necesite otro servicio (caché, cola de mensajes, correo de pruebas), se agrega un bloque bajo `services:` en el compose que corresponda, con imagen fija, puerto, volumen si guarda datos y sus variables en `docker/.env` y `docker/.env.example`. Después se agrega una fila a la tabla de servicios.
 
 ## Acceso a la base de datos
 
@@ -601,7 +632,7 @@ Todo endpoint es privado por defecto: `AddApiAuthorization` (`API/Authorization`
 
 ### Swagger y `API.http`
 
-En Desarrollo, `http://localhost:5041/swagger` abre Swagger UI y el documento OpenAPI está en `/openapi/v1.json`. El documento declara el esquema `Bearer` (HTTP, JWT) y marca con un candado los endpoints que exigen autenticación (`API/OpenApi`: `BearerSecurityDocumentTransformer` y `AuthorizationOperationTransformer`); los públicos (`[AllowAnonymous]`) salen sin candado. Para probar un endpoint protegido: iniciar sesión con `POST /api/v1/auth/login`, pulsar **Authorize**, pegar el `accessToken` (sin el prefijo `Bearer`) y ejecutar la petición; Swagger UI envía `Authorization: Bearer <token>`. El token solo se guarda en la página abierta: no cambia las reglas de acceso del servidor ni se versiona. `OpenApiSecurityTests` comprueba el esquema y que los públicos no queden marcados. `API/API.http` trae peticiones de ejemplo para la ruta base versionada y para comprobar CORS.
+En Desarrollo, `http://localhost:5187/swagger` abre Swagger UI y el documento OpenAPI está en `/openapi/v1.json`. El documento declara el esquema `Bearer` (HTTP, JWT) y marca con un candado los endpoints que exigen autenticación (`API/OpenApi`: `BearerSecurityDocumentTransformer` y `AuthorizationOperationTransformer`); los públicos (`[AllowAnonymous]`) salen sin candado. Para probar un endpoint protegido: iniciar sesión con `POST /api/v1/auth/login`, pulsar **Authorize**, pegar el `accessToken` (sin el prefijo `Bearer`) y ejecutar la petición; Swagger UI envía `Authorization: Bearer <token>`. El token solo se guarda en la página abierta: no cambia las reglas de acceso del servidor ni se versiona. `OpenApiSecurityTests` comprueba el esquema y que los públicos no queden marcados. `API/API.http` trae peticiones de ejemplo para la ruta base versionada y para comprobar CORS.
 
 ## Pruebas unitarias
 

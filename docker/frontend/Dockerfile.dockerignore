@@ -1,0 +1,7 @@
+**/node_modules
+**/dist
+**/.expo
+**/.idea
+**/.vscode
+**/src-tauri/target
+**/.env.local

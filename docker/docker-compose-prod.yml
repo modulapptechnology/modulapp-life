@@ -1,0 +1,54 @@
+name: life-prod
+
+# Production: the database, the API and the web app, built from the repository.
+# Run from this folder: docker compose -f docker-compose-prod.yml up -d --build
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ModulLifeProd
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (see .env.example)}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ModulLifeProd"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/backend/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=ModulLifeProd;Username=postgres;Password=${POSTGRES_PASSWORD}
+      Authentication__AccessToken__SigningKey: ${ACCESS_TOKEN_SIGNING_KEY:?Set ACCESS_TOKEN_SIGNING_KEY in .env (see .env.example)}
+      Cors__AllowedOrigins__0: ${WEB_PUBLIC_URL:?Set WEB_PUBLIC_URL in .env (see .env.example)}
+      Email__Provider: ${EMAIL_PROVIDER:-Log}
+    ports:
+      - "${API_PORT:-5187}:5187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/frontend/Dockerfile
+      target: web
+      args:
+        EXPO_PUBLIC_API_URL: ${API_PUBLIC_URL:?Set API_PUBLIC_URL in .env (see .env.example)}
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres-data:

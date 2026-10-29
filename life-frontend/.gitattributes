@@ -1,0 +1,2 @@
+# Texto con LF, igual que Prettier y el .editorconfig del frontend.
+* text=auto eol=lf

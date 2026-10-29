@@ -109,7 +109,7 @@ La app tiene tres entornos. Cada uno tiene un archivo versionado con sus variabl
 
 | Entorno | Archivo | `EXPO_PUBLIC_APP_ENV` | `EXPO_PUBLIC_API_URL` |
 |---|---|---|---|
-| Desarrollo | `.env.development` | `development` | `http://localhost:5041` |
+| Desarrollo | `.env.development` | `development` | `http://localhost:5187` |
 | Pruebas | `.env.test` | `test` | `http://localhost:5042` |
 | Producción | `.env.production` | `production` | `https://api.life.example.com` (marcador: se reemplaza por la URL real al aprovisionar producción) |
 
@@ -127,7 +127,7 @@ Se mantiene el prefijo `EXPO_PUBLIC_` también en la web (`envPrefix` de Vite) p
 
 Los archivos de cada entorno son públicos y se versionan; los de valores propios (`.env.local`) los ignora Git. Una prueba (`apps/desktop/src-tauri/envFiles.test.ts`) comprueba que los de la app móvil coinciden con los de la raíz y con los perfiles de `apps/mobile/eas.json`: al cambiar una URL se cambia en los tres lugares.
 
-Para valores locales propios (por ejemplo, la IP de tu equipo al probar en un dispositivo físico) se copia la plantilla a `.env.local` (tiene prioridad sobre el archivo del entorno): en `apps/mobile/.env.local` para el móvil y en `life-frontend/.env.local` para la web y el escritorio. En el emulador de Android `localhost` es el propio emulador: allí se usa `http://10.0.2.2:5041`. Desde `life-frontend`:
+Para valores locales propios (por ejemplo, la IP de tu equipo al probar en un dispositivo físico) se copia la plantilla a `.env.local` (tiene prioridad sobre el archivo del entorno): en `apps/mobile/.env.local` para el móvil y en `life-frontend/.env.local` para la web y el escritorio. En el emulador de Android `localhost` es el propio emulador: allí se usa `http://10.0.2.2:5187`. Desde `life-frontend`:
 
 ```powershell
 Copy-Item apps/mobile/.env.example apps/mobile/.env.local

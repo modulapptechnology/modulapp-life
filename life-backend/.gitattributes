@@ -1,0 +1,3 @@
+# El backend usa CRLF (end_of_line = crlf en .editorconfig). Sin esto, dotnet format --verify-no-changes
+# fallaría en el CI de Linux, que descargaría los archivos con LF.
+* text=auto eol=crlf

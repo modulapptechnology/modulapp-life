@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace Life.API.Extensions;
 
@@ -13,7 +13,8 @@ public static class ApiApplicationBuilderExtensions
 
             app.MapGet("/house/database", async (IConfiguration configuration) =>
             {
-                await using var connection = new SqlConnection(configuration.GetConnectionString("Default"));
+                await using var connection = new NpgsqlConnection(
+                    configuration.GetConnectionString("Default"));
                 await connection.OpenAsync();
                 return Results.Ok(new { database = connection.Database, status = "connected" });
             });
