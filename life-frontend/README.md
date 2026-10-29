@@ -37,6 +37,21 @@ npx expo export
 
 El código lee la URL con `process.env.EXPO_PUBLIC_API_URL` y nunca la escribe directamente.
 
+## Variables de entorno y plantilla
+
+`.env.example` es la plantilla de variables y se versiona sin valores reales. Para configurar un equipo local se copia a `.env.local` (ignorado por Git), que tiene prioridad sobre el archivo del entorno. Desde `life-frontend`:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+| Variable | Qué es |
+|---|---|
+| `EXPO_PUBLIC_APP_ENV` | Nombre del entorno (`development`, `test` o `production`) |
+| `EXPO_PUBLIC_API_URL` | URL de la API del entorno |
+
+Solo las variables `EXPO_PUBLIC_*` llegan a la app, y por eso nunca llevan contraseñas, claves ni tokens. Cualquier valor sensible vive en el backend o en los secretos de CI de GitHub Actions (ver el README del backend).
+
 ## Formato y estilo
 
 Las reglas están versionadas en el repositorio: `.prettierrc` y `.prettierignore` (Prettier: comillas simples, punto y coma, coma final, ancho de 100, finales de línea LF) y `.editorconfig` (indentación de 2 espacios, UTF-8, LF). El formato no depende de carpetas de IDE: `.idea/`, `.vs/` y `.vscode/` no se versionan (están en el `.gitignore` de la raíz). Para formatear al guardar basta activar Prettier en el editor, que lee `.prettierrc` y `.editorconfig` del proyecto.
