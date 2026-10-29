@@ -18,5 +18,6 @@ coverage/
 # IDE
 .idea/
 .vs/
+.vscode/
 *.user
 *.suo

@@ -1,0 +1,4 @@
+# Carpetas de IDE (ningún proyecto las versiona)
+.idea/
+.vs/
+.vscode/
