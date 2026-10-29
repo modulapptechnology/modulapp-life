@@ -25,6 +25,24 @@ Las dependencias apuntan hacia adentro: `Domain` no referencia a ningún proyect
 - El código de un módulo de negocio se organiza por funcionalidad dentro de cada capa (por ejemplo `Tareas/`), no por tipo técnico.
 - Los secretos, cadenas de conexión y archivos de entorno no se versionan: se usan `user-secrets` o `appsettings.Development.local.json`.
 
+## Inyección de dependencias
+
+Cada capa expone un método de extensión que `API` invoca en `Program.cs`:
+
+| Capa | Método | Qué registra |
+|---|---|---|
+| `Application` | `AddApplication()` | Casos de uso |
+| `Infrastructure` | `AddInfrastructure()` | Servicios externos |
+| `Persistence` | `AddPersistence()` | `DbContext` y repositorios |
+
+Tiempos de vida:
+
+- **Singleton**: una instancia para toda la aplicación (configuración, clientes HTTP compartidos).
+- **Scoped**: una instancia por petición HTTP (casos de uso, `DbContext`, repositorios).
+- **Transient**: una instancia nueva cada vez que se pide (servicios livianos y sin estado).
+
+Las capas internas dependen de interfaces definidas en `Application`; las implementaciones se registran en `Infrastructure` y `Persistence`.
+
 ## Formato y estilo
 
 Las reglas están en `.editorconfig` (indentación de 4 espacios, finales de línea LF, UTF-8, `using` fuera del namespace con `System` primero, namespaces con alcance de archivo, llaves siempre y nombres: PascalCase para tipos y miembros, camelCase para parámetros y variables, `_camelCase` para campos privados e `I` para interfaces). Visual Studio, Rider y VS Code las leen sin configuración adicional, así que el formato no depende de carpetas de IDE: `.idea/`, `.vs/` y `.vscode/` no se versionan y están en el `.gitignore`.
