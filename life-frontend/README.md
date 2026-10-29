@@ -2,7 +2,34 @@
 
 Aplicación de ModulApp Life (React + TypeScript, React Native con Expo).
 
-Este proyecto todavía no tiene código. La estructura y las instrucciones de ejecución se documentarán cuando se cree la app.
+## Estructura
+
+Las rutas usan Expo Router: cada archivo de `src/app/` es una pantalla y `_layout.tsx` define el navegador. El alias `@/` apunta a `src/`.
+
+```
+src/
+  app/          rutas y layout raíz (Expo Router)
+  components/   componentes compartidos
+  hooks/        hooks compartidos
+  services/     acceso a la API y otros servicios
+  types/        tipos de TypeScript
+```
+
+No se versionan `node_modules`, artefactos de compilación (`dist/`, `.expo/`, `web-build/`), archivos de entorno (`.env*`) ni claves o certificados (ver `.gitignore`).
+
+## Instalación y ejecución
+
+Desde `life-frontend`:
+
+```powershell
+npm install
+npx expo start   # Expo Go (QR), emulador (a Android, i iOS) o navegador (w)
+npm run web      # navegador
+npx tsc --noEmit # tipos
+npx expo lint    # lint
+```
+
+Antes de usar APIs de Expo o React Native se consulta la documentación de la versión instalada (ver `AGENTS.md`).
 
 ## Formato y estilo
 
