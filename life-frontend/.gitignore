@@ -1,0 +1,3 @@
+﻿# Valores locales de entorno (los .env.development, .env.test y .env.production sí se versionan)
+.env.local
+.env*.local
