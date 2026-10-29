@@ -73,6 +73,36 @@ dotnet run --project API
 
 La API escucha en `http://localhost:5041` y `https://localhost:7183`.
 
+## Entornos
+
+El backend tiene tres entornos, que se eligen con la variable `ASPNETCORE_ENVIRONMENT`. Cada uno lee `appsettings.json` y encima `appsettings.<Entorno>.json`:
+
+| Entorno | `ASPNETCORE_ENVIRONMENT` | Archivo | Base de datos (`Database:Name`) | URL local |
+|---|---|---|---|---|
+| Desarrollo | `Development` | `appsettings.Development.json` | `life_dev` | `http://localhost:5041` |
+| Pruebas | `Testing` | `appsettings.Testing.json` | `life_test` | `http://localhost:5042` |
+| Producción | `Production` | `appsettings.Production.json` | `life_prod` | La define el despliegue |
+
+Cada entorno usa su propia base de datos: los datos de producción no se usan fuera de producción. Los archivos versionados solo llevan el nombre de la base; el servidor, el usuario y la contraseña no se versionan (ver Convenciones).
+
+### Cambiar de entorno
+
+Desde `life-backend`:
+
+```powershell
+# Desarrollo (por defecto con dotnet run)
+dotnet run --project API
+
+# Pruebas
+dotnet run --project API --launch-profile testing
+
+# Producción (sin perfil de lanzamiento; la variable la define el servidor)
+$env:ASPNETCORE_ENVIRONMENT = "Production"
+dotnet run --project API --no-launch-profile
+```
+
+Los ajustes propios de un entorno se agregan en su `appsettings.<Entorno>.json`, nunca en el código. Las cadenas de conexión y los secretos se configuran con `user-secrets` o `appsettings.Development.local.json`.
+
 ## Control de versiones
 
 El `.gitignore` excluye `bin/`, `obj/`, los archivos de entorno, los secretos y los archivos de IDE (`.idea/`, `.vs/`, `.vscode/`). Tras compilar, `git status` no debe mostrar archivos de `bin/` ni `obj/`.
