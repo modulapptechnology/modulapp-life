@@ -103,6 +103,44 @@ dotnet run --project API --no-launch-profile
 
 Los ajustes propios de un entorno se agregan en su `appsettings.<Entorno>.json`, nunca en el código. Las cadenas de conexión y los secretos se configuran con `user-secrets` o `appsettings.Development.local.json`.
 
+## Variables de entorno y secretos
+
+La configuración se lee de las fuentes estándar de ASP.NET Core, de menor a mayor prioridad: `appsettings.json`, `appsettings.<Entorno>.json`, `user-secrets` (solo en desarrollo), `appsettings.Development.local.json` (solo en desarrollo) y variables de entorno. Los archivos versionados no llevan secretos ni cadenas de conexión.
+
+| Clave | Qué es | Dónde se define |
+|---|---|---|
+| `ConnectionStrings:Default` | Cadena de conexión a SQL Server | `user-secrets` o `appsettings.Development.local.json` en desarrollo; variable `ConnectionStrings__Default` en el resto |
+
+La clave `Database:Name` (nombre de la base de cada entorno) sí se versiona en `appsettings.<Entorno>.json`.
+
+### Configuración local
+
+Opción A, `user-secrets` (recomendada; el secreto queda fuera del repositorio). Desde `life-backend`:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:Default" "<cadena de conexión local>" --project API
+dotnet user-secrets list --project API
+```
+
+Opción B, archivo local ignorado por Git. Desde `life-backend/API`:
+
+```powershell
+Copy-Item appsettings.Development.local.example.json appsettings.Development.local.json
+```
+
+Después se reemplaza el valor de `ConnectionStrings:Default` en `appsettings.Development.local.json`. La plantilla `appsettings.Development.local.example.json` sí se versiona y solo contiene un valor de ejemplo.
+
+### Secretos de CI
+
+En GitHub Actions los secretos se definen en el repositorio (Settings > Secrets and variables > Actions) y se pasan al proceso como variable de entorno; nunca se escriben en el flujo de trabajo. Secreto requerido: `DB_CONNECTION_STRING`, usado así:
+
+```yaml
+env:
+  ConnectionStrings__Default: ${{ secrets.DB_CONNECTION_STRING }}
+```
+
+Los secretos de producción se gestionan fuera de este repositorio.
+
 ## Control de versiones
 
 El `.gitignore` excluye `bin/`, `obj/`, los archivos de entorno, los secretos y los archivos de IDE (`.idea/`, `.vs/`, `.vscode/`). Tras compilar, `git status` no debe mostrar archivos de `bin/` ni `obj/`.
