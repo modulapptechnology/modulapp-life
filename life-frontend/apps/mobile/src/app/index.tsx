@@ -1,9 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { APP_NAME } from '@life/constants';
 
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text>ModulApp Life</Text>
+      <Text>{APP_NAME}</Text>
     </View>
   );
 }

@@ -1,36 +1,24 @@
 {
   "name": "life-frontend",
-  "version": "1.0.0",
-  "main": "expo-router/entry",
-  "dependencies": {
-    "expo": "~58.0.21",
-    "expo-constants": "~58.0.14",
-    "expo-linking": "~58.0.15",
-    "expo-router": "~58.0.28",
-    "expo-status-bar": "~58.0.4",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "react-native": "0.88.1",
-    "react-native-safe-area-context": "~5.10.1",
-    "react-native-screens": "~4.30.0",
-    "react-native-web": "^0.21.4"
-  },
-  "devDependencies": {
-    "@types/react": "~19.3.0",
-    "eslint": "^9.0.0",
-    "eslint-config-expo": "~58.0.4",
-    "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.9.10",
-    "typescript": "~6.0.3"
-  },
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "lint": "expo lint",
+    "mobile": "npm run start -w @life/mobile",
+    "web": "npm run dev -w @life/web",
+    "desktop": "npm run tauri -w @life/desktop -- dev",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
-  "private": true
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "eslint": "^9.39.5",
+    "@eslint/js": "^9.39.5",
+    "typescript-eslint": "^8.72.0"
+  }
 }
