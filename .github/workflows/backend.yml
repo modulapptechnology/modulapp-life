@@ -1,0 +1,46 @@
+name: Backend
+
+on:
+  pull_request:
+    branches: [review, main]
+    paths:
+      - 'life-backend/**'
+      - '.github/workflows/backend.yml'
+  push:
+    branches: [review, main, 'release/**']
+    paths:
+      - 'life-backend/**'
+      - '.github/workflows/backend.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: life-backend
+
+jobs:
+  build:
+    name: Compilar backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # La versión del SDK sale de global.json, la misma que usa el desarrollador
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: life-backend/global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('life-backend/Directory.Packages.props', 'life-backend/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - run: dotnet restore life-backend.slnx
+
+      - run: dotnet build life-backend.slnx --no-restore --configuration Release

@@ -90,6 +90,14 @@ dotnet run --project API
 
 La API escucha en `http://localhost:5041` y `https://localhost:7183`.
 
+## Integración continua
+
+El flujo `.github/workflows/backend.yml` restaura y compila `life-backend.slnx` en GitHub Actions. Se ejecuta en los pull requests hacia `review` y `main`, y en los push a `review`, `main` y `release/**`, cuando cambia algo en `life-backend`. La versión del SDK sale de `global.json` y los paquetes de NuGet se guardan en caché según `Directory.Packages.props` y los `.csproj`. La compilación no necesita secretos.
+
+Para que una compilación fallida bloquee el pull request, en GitHub (Settings > Branches > regla de protección de `review` y `main`) se activa "Require status checks to pass before merging" y se marca el check `Compilar backend`.
+
+Para reproducir el mismo paso en local: `dotnet restore life-backend.slnx` y `dotnet build life-backend.slnx --configuration Release`.
+
 ## Entornos
 
 El backend tiene tres entornos, que se eligen con la variable `ASPNETCORE_ENVIRONMENT`. Cada uno lee `appsettings.json` y encima `appsettings.<Entorno>.json`:
