@@ -124,6 +124,19 @@ Con `nvm`, `nvm use` toma la versión de `.nvmrc`. `npm ci` instala exactamente 
 - Un cambio de versión mayor de Node actualiza `engines`, `.nvmrc` y esta sección en el mismo cambio.
 - Tras actualizar, `npm run typecheck` y `npm run lint` deben terminar sin errores.
 
+## Integración continua
+
+El flujo `.github/workflows/frontend.yml` instala las dependencias con `npm ci` y ejecuta `npm run typecheck` en GitHub Actions. Se ejecuta en los pull requests hacia `review` y `main`, y en los push a `review`, `main` y `release/**`, cuando cambia algo en `life-frontend`. La versión de Node sale de `.nvmrc` y la caché de npm se basa en `package-lock.json`. La compilación no necesita secretos.
+
+Para que una compilación fallida bloquee el pull request, en GitHub (Settings > Branches > regla de protección de `review` y `main`) se activa "Require status checks to pass before merging" y se marca el check `Compilar frontend`.
+
+Para reproducir el mismo paso en local, desde `life-frontend`:
+
+```powershell
+npm ci
+npm run typecheck
+```
+
 ## Entornos
 
 La app tiene tres entornos. Cada uno tiene un archivo versionado con sus variables `EXPO_PUBLIC_*`, que apuntan a la URL de la API de ese entorno (la API usa su propia base de datos, ver el README del backend):

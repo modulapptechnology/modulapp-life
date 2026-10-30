@@ -1,0 +1,42 @@
+name: Frontend
+
+on:
+  pull_request:
+    branches: [review, main]
+    paths:
+      - 'life-frontend/**'
+      - '.github/workflows/frontend.yml'
+  push:
+    branches: [review, main, 'release/**']
+    paths:
+      - 'life-frontend/**'
+      - '.github/workflows/frontend.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: life-frontend
+
+jobs:
+  build:
+    name: Compilar frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # La versión de Node sale de .nvmrc, la misma que usa el desarrollador
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: life-frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: life-frontend/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run typecheck
