@@ -61,6 +61,23 @@ dotnet format life-backend.slnx --verify-no-changes
 
 No se agregan comentarios salvo que sean necesarios: solo cuando explican un porqué que el código no deja claro por sí mismo. No se comenta lo que el código ya expresa y no se deja código comentado.
 
+## Versiones requeridas
+
+| Herramienta | Versión | Dónde se fija |
+|---|---|---|
+| SDK de .NET | 10.0.100 o superior de la banda 10.0.1xx (`latestFeature`) | `global.json` |
+| Framework destino | `net10.0` | `<TargetFramework>` de cada `.csproj` |
+| Paquetes NuGet | Una versión por paquete para toda la solución | `Directory.Packages.props` |
+
+Las versiones de los paquetes NuGet se declaran solo en `Directory.Packages.props`; los `.csproj` referencian el paquete sin `Version`. Para agregar o actualizar un paquete se cambia únicamente ese archivo.
+
+### Política de actualización
+
+- Las versiones se actualizan en un ticket propio, nunca como parte de otro cambio.
+- Los paquetes `Microsoft.*` de una misma línea (por ejemplo `10.0.x`) se actualizan juntos.
+- Un cambio de versión mayor del SDK o del framework destino actualiza `global.json`, los `.csproj` y esta sección en el mismo cambio.
+- Tras actualizar, `dotnet restore` y `dotnet build life-backend.slnx` deben terminar sin errores ni advertencias nuevas.
+
 ## Compilar y ejecutar
 
 Desde `life-backend`:
