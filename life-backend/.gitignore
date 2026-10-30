@@ -5,6 +5,7 @@ obj/
 # Archivos de entorno y secretos
 .env
 .env.*
+!.env.example
 appsettings.Development.local.json
 appsettings.*.local.json
 secrets.json

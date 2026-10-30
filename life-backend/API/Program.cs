@@ -1,5 +1,6 @@
 using Application;
 using Infrastructure;
+using Microsoft.Data.SqlClient;
 using Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +25,14 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "LIFE API v1"));
+
+    app.MapGet("/health/database", async (IConfiguration configuration) =>
+    {
+        await using var connection = new SqlConnection(configuration.GetConnectionString("Default"));
+        await connection.OpenAsync();
+        return Results.Ok(new { database = connection.Database, status = "connected" });
+    });
 }
 
 app.UseHttpsRedirection();

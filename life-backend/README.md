@@ -88,7 +88,55 @@ dotnet build life-backend.slnx
 dotnet run --project API
 ```
 
-La API escucha en `http://localhost:5041` y `https://localhost:7183`.
+La API escucha en `http://localhost:5041` y `https://localhost:7183`. Para levantar la base de datos local antes de ejecutarla, ver "Docker para desarrollo local".
+
+## Docker para desarrollo local
+
+`docker-compose.yml` define los servicios que el proyecto necesita en desarrollo. Hoy tiene uno:
+
+| Servicio | Imagen | Contenedor | Puerto | Datos |
+|---|---|---|---|---|
+| `sqlserver` | `mcr.microsoft.com/mssql/server:2022-latest` | `life-sqlserver` | `1433` | Volumen `sqlserver-data` (se conservan al detener el contenedor) |
+
+Requisito: Docker Desktop (o Docker Engine con el plugin Compose).
+
+### Contraseña
+
+La contraseña del usuario `sa` se lee de la variable `MSSQL_SA_PASSWORD`, definida en un `.env` local que no se versiona. La plantilla `.env.example` sí se versiona y no lleva valores reales. Desde `life-backend`:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Se edita `.env` con una contraseña que cumpla la política de SQL Server (8 o más caracteres con mayúsculas, minúsculas, números y símbolos). Sin esa variable, `docker compose` se detiene con un mensaje de error.
+
+### Iniciar y detener
+
+Desde `life-backend`:
+
+```powershell
+docker compose up -d          # inicia los contenedores
+docker compose ps             # el estado pasa a "healthy" en unos segundos
+docker compose down           # detiene y elimina los contenedores (conserva los datos)
+docker compose down -v        # además borra el volumen con los datos
+```
+
+### Apuntar la API a la base del contenedor
+
+Se guarda la cadena de conexión con `user-secrets` (la misma contraseña de `.env`). Desde `life-backend`:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost,1433;Database=master;User Id=sa;Password=<contraseña de .env>;TrustServerCertificate=True" --project API
+```
+
+Se usa `Database=master` porque la base `life_dev` se crea con las migraciones, que no forman parte de esta configuración. Con la API en marcha (`dotnet run --project API`), en Desarrollo:
+
+- `http://localhost:5041/swagger` abre Swagger UI (el documento está en `/openapi/v1.json`).
+- `GET http://localhost:5041/health/database` responde `200` con `{"database":"master","status":"connected"}` cuando la API alcanza SQL Server, y `500` si no puede.
+
+### Ampliar los servicios
+
+Cuando el proyecto necesite otro servicio (caché, cola de mensajes, correo de pruebas), se agrega un bloque bajo `services:` en `docker-compose.yml`, con imagen fija, puerto, volumen si guarda datos y sus variables en `.env` y `.env.example`. Después se agrega una fila a la tabla de arriba. Los Dockerfiles de la API y de la app, y los contenedores en CI y producción, no forman parte de esta configuración.
 
 ## Integración continua
 
