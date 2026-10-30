@@ -87,12 +87,12 @@ Los estilos salen de `createGlobalStyles(colors)` y `createGlobalTextStyles(colo
 
 ## Instalación y ejecución
 
-Requisitos: Node.js y npm. Para el escritorio, además, Rust (`rustup`) y las herramientas de C++ de Visual Studio con WebView2 (ver la [guía de requisitos de Tauri](https://tauri.app/start/prerequisites/)).
+Requisitos: Node.js 22 (`^22.13.0`) y npm 10 o superior. Para el escritorio, además, Rust (`rustup`) y las herramientas de C++ de Visual Studio con WebView2 (ver la [guía de requisitos de Tauri](https://tauri.app/start/prerequisites/)).
 
 Desde `life-frontend`:
 
 ```powershell
-npm install        # instala todas las apps y paquetes
+npm ci             # instala las versiones exactas de package-lock.json (usar npm install solo para agregar o actualizar dependencias)
 npm run mobile     # Expo: Expo Go (QR), emulador (a Android, i iOS) o navegador (w)
 npm run web        # web en http://localhost:5173
 npm run desktop    # ventana nativa con la app web (la primera vez compila Rust)
@@ -103,6 +103,26 @@ npm run lint       # lint en las apps y los paquetes
 Para compilar la web: `npm run build -w @life/web`. Para detener `npm run desktop`, `Ctrl+C` en la terminal; el aviso `STATUS_CONTROL_C_EXIT` de `cargo` es normal.
 
 Antes de usar APIs de Expo o React Native se consulta la documentación de la versión instalada (ver `AGENTS.md`).
+
+## Versiones requeridas
+
+| Herramienta | Versión | Dónde se fija |
+|---|---|---|
+| Node.js | 22 (`^22.13.0`) | `engines` de `package.json` y `.nvmrc` |
+| npm | 10 o superior | `engines` de `package.json` |
+| Dependencias | Versiones exactas resueltas | `package-lock.json` (se versiona) |
+| Expo, React Native, React | Expo `~58`, React Native `0.88.1`, React `19.3.0` | `apps/mobile/package.json` |
+| TypeScript | `~6.0.3` | `package.json` raíz y de cada app |
+
+Con `nvm`, `nvm use` toma la versión de `.nvmrc`. `npm ci` instala exactamente lo que dice `package-lock.json`, así que da las mismas versiones en cualquier equipo.
+
+### Política de actualización
+
+- Las dependencias se actualizan en un ticket propio, nunca como parte de otro cambio, y el `package-lock.json` se versiona en el mismo commit.
+- Expo, React Native y las librerías `expo-*` se actualizan juntas y se validan con `npx expo install --check` (desde `apps/mobile`); no se sube una de forma aislada.
+- Las dependencias de Expo y React Native llevan `~` o versión exacta; solo las herramientas ajenas a Expo (por ejemplo la web con Vite) pueden usar `^`.
+- Un cambio de versión mayor de Node actualiza `engines`, `.nvmrc` y esta sección en el mismo cambio.
+- Tras actualizar, `npm run typecheck` y `npm run lint` deben terminar sin errores.
 
 ## Entornos
 
