@@ -5,5 +5,7 @@ web-build/
 android/
 ios/
 coverage/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/
 package-lock.json
 *.md
