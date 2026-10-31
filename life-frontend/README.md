@@ -98,11 +98,59 @@ npm run web        # web en http://localhost:5173
 npm run desktop    # ventana nativa con la app web (la primera vez compila Rust)
 npm run typecheck  # tsc en las apps y los paquetes
 npm run lint       # lint en las apps y los paquetes
+npm test           # pruebas unitarias (Jest) de la app móvil
 ```
 
 Para compilar la web: `npm run build -w @life/web`. Para detener `npm run desktop`, `Ctrl+C` en la terminal; el aviso `STATUS_CONTROL_C_EXIT` de `cargo` es normal.
 
 Antes de usar APIs de Expo o React Native se consulta la documentación de la versión instalada (ver `AGENTS.md`).
+
+## Pruebas unitarias
+
+Las pruebas verifican la lógica de servicios, hooks y utilidades con Jest y el preset `jest-expo`, configurados en `jest.config.js` (un proyecto por zona). No incluyen pruebas de componentes de interfaz. Las versiones de `jest` y `jest-expo` deben ser las que `npx expo install` resuelve para la versión de Expo instalada.
+
+Cada plataforma tiene su proyecto de Jest y su carpeta `__tests__`. La lógica compartida vive en `packages/*` y la usan las tres plataformas, por eso una prueba en un paquete las cubre a todas. La web (Vite) y el escritorio (Tauri) se prueban con el preset `jest-expo/node`, sin Jest propio de Vite.
+
+| Proyecto   | Pruebas                                         | Entorno          |
+| ---------- | ----------------------------------------------- | ---------------- |
+| `mobile`   | `apps/mobile/__tests__/<nombre>.test.ts`        | `jest-expo`      |
+| `web`      | `apps/web/__tests__/<nombre>.test.ts`           | `jest-expo/node` |
+| `desktop`  | `apps/desktop/__tests__/<nombre>.test.ts`       | `jest-expo/node` |
+| `packages` | `packages/<paquete>/__tests__/<nombre>.test.ts` | `jest-expo/node` |
+
+| Qué                      | Dónde                                                                  |
+| ------------------------ | ---------------------------------------------------------------------- |
+| Mocks de módulos nativos | `apps/mobile/jest.setup.ts` (los módulos de Expo los mockea el preset) |
+| Alias `@/` (móvil)       | Apunta a `apps/mobile/src/`, igual que en la app                       |
+
+Desde `life-frontend`:
+
+```powershell
+npm test                              # todas las pruebas
+npm test -- -t "tamaño mínimo"        # solo las pruebas cuyo nombre coincide
+```
+
+### Regla del desarrollador
+
+Los tests son obligatorios en los cambios: todo cambio de lógica (servicios, hooks, utilidades, validaciones) incluye su test en la carpeta `__tests__` de la zona que toca, y `npm test` debe pasar antes de pedir revisión. Cada test tiene tres partes (preparación, qué se prueba, la prueba), como se explica en la convención. Un cambio sin test no se da por terminado. Si el cambio no es de lógica (solo documentación, estilos o configuración), se explica en la revisión por qué no lleva test.
+
+### Convención
+
+Cada prueba tiene tres partes separadas por una línea en blanco: preparación, qué se prueba y la prueba (las aserciones). El nombre dice el comportamiento esperado.
+
+```ts
+import { MIN_FONT_SIZE, typography } from '../typography';
+
+describe('typography', () => {
+  it('ninguna variante de texto baja del tamaño mínimo de fuente', () => {
+    const tamanos = Object.values(typography).map((variante) => variante.fontSize);
+
+    const menorTamano = Math.min(...tamanos);
+
+    expect(menorTamano).toBeGreaterThanOrEqual(MIN_FONT_SIZE);
+  });
+});
+```
 
 ## Versiones requeridas
 
