@@ -15,10 +15,14 @@
     "desktop": "npm run tauri -w @life/desktop -- dev",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
+    "test": "jest",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@types/jest": "30.0.0",
+    "jest": "~30.5.2",
+    "jest-expo": "~58.0.13",
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
     "eslint": "^9.39.5",

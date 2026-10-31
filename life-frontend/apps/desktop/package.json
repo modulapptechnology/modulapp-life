@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@life/constants": "*",
+    "@life/utils": "*"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.4"
