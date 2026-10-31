@@ -116,7 +116,7 @@ Desde `life-backend`:
 
 ```powershell
 docker compose up -d          # inicia los contenedores
-docker compose ps             # el estado pasa a "healthy" en unos segundos
+docker compose ps             # muestra el estado de cada contenedor
 docker compose down           # detiene y elimina los contenedores (conserva los datos)
 docker compose down -v        # además borra el volumen con los datos
 ```
@@ -132,7 +132,7 @@ dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost,1433;Datab
 Se usa `Database=master` porque la base `life_dev` se crea con las migraciones, que no forman parte de esta configuración. Con la API en marcha (`dotnet run --project API`), en Desarrollo:
 
 - `http://localhost:5041/swagger` abre Swagger UI (el documento está en `/openapi/v1.json`).
-- `GET http://localhost:5041/health/database` responde `200` con `{"database":"master","status":"connected"}` cuando la API alcanza SQL Server, y `500` si no puede.
+- `GET http://localhost:5041/house/database` responde `200` con `{"database":"master","status":"connected"}` cuando la API alcanza SQL Server, y `500` si no puede.
 
 ### Ampliar los servicios
 
@@ -213,6 +213,37 @@ env:
 ```
 
 Los secretos de producción se gestionan fuera de este repositorio.
+
+## Estructura de la API
+
+La estructura común de la API vive en el proyecto `API`:
+
+- `Extensions/ApiServiceCollectionExtensions.cs` registra controladores, versionado, OpenAPI y CORS.
+- `Extensions/ApiApplicationBuilderExtensions.cs` define el pipeline de middleware; el orden de las llamadas es el orden de ejecución (Swagger en Desarrollo, HTTPS, CORS, autorización, controladores). Los nuevos middleware se agregan ahí, no en `Program.cs`.
+- `Controllers/` contiene los controladores.
+
+### Convención de rutas y versionado
+
+- La ruta base es `api/v{version}/[controller]`; la versión va en el segmento de URL (`/api/v1/house`). Sin versión en la URL la API responde `404`.
+- Todo controlador hereda de `ApiControllerBase`, que ya declara `[ApiController]`, la versión `1.0` y la ruta.
+- Los controladores no contienen lógica de negocio: reciben la petición y delegan en `Application`.
+- Una versión nueva se declara con `[ApiVersion("2.0")]` en los controladores que la soporten.
+
+### CORS
+
+Solo se permiten los orígenes de `Cors:AllowedOrigins`, definidos por ambiente en `appsettings.<Entorno>.json`:
+
+| Ambiente | Orígenes |
+|---|---|
+| Desarrollo | `http://localhost:5173` (web con Vite), `http://localhost:8081` (Expo web), `http://tauri.localhost` y `tauri://localhost` (escritorio) |
+| Pruebas | Ninguno |
+| Producción | Ninguno hasta que se configuren (por variable de entorno `Cors__AllowedOrigins__0`, etc.) |
+
+Un origen no configurado no recibe la cabecera `Access-Control-Allow-Origin` y el navegador bloquea la respuesta.
+
+### Swagger y `API.http`
+
+En Desarrollo, `http://localhost:5041/swagger` abre Swagger UI y el documento OpenAPI está en `/openapi/v1.json`. `API/API.http` trae peticiones de ejemplo para la ruta base versionada y para comprobar CORS.
 
 ## Control de versiones
 
