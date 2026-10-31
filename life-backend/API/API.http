@@ -1,6 +1,19 @@
 @API_HostAddress = http://localhost:5041
 
-GET {{API_HostAddress}}/weatherforecast/
+### Ruta base versionada
+GET {{API_HostAddress}}/api/v1/house
 Accept: application/json
 
-###
+### Conexión a la base de datos
+GET {{API_HostAddress}}/house/database
+Accept: application/json
+
+### CORS origen no permitido
+GET {{API_HostAddress}}/api/v1/house
+Origin: http://origen-no-permitido.example
+Accept: application/json
+
+### CORS origen permitido
+GET {{API_HostAddress}}/api/v1/house
+Origin: http://localhost:5173
+Accept: application/json
