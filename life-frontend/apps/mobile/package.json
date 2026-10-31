@@ -14,7 +14,8 @@
     "react-native-safe-area-context": "~5.10.1",
     "react-native-screens": "~4.30.0",
     "react-native-web": "^0.21.4",
-    "@life/constants": "*"
+    "@life/constants": "*",
+    "@life/theme": "*"
   },
   "devDependencies": {
     "@types/react": "~19.3.0",

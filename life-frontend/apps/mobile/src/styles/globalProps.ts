@@ -1,6 +1,6 @@
 import type { ViewProps, ViewStyle, TextProps, TextStyle, StyleProp } from 'react-native';
 import type { createGlobalStyles, createGlobalTextStyles } from './global';
-import type { TextVariant } from '../theme/typography';
+import type { TextVariant } from '@life/theme';
 
 export type GlobalStyleProps = {
   [K in keyof ReturnType<typeof createGlobalStyles>]?: boolean;

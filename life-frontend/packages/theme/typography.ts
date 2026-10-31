@@ -1,19 +1,16 @@
-import type { TextStyle } from 'react-native';
-
 export const MIN_FONT_SIZE = 14;
 export const MAX_FONT_SIZE_MULTIPLIER = 1.5;
 
-export type TextVariant =
-  | 'screenTitle'
-  | 'sectionTitle'
-  | 'headerTitle'
-  | 'body'
-  | 'bodySecondary'
-  | 'label'
-  | 'button';
+export type FontWeight = '400' | '500' | '600' | '700';
 
-type VariantStyle = Required<Pick<TextStyle, 'fontSize' | 'lineHeight'>> &
-  Pick<TextStyle, 'fontWeight'>;
+export type TextVariant =
+  'screenTitle' | 'sectionTitle' | 'headerTitle' | 'body' | 'bodySecondary' | 'label' | 'button';
+
+type VariantStyle = {
+  fontSize: number;
+  lineHeight: number;
+  fontWeight?: FontWeight;
+};
 
 export const typography: Record<TextVariant, VariantStyle> = {
   screenTitle: { fontSize: 24, lineHeight: 32, fontWeight: '700' },
