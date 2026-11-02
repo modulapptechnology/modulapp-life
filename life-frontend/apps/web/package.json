@@ -11,11 +11,14 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "@fontsource/audiowide": "^5.3.0",
+    "@fontsource/comfortaa": "^5.3.0",
     "@life/constants": "*",
+    "@life/icons": "*",
     "@life/theme": "*",
     "@life/utils": "*",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "react-router-dom": "^7.0.0"
   },
   "devDependencies": {
