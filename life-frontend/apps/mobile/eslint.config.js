@@ -8,4 +8,8 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*'],
   },
+  {
+    // El resolver de TypeScript falla al leer los reexports (export *) de @life/icons.
+    rules: { 'import/namespace': 'off' },
+  },
 ]);
