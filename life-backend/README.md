@@ -90,6 +90,38 @@ dotnet run --project API
 
 La API escucha en `http://localhost:5041` y `https://localhost:7183`. Para levantar la base de datos local antes de ejecutarla, ver "Docker para desarrollo local".
 
+## Pruebas unitarias
+
+El proyecto `Application.Tests` (xUnit, con NSubstitute para simular dependencias y `Assert` de xUnit para las aserciones) prueba `Domain` y `Application` de forma aislada: no accede a base de datos ni a red. Solo referencia `Application` y `Domain`, igual que el resto de capas internas. Las pruebas de `Infrastructure`, `Persistence` y las de integración no van aquí.
+
+Desde `life-backend`:
+
+```powershell
+dotnet test Application.Tests/Application.Tests.csproj
+```
+
+### Convención
+
+- Las carpetas y archivos de `Application.Tests` replican la estructura de la capa que prueban (`Application/Tareas/CrearTarea.cs` se prueba en `Application.Tests/Tareas/CrearTareaTests.cs`). Las pruebas de `Domain` van en una carpeta `Domain/`.
+- Una clase por clase probada, con el sufijo `Tests`, en el namespace `Application.Tests.<Carpeta>`.
+- Nombre del método: `Metodo_Escenario_ResultadoEsperado`, por ejemplo `Crear_ConTituloVacio_LanzaExcepcion`.
+- Cada caso de uso o regla lleva como mínimo una prueba del caso exitoso, una de cada rechazo y una por cada valor límite.
+- Cada prueba tiene tres partes separadas por una línea en blanco: preparación, qué se prueba y la prueba (las aserciones).
+
+```csharp
+[Fact]
+public void AddApplication_ConColeccionValida_DevuelveLaMismaColeccion()
+{
+    var services = new ServiceCollection();
+
+    var resultado = services.AddApplication();
+
+    Assert.Same(services, resultado);
+}
+```
+
+Todo cambio de lógica en `Domain` o `Application` incluye su prueba en este proyecto, y `dotnet test` debe pasar antes de pedir revisión.
+
 ## Docker para desarrollo local
 
 `docker-compose.yml` define los servicios que el proyecto necesita en desarrollo. Hoy tiene uno:
