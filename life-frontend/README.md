@@ -49,41 +49,55 @@ No se versionan `node_modules`, artefactos de compilación (`dist/`, `.expo/`, `
 
 ## Sistema de diseño
 
-Aplica a la app móvil. Los valores visuales viven en `apps/mobile/src/theme/` y `apps/mobile/src/styles/` (las rutas de esta sección son relativas a `apps/mobile/`); los componentes no usan valores fijos propios.
+Los valores visuales viven en `packages/theme/` y los componentes en `packages/ui/` (las rutas de esta sección son relativas a `packages/`). Los componentes no usan valores fijos propios: consumen los estilos y colores del tema.
 
-| Archivo                     | Contenido                                                                      |
-| --------------------------- | ------------------------------------------------------------------------------ |
-| `src/theme/colors.ts`       | Paleta clara (`lightColors`) y oscura (`darkColors`), y el tipo `ThemeColors`  |
-| `src/theme/typography.ts`   | Variantes de texto (tamaño, interlineado y peso) y límites de escala de fuente |
-| `src/theme/dimension.ts`    | Layout, breakpoints y escalas responsivas (definidas, aún sin uso)             |
-| `src/styles/global.ts`      | `createGlobalStyles` (vistas) y `createGlobalTextStyles` (texto)               |
-| `src/styles/globalProps.ts` | Tipos de las props booleanas (`GlobalProps`, `GlobalTextProps`)                |
+| Archivo               | Contenido                                                                      |
+| --------------------- | ------------------------------------------------------------------------------ |
+| `theme/colors.ts`     | Paleta clara (`lightColors`) y oscura (`darkColors`), y el tipo `ThemeColors`  |
+| `theme/typography.ts` | Variantes de texto (tamaño, interlineado y peso) y límites de escala de fuente |
+| `theme/dimension.ts`  | Layout, breakpoints y escalas responsivas                                      |
+| `theme/styles.ts`     | `createViewStyles` (vistas) y `createTextStyles` (texto)                       |
 
 ### Cambiar un valor
 
 Cada valor se cambia en su archivo y se refleja en todo lo que lo usa. Un color en `colors.ts` cambia todos los estilos que lo leen (`bg`, `bgPrimary`, `textBrand`, etc.).
 
-### Usar los estilos
+### Componentes compartidos (`@life/ui`)
 
-Los componentes reciben los estilos como props booleanas, sin `style`, y el texto recibe una variante:
+`packages/ui` agrupa los componentes que usan la app móvil, la web y el escritorio (Tauri muestra la web). Se importan desde un único punto y reciben los estilos como props booleanas, sin `style`; el texto recibe una variante:
 
 ```tsx
-<ModulView w100 p16 gap8 bgSurface rounded>
-  <ModulText variant="sectionTitle" fwBold>
+import { ModulButton, ModulText, ModulView } from '@life/ui';
+
+<ModulView flex1 alignCenter justifyCenter gap16 p16 bg>
+  <ModulText variant="screenTitle" textBrand>
     Mis tareas
   </ModulText>
+  <ModulButton label="Guardar" onPress={guardar} />
 </ModulView>
 ```
 
-Los estilos salen de `createGlobalStyles(colors)` y `createGlobalTextStyles(colors)`, con `lightColors` o `darkColors` según el tema del sistema.
+| Ruta (en `ui/`)           | Contenido                                                        |
+| ------------------------- | ---------------------------------------------------------------- |
+| `components/atoms/`       | `ModulView`, `ModulText`, `ModulButton`                          |
+| `components/molecules/`   | `ModulLoadingState`, `ModulEmptyState`, `ModulErrorState`        |
+| `components/organisms/`   | Reservada: los organismos viven en cada app hasta que se repitan |
+| `theme/ThemeProvider.tsx` | Tema claro, oscuro o del sistema (`ThemeProvider`, `useTheme`)   |
+| `utils/`                  | `useStyles`, `useBreakpoint` y funciones auxiliares              |
+
+Cada app envuelve su raíz con `<ThemeProvider>`. La web resuelve `react-native` a `react-native-web` con un alias en `apps/web/vite.config.ts`.
 
 ### Convenciones
 
+- Los componentes empiezan con `Modul` y tienen props tipadas.
 - Colores: siempre desde `ThemeColors`; nunca un hexadecimal dentro de un componente.
 - Texto: el tamaño, interlineado y peso base salen de `typography`; el color y el peso extra, de las props (`textSecondary`, `textBrand`, `fwBold`, etc.).
-- Para agregar un estilo nuevo: la entrada en `createGlobalStyles` o `createGlobalTextStyles`; el tipo de la prop se actualiza solo.
+- Los textos llegan por props; los componentes no llevan textos fijos ni lógica de negocio.
+- Para agregar un estilo nuevo: la entrada en `createViewStyles` o `createTextStyles`; el tipo de la prop se actualiza solo.
+- Si un comportamiento difiere por plataforma (hover, foco, área táctil), se agrega un archivo `.web.tsx` o `.native.tsx` junto al componente.
 - Contraste: los pares de texto y fondo cumplen WCAG AA (4.5:1) en tema claro y oscuro; los bordes de interfaz, 3:1.
-- Escalas responsivas: `breakpoints` y `spacingScale` están definidos en `dimension.ts`; los componentes aún no los aplican.
+- Escalas responsivas: `useStyles` aplica `spacingScale` según el ancho de pantalla (teléfono, tablet o escritorio) al `padding`, `margin` y `gap` de los estilos del tema.
+- `@life/ui` es, junto con `@life/icons`, el único paquete que importa `react-native`; la excepción está en `packages/eslint.config.mjs`.
 
 ## Instalación y ejecución
 
