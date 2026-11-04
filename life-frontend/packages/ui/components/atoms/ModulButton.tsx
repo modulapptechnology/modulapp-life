@@ -1,20 +1,41 @@
 import { useState } from 'react';
 import { Pressable, type PressableProps } from 'react-native';
+import { resolveButtonKind } from '../../utils/resolveButtonKind';
 import { useStyles } from '../../utils/useStyles';
+import { ModulIcon, type IconName } from './ModulIcon';
 import { ModulText } from './ModulText';
 
+export type ModulButtonVariant = 'primary' | 'secondary' | 'danger';
+
 export type ModulButtonProps = Omit<PressableProps, 'style' | 'children'> & {
-  label: string;
+  label?: string;
+  icon?: IconName;
+  variant?: ModulButtonVariant;
   danger?: boolean;
 };
 
-export function ModulButton({ label, danger = false, disabled, onFocus, onBlur, ...props }: ModulButtonProps) {
+export function ModulButton({
+                              label,
+                              icon,
+                              variant = 'primary',
+                              danger = false,
+                              disabled,
+                              accessibilityLabel,
+                              onFocus,
+                              onBlur,
+                              ...props
+                            }: ModulButtonProps) {
   const { view } = useStyles();
   const [focused, setFocused] = useState(false);
+
+  const kind = resolveButtonKind(variant, danger);
+  const filled = kind !== 'secondary';
+  const iconOnly = !label && !!icon;
 
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       onFocus={(event) => {
@@ -29,19 +50,26 @@ export function ModulButton({ label, danger = false, disabled, onFocus, onBlur, 
       style={[
         view.minH44,
         view.minW44,
-        view.px16,
         view.py8,
+        iconOnly ? view.p8 : view.px16,
+        view.row,
+        view.gap8,
         view.alignCenter,
         view.justifyCenter,
         view.rounded,
-        danger ? view.bgDanger : view.bgPrimary,
+        kind === 'danger' && view.bgDanger,
+        kind === 'primary' && view.bgPrimary,
+        kind === 'secondary' && view.borderPrimary,
         focused && view.border,
         disabled && view.opacityDisabled,
       ]}
     >
-      <ModulText variant="button" textOnPrimary>
-        {label}
-      </ModulText>
+      {icon ? <ModulIcon name={icon} color={filled ? 'onAccent' : 'primary'} /> : null}
+      {label ? (
+        <ModulText variant="button" textOnPrimary={filled} textBrand={!filled}>
+          {label}
+        </ModulText>
+      ) : null}
     </Pressable>
   );
 }

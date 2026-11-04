@@ -20,6 +20,8 @@ export const createViewStyles = (colors: ThemeColors) =>
     mt16: { marginTop: 16 },
     mb8: { marginBottom: 8 },
     mb16: { marginBottom: 16 },
+    px8: { paddingHorizontal: 8 },
+    py4: { paddingVertical: 4 },
     gap2: { gap: 2 },
     gap4: { gap: 4 },
     gap8: { gap: 8 },
@@ -32,17 +34,27 @@ export const createViewStyles = (colors: ThemeColors) =>
     alignCenter: { alignItems: 'center' },
     justifyCenter: { justifyContent: 'center' },
     justifyBetween: { justifyContent: 'space-between' },
+    absolute: { position: 'absolute' },
+    bottom16: { bottom: 16 },
+    right16: { right: 16 },
+    overflowHidden: { overflow: 'hidden' },
 
     // Fondos
     bg: { backgroundColor: colors.background },
     bgSurface: { backgroundColor: colors.surface },
     bgPrimary: { backgroundColor: colors.primary },
     bgDanger: { backgroundColor: colors.danger },
+    bgSecondary: { backgroundColor: colors.secondary },
+    bgSuccess: { backgroundColor: colors.success },
+    bgWarning: { backgroundColor: colors.warning },
+    bgInfo: { backgroundColor: colors.info },
 
     // Bordes y radios
     border: { borderWidth: 1, borderColor: colors.borderStrong },
     borderFocus: { borderWidth: 2, borderColor: colors.primary },
     borderError: { borderWidth: 2, borderColor: colors.danger },
+    borderPrimary: { borderWidth: 1, borderColor: colors.primary },
+    borderSubtle: { borderWidth: 1, borderColor: colors.border },
     rounded: { borderRadius: 8 },
     roundedLg: { borderRadius: 12 },
     roundedFull: { borderRadius: 999 },
@@ -64,4 +76,5 @@ export const createTextStyles = (colors: ThemeColors) =>
 
     textCenter: { textAlign: 'center' },
     textRight: { textAlign: 'right' },
+    underline: { textDecorationLine: 'underline' },
   }) as const;
