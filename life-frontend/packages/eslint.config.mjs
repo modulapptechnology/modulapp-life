@@ -18,6 +18,6 @@ export default defineConfig(js.configs.recommended, tseslint.configs.recommended
   },
 }, {
   // @life/icons es el único paquete que reexporta librerías por plataforma.
-  files: ['icons/**/*.ts'],
+  files: ['icons/**/*.ts', 'ui/**/*.{ts,tsx}'],
   rules: { 'no-restricted-imports': 'off' },
 });

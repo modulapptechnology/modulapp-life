@@ -1,5 +1,6 @@
 import { Audiowide_400Regular } from '@expo-google-fonts/audiowide';
 import { Comfortaa_400Regular, Comfortaa_700Bold, useFonts } from '@expo-google-fonts/comfortaa';
+import { ThemeProvider } from '@life/ui';
 import { Stack } from 'expo-router';
 
 export default function RootLayout() {
@@ -7,5 +8,9 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
-  return <Stack />;
+  return (
+    <ThemeProvider>
+      <Stack />
+    </ThemeProvider>
+  );
 }
