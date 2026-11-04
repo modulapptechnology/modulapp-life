@@ -2,6 +2,7 @@ export * from './theme/ThemeProvider';
 export * from './utils/useBreakpoint';
 export * from './utils/useStyles';
 export * from './utils/styleProps';
+export * from './components/atoms/ModulIcon';
 export * from './components/atoms/ModulText';
 export * from './components/atoms/ModulButton';
 export * from './components/atoms/ModulView';
