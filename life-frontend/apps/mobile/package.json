@@ -9,6 +9,7 @@
     "@life/icons": "*",
     "@life/theme": "*",
     "@life/ui": "*",
+    "@react-native-community/datetimepicker": "9.2.1",
     "expo": "~58.0.21",
     "expo-constants": "~58.0.14",
     "expo-font": "~58.0.11",
