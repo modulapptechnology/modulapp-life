@@ -5,4 +5,7 @@
   <Project Path="Domain/Domain.csproj" />
   <Project Path="Infrastructure/Infrastructure.csproj" />
   <Project Path="Persistence/Persistence.csproj" />
+  <Project Path="tests/TestSupport.Tests/TestSupport.Tests.csproj" />
+  <Project Path="tests/TestSupport.Tool/TestSupport.Tool.csproj" />
+  <Project Path="tests/TestSupport/TestSupport.csproj" />
 </Solution>

@@ -122,6 +122,62 @@ public void AddApplication_ConColeccionValida_DevuelveLaMismaColeccion()
 
 Todo cambio de lógica en `Domain` o `Application` incluye su prueba en este proyecto, y `dotnet test` debe pasar antes de pedir revisión.
 
+## Entorno de pruebas de integración
+
+Las pruebas de integración y de flujos críticos usan una base SQL Server aislada, `life_test`, que se crea y se elimina en cada ejecución. Nunca se usa la base de desarrollo ni la de producción: `TestDatabaseOptions` rechaza cualquier nombre de base que no termine en `_test` y siempre reemplaza la base indicada en la cadena de conexión.
+
+| Proyecto (en `tests/`) | Qué contiene |
+|---|---|
+| `tests/TestSupport` | Biblioteca reutilizable desde cualquier proyecto de pruebas: ciclo de vida de la base (`TestDatabase`), fixture de xUnit (`TestDatabaseFixture`), esquema provisional (`Schema.sql`), datos semilla (`DatosSemilla`) y constructores (`UsuarioPruebaBuilder`, `EspacioTrabajoPruebaBuilder`) |
+| `tests/TestSupport.Tool` | Comando `prepare` / `clean` para preparar o limpiar el entorno a mano |
+| `tests/TestSupport.Tests` | Pruebas del propio entorno; las que necesitan la base se omiten si no hay cadena de conexión |
+
+Los datos semilla y constructores viven en `life-backend/tests/` y son solo del backend: el frontend mantiene su propia configuración y dependencias de pruebas y no los comparte. Los usuarios y espacios de trabajo de `TestSupport` son tipos provisionales de pruebas. Cuando existan las entidades y las migraciones, `Schema.sql` y los constructores se reemplazan por ellas.
+
+### Configurar la cadena de conexión
+
+Se apunta al servidor de `docker-compose.yml` (la base de `Database=` se ignora). Desde `life-backend`:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:Test" "Server=localhost,1433;User Id=sa;Password=<contraseña de .env>;TrustServerCertificate=True" --project tests/TestSupport
+```
+
+También se acepta la variable de entorno `ConnectionStrings__Test`. La cadena no se versiona. `TestDatabase:Name` cambia el nombre de la base (debe terminar en `_test`; por defecto `life_test`).
+
+### Preparar y limpiar con un único comando
+
+```powershell
+docker compose up -d
+dotnet run --project tests/TestSupport.Tool -- prepare
+dotnet run --project tests/TestSupport.Tool -- clean
+```
+
+`prepare` crea la base si no existe, recrea el esquema y carga los datos semilla, así que siempre parte del mismo estado. `clean` elimina la base completa y no deja datos residuales.
+
+### Datos semilla cargados por `prepare`
+
+| Cuenta | Correo | Rol en la semilla |
+|---|---|---|
+| Propietario de prueba | `propietario@life.test` | Propietario de "Espacio principal de prueba" |
+| Miembro de prueba | `miembro@life.test` | Usuario adicional |
+
+Todavía no hay autenticación, por lo que las cuentas no llevan contraseña; se agrega cuando exista ese modelo.
+
+### Usar el entorno desde otro proyecto de pruebas
+
+Se referencia `tests/TestSupport` y se usa el fixture, que prepara la base antes de las pruebas de la clase y la elimina al terminar:
+
+```csharp
+public class MiPruebaDeIntegracion : IClassFixture<TestDatabaseFixture>
+{
+    private readonly TestDatabaseFixture _database;
+
+    public MiPruebaDeIntegracion(TestDatabaseFixture database) => _database = database;
+}
+```
+
+Para datos adicionales se usan los constructores, por ejemplo `new UsuarioPruebaBuilder().ConEmail("otro@life.test").Build()`, y `TestDatabase.InsertarAsync` para guardarlos. Las pruebas que dependen de la base se marcan con `[RequiereBaseDePruebasFact]` para omitirlas cuando no hay cadena configurada.
+
 ## Docker para desarrollo local
 
 `docker-compose.yml` define los servicios que el proyecto necesita en desarrollo. Hoy tiene uno:
