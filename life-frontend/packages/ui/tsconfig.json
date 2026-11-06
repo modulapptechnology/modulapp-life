@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "types": ["jest"] },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", "**/*.test.tsx"]
 }
