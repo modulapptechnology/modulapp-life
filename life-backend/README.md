@@ -92,18 +92,27 @@ La API escucha en `http://localhost:5041` y `https://localhost:7183`. Para levan
 
 ## Pruebas unitarias
 
-El proyecto `Application.Tests` (xUnit, con NSubstitute para simular dependencias y `Assert` de xUnit para las aserciones) prueba `Domain` y `Application` de forma aislada: no accede a base de datos ni a red. Solo referencia `Application` y `Domain`, igual que el resto de capas internas. Las pruebas de `Infrastructure`, `Persistence` y las de integración no van aquí.
+Las pruebas unitarias viven en `life-backend/tests/`, separadas del código de producción, con un proyecto xUnit por capa probada. No acceden a base de datos ni a red. Las pruebas de `Infrastructure`, `Persistence` y las de integración no van aquí.
+
+| Proyecto (en `tests/`) | Qué prueba | Referencia a |
+|---|---|---|
+| `tests/Domain.Tests` | Las reglas de `Domain` | `Domain` |
+| `tests/Application.Tests` | Los casos de uso y validaciones de `Application`; usa NSubstitute para simular dependencias | `Application` |
+
+Las aserciones son las de xUnit (`Assert`). Cada proyecto de pruebas respeta la regla de dependencias: solo referencia la capa que prueba. Las dependencias y la configuración de pruebas del backend son propias: no se comparten con las del frontend. Las versiones están centralizadas en `Directory.Packages.props`.
 
 Desde `life-backend`:
 
 ```powershell
-dotnet test Application.Tests/Application.Tests.csproj
+# Todas las pruebas de una capa
+dotnet test tests/Domain.Tests/Domain.Tests.csproj
+dotnet test tests/Application.Tests/Application.Tests.csproj
 ```
 
 ### Convención
 
-- Las carpetas y archivos de `Application.Tests` replican la estructura de la capa que prueban (`Application/Tareas/CrearTarea.cs` se prueba en `Application.Tests/Tareas/CrearTareaTests.cs`). Las pruebas de `Domain` van en una carpeta `Domain/`.
-- Una clase por clase probada, con el sufijo `Tests`, en el namespace `Application.Tests.<Carpeta>`.
+- Las carpetas y archivos de cada proyecto replican la estructura de la capa que prueban (`Application/Tareas/CrearTarea.cs` se prueba en `tests/Application.Tests/Tareas/CrearTareaTests.cs`).
+- Una clase por clase probada, con el sufijo `Tests`, en el namespace `<Proyecto>.<Carpeta>` (por ejemplo `Application.Tests.Tareas`).
 - Nombre del método: `Metodo_Escenario_ResultadoEsperado`, por ejemplo `Crear_ConTituloVacio_LanzaExcepcion`.
 - Cada caso de uso o regla lleva como mínimo una prueba del caso exitoso, una de cada rechazo y una por cada valor límite.
 - Cada prueba tiene tres partes separadas por una línea en blanco: preparación, qué se prueba y la prueba (las aserciones).
@@ -120,7 +129,7 @@ public void AddApplication_ConColeccionValida_DevuelveLaMismaColeccion()
 }
 ```
 
-Todo cambio de lógica en `Domain` o `Application` incluye su prueba en este proyecto, y `dotnet test` debe pasar antes de pedir revisión.
+Todo cambio de lógica en `Domain` o `Application` incluye su prueba en el proyecto de su capa, y `dotnet test` debe pasar antes de pedir revisión.
 
 ## Entorno de pruebas de integración
 

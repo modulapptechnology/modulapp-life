@@ -1,10 +1,11 @@
 <Solution>
   <Project Path="API/API.csproj" />
-  <Project Path="Application.Tests/Application.Tests.csproj" />
   <Project Path="Application/Application.csproj" />
   <Project Path="Domain/Domain.csproj" />
   <Project Path="Infrastructure/Infrastructure.csproj" />
   <Project Path="Persistence/Persistence.csproj" />
+  <Project Path="tests/Application.Tests/Application.Tests.csproj" />
+  <Project Path="tests/Domain.Tests/Domain.Tests.csproj" />
   <Project Path="tests/TestSupport.Tests/TestSupport.Tests.csproj" />
   <Project Path="tests/TestSupport.Tool/TestSupport.Tool.csproj" />
   <Project Path="tests/TestSupport/TestSupport.csproj" />
