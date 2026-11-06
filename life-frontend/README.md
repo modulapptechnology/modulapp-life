@@ -53,10 +53,10 @@ Los valores visuales viven en `packages/theme/` y los componentes en `packages/u
 
 | Archivo               | Contenido                                                                      |
 | --------------------- | ------------------------------------------------------------------------------ |
-| `theme/colors.ts`     | Paleta clara (`lightColors`) y oscura (`darkColors`), y el tipo `ThemeColors`  |
-| `theme/typography.ts` | Variantes de texto (tamaño, interlineado y peso) y límites de escala de fuente |
-| `theme/dimension.ts`  | Layout, breakpoints y escalas responsivas                                      |
-| `theme/styles.ts`     | `createViewStyles` (vistas) y `createTextStyles` (texto)                       |
+| `theme/colors/colors.ts`     | Paleta clara (`lightColors`) y oscura (`darkColors`), y el tipo `ThemeColors`  |
+| `theme/typography/typography.ts` | Variantes de texto (tamaño, interlineado y peso) y límites de escala de fuente |
+| `theme/dimension/dimension.ts`  | Layout, breakpoints y escalas responsivas                                      |
+| `theme/styles/styles.ts`     | `createViewStyles` (vistas) y `createTextStyles` (texto)                       |
 
 ### Cambiar un valor
 
@@ -145,20 +145,21 @@ Antes de usar APIs de Expo o React Native se consulta la documentación de la ve
 
 ## Pruebas unitarias
 
-Las pruebas verifican la lógica de servicios, hooks y utilidades con Jest y el preset `jest-expo`, configurados en `jest.config.js` (un proyecto por zona). No incluyen pruebas de componentes de interfaz. Las versiones de `jest` y `jest-expo` deben ser las que `npx expo install` resuelve para la versión de Expo instalada.
+Las pruebas verifican la lógica de servicios, hooks y utilidades con Jest y el preset `jest-expo`, configurados en `jest.config.js` (un proyecto por zona). Cubren el caso exitoso, el error y los valores límite. Los componentes de `@life/ui` también se prueban (lo que muestran y cómo responden a la interacción); no hay pruebas de integración ni de extremo a extremo. Las versiones de `jest` y `jest-expo` deben ser las que `npx expo install` resuelve para la versión de Expo instalada. Los hooks se prueban con `renderHook` y los componentes con `renderWithTheme` (`packages/ui/testing/`), ambos de `@testing-library/react-native`. La configuración y las dependencias de pruebas del frontend no se comparten con las del backend.
 
-Cada plataforma tiene su proyecto de Jest y su carpeta `__tests__`. La lógica compartida vive en `packages/*` y la usan las tres plataformas, por eso una prueba en un paquete las cubre a todas. La web (Vite) y el escritorio (Tauri) se prueban con el preset `jest-expo/node`, sin Jest propio de Vite.
+Cada archivo vive en su propia carpeta (por ejemplo `utils/clampPercent/clampPercent.ts`) y su test va en esa misma carpeta, con el nombre `<archivo>.test.ts` (o `.test.tsx`); no hay una carpeta `tests/` centralizada. La lógica compartida vive en `packages/*` y la usan las tres plataformas: se prueba una sola vez ahí. Las adaptaciones propias de una plataforma se prueban junto a su implementación en `apps/<plataforma>/`.
 
-| Proyecto   | Pruebas                                         | Entorno          |
-| ---------- | ----------------------------------------------- | ---------------- |
-| `mobile`   | `apps/mobile/__tests__/<nombre>.test.ts`        | `jest-expo`      |
-| `web`      | `apps/web/__tests__/<nombre>.test.ts`           | `jest-expo/node` |
-| `desktop`  | `apps/desktop/__tests__/<nombre>.test.ts`       | `jest-expo/node` |
-| `packages` | `packages/<paquete>/__tests__/<nombre>.test.ts` | `jest-expo/node` |
+| Proyecto   | Dónde está el test                                   | Entorno          |
+| ---------- | ---------------------------------------------------- | ---------------- |
+| `mobile`   | `apps/mobile/src/**/<archivo>.test.ts`               | `jest-expo`      |
+| `web`      | `apps/web/**/<archivo>.test.ts`                      | `jest-expo/node` |
+| `desktop`  | `apps/desktop/**/<archivo>.test.ts`                  | `jest-expo/node` |
+| `packages` | `packages/<paquete>/**/<archivo>.test.ts`            | `jest-expo/node` |
+| `ui`       | `packages/ui/**/<archivo>.test.ts` (hooks incluidos) | `jest-expo`      |
 
 | Qué                      | Dónde                                                                  |
 | ------------------------ | ---------------------------------------------------------------------- |
-| Mocks de módulos nativos | `apps/mobile/jest.setup.ts` (los módulos de Expo los mockea el preset) |
+| Mocks de módulos nativos | `apps/mobile/jest.setup.ts` y `packages/ui/jest.setup.ts` (iconos); los módulos de Expo los mockea el preset |
 | Alias `@/` (móvil)       | Apunta a `apps/mobile/src/`, igual que en la app                       |
 
 Desde `life-frontend`:
@@ -170,7 +171,7 @@ npm test -- -t "tamaño mínimo"        # solo las pruebas cuyo nombre coincide
 
 ### Regla del desarrollador
 
-Los tests son obligatorios en los cambios: todo cambio de lógica (servicios, hooks, utilidades, validaciones) incluye su test en la carpeta `__tests__` de la zona que toca, y `npm test` debe pasar antes de pedir revisión. Cada test tiene tres partes (preparación, qué se prueba, la prueba), como se explica en la convención. Un cambio sin test no se da por terminado. Si el cambio no es de lógica (solo documentación, estilos o configuración), se explica en la revisión por qué no lleva test.
+Los tests son obligatorios en los cambios: todo cambio de lógica (servicios, hooks, utilidades, validaciones) incluye su test junto al archivo que cambia, y `npm test` debe pasar antes de pedir revisión. Cada test tiene tres partes (preparación, qué se prueba, la prueba), como se explica en la convención. Un cambio sin test no se da por terminado. Si el cambio no es de lógica (solo documentación, estilos o configuración), se explica en la revisión por qué no lleva test.
 
 ### Convención
 

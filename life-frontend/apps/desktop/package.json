@@ -7,8 +7,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@life/constants": "*",
-    "@life/utils": "*"
+    "@life/constants": "*"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.4"
