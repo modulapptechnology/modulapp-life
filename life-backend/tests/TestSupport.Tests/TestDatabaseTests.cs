@@ -5,41 +5,41 @@ namespace TestSupport.Tests;
 
 public class TestDatabaseTests
 {
-    [RequiereBaseDePruebasFact]
-    public async Task PrepareAsync_LlamadoDosVeces_DejaSoloLosDatosSemilla()
+    [RequiresTestDatabaseFact]
+    public async Task PrepareAsync_CalledTwice_LeavesOnlyTheSeedData()
     {
-        var database = CrearBaseAislada();
+        var database = CreateIsolatedDatabase();
         await database.PrepareAsync();
         await database.PrepareAsync();
 
-        var usuarios = await ContarAsync(database.ConnectionString, "dbo.Usuarios");
+        var users = await CountAsync(database.ConnectionString, "dbo.Users");
         await database.CleanAsync();
 
-        Assert.Equal(DatosSemilla.Usuarios.Count, usuarios);
+        Assert.Equal(SeedData.Users.Count, users);
     }
 
-    [RequiereBaseDePruebasFact]
-    public async Task CleanAsync_DespuesDePreparar_EliminaLaBase()
+    [RequiresTestDatabaseFact]
+    public async Task CleanAsync_AfterPrepare_DropsTheDatabase()
     {
-        var database = CrearBaseAislada();
+        var database = CreateIsolatedDatabase();
         await database.PrepareAsync();
 
         await database.CleanAsync();
 
-        await Assert.ThrowsAsync<SqlException>(() => ContarAsync(database.ConnectionString, "dbo.Usuarios"));
+        await Assert.ThrowsAsync<SqlException>(() => CountAsync(database.ConnectionString, "dbo.Users"));
     }
 
-    private static TestDatabase CrearBaseAislada()
+    private static TestDatabase CreateIsolatedDatabase()
     {
-        var servidor = TestConfiguration.Build()[TestDatabaseOptions.ConnectionStringKey];
-        return new TestDatabase(new TestDatabaseOptions(servidor, "life_support_test"));
+        var server = TestConfiguration.Build()[TestDatabaseOptions.ConnectionStringKey];
+        return new TestDatabase(new TestDatabaseOptions(server, "life_support_test"));
     }
 
-    private static async Task<int> ContarAsync(string connectionString, string tabla)
+    private static async Task<int> CountAsync(string connectionString, string table)
     {
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await using var command = new SqlCommand($"SELECT COUNT(*) FROM {tabla}", connection);
+        await using var command = new SqlCommand($"SELECT COUNT(*) FROM {table}", connection);
         return (int)(await command.ExecuteScalarAsync())!;
     }
 }

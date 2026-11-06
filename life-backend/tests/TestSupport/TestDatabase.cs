@@ -18,73 +18,73 @@ public sealed class TestDatabase
 
     public async Task PrepareAsync()
     {
-        await EjecutarAsync(_options.AdminConnectionString, $"IF DB_ID(N'{_options.DatabaseName}') IS NULL CREATE DATABASE [{_options.DatabaseName}];");
+        await ExecuteAsync(_options.AdminConnectionString, $"IF DB_ID(N'{_options.DatabaseName}') IS NULL CREATE DATABASE [{_options.DatabaseName}];");
 
         await using var connection = new SqlConnection(_options.ConnectionString);
         await connection.OpenAsync();
 
-        await EjecutarAsync(connection, "DROP TABLE IF EXISTS dbo.EspaciosTrabajo; DROP TABLE IF EXISTS dbo.Usuarios;");
-        await EjecutarAsync(connection, LeerEsquema());
+        await ExecuteAsync(connection, "DROP TABLE IF EXISTS dbo.Workspaces; DROP TABLE IF EXISTS dbo.Users;");
+        await ExecuteAsync(connection, ReadSchema());
 
-        foreach (var usuario in DatosSemilla.Usuarios)
+        foreach (var user in SeedData.Users)
         {
-            await InsertarAsync(connection, usuario);
+            await InsertAsync(connection, user);
         }
 
-        foreach (var espacio in DatosSemilla.Espacios)
+        foreach (var workspace in SeedData.Workspaces)
         {
-            await InsertarAsync(connection, espacio);
+            await InsertAsync(connection, workspace);
         }
     }
 
     public async Task CleanAsync()
     {
-        await EjecutarAsync(
+        await ExecuteAsync(
             _options.AdminConnectionString,
             $"IF DB_ID(N'{_options.DatabaseName}') IS NOT NULL BEGIN " +
             $"ALTER DATABASE [{_options.DatabaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; " +
             $"DROP DATABASE [{_options.DatabaseName}]; END");
     }
 
-    public static async Task InsertarAsync(SqlConnection connection, UsuarioPrueba usuario)
+    public static async Task InsertAsync(SqlConnection connection, TestUser user)
     {
         await using var command = new SqlCommand(
-            "INSERT INTO dbo.Usuarios (Id, Email, Nombre, CreadoEn) VALUES (@Id, @Email, @Nombre, @CreadoEn)", connection);
-        command.Parameters.AddWithValue("@Id", usuario.Id);
-        command.Parameters.AddWithValue("@Email", usuario.Email);
-        command.Parameters.AddWithValue("@Nombre", usuario.Nombre);
-        command.Parameters.AddWithValue("@CreadoEn", usuario.CreadoEn);
+            "INSERT INTO dbo.Users (Id, Email, Name, CreatedAt) VALUES (@Id, @Email, @Name, @CreatedAt)", connection);
+        command.Parameters.AddWithValue("@Id", user.Id);
+        command.Parameters.AddWithValue("@Email", user.Email);
+        command.Parameters.AddWithValue("@Name", user.Name);
+        command.Parameters.AddWithValue("@CreatedAt", user.CreatedAt);
         await command.ExecuteNonQueryAsync();
     }
 
-    public static async Task InsertarAsync(SqlConnection connection, EspacioTrabajoPrueba espacio)
+    public static async Task InsertAsync(SqlConnection connection, TestWorkspace workspace)
     {
         await using var command = new SqlCommand(
-            "INSERT INTO dbo.EspaciosTrabajo (Id, Nombre, PropietarioId, CreadoEn) VALUES (@Id, @Nombre, @PropietarioId, @CreadoEn)", connection);
-        command.Parameters.AddWithValue("@Id", espacio.Id);
-        command.Parameters.AddWithValue("@Nombre", espacio.Nombre);
-        command.Parameters.AddWithValue("@PropietarioId", espacio.PropietarioId);
-        command.Parameters.AddWithValue("@CreadoEn", espacio.CreadoEn);
+            "INSERT INTO dbo.Workspaces (Id, Name, OwnerId, CreatedAt) VALUES (@Id, @Name, @OwnerId, @CreatedAt)", connection);
+        command.Parameters.AddWithValue("@Id", workspace.Id);
+        command.Parameters.AddWithValue("@Name", workspace.Name);
+        command.Parameters.AddWithValue("@OwnerId", workspace.OwnerId);
+        command.Parameters.AddWithValue("@CreatedAt", workspace.CreatedAt);
         await command.ExecuteNonQueryAsync();
     }
 
-    private static async Task EjecutarAsync(string connectionString, string sql)
+    private static async Task ExecuteAsync(string connectionString, string sql)
     {
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
-        await EjecutarAsync(connection, sql);
+        await ExecuteAsync(connection, sql);
     }
 
-    private static async Task EjecutarAsync(SqlConnection connection, string sql)
+    private static async Task ExecuteAsync(SqlConnection connection, string sql)
     {
         await using var command = new SqlCommand(sql, connection);
         await command.ExecuteNonQueryAsync();
     }
 
-    private static string LeerEsquema()
+    private static string ReadSchema()
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("TestSupport.Schema.sql")
-            ?? throw new InvalidOperationException("No se encontró el recurso TestSupport.Schema.sql.");
+            ?? throw new InvalidOperationException("The TestSupport.Schema.sql resource was not found.");
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }

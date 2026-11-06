@@ -1,19 +1,19 @@
 @API_HostAddress = http://localhost:5041
 
-### Ruta base versionada
+### Versioned base route
 GET {{API_HostAddress}}/api/v1/house
 Accept: application/json
 
-### Conexión a la base de datos
+### Database connection
 GET {{API_HostAddress}}/house/database
 Accept: application/json
 
-### CORS origen no permitido
+### CORS disallowed origin
 GET {{API_HostAddress}}/api/v1/house
-Origin: http://origen-no-permitido.example
+Origin: http://disallowed-origin.example
 Accept: application/json
 
-### CORS origen permitido
+### CORS allowed origin
 GET {{API_HostAddress}}/api/v1/house
 Origin: http://localhost:5173
 Accept: application/json
