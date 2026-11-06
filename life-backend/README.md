@@ -61,6 +61,10 @@ dotnet format life-backend.slnx --verify-no-changes
 
 No se agregan comentarios salvo que sean necesarios: solo cuando explican un porqué que el código no deja claro por sí mismo. No se comenta lo que el código ya expresa y no se deja código comentado.
 
+### Idioma del código
+
+Todo el código se escribe en inglés: nombres de clases, métodos, propiedades, variables, carpetas, namespaces, rutas, campos de JSON, nombres de las pruebas (`Metodo_Escenario_Resultado` con las tres partes en inglés) y mensajes de excepción. La documentación (README, `docs/`) y los textos que ve el usuario final siguen en español. El esquema provisional de `TestSupport` (`dbo.Users`, `dbo.Workspaces`) también está en inglés; cuando existan las entidades y migraciones reales, las reemplazan.
+
 ## Versiones requeridas
 
 | Herramienta | Versión | Dónde se fija |
@@ -92,7 +96,7 @@ La API escucha en `http://localhost:5041` y `https://localhost:7183`. Para levan
 
 ## Pruebas unitarias
 
-Las pruebas unitarias viven en `life-backend/tests/`, separadas del código de producción, con un proyecto xUnit por capa probada. No acceden a base de datos ni a red. Las pruebas de `Infrastructure`, `Persistence` y las de integración no van aquí.
+Las pruebas unitarias viven en `life-backend/tests/`, separadas del código de producción, con un proyecto xUnit por capa probada. No acceden a base de datos ni a red. Las pruebas de `Infrastructure`, `Persistence` y las de integración no van aquí (las de integración de la API están en `tests/API.Tests`, ver más abajo).
 
 | Proyecto (en `tests/`) | Qué prueba | Referencia a |
 |---|---|---|
@@ -137,11 +141,11 @@ Las pruebas de integración y de flujos críticos usan una base SQL Server aisla
 
 | Proyecto (en `tests/`) | Qué contiene |
 |---|---|
-| `tests/TestSupport` | Biblioteca reutilizable desde cualquier proyecto de pruebas: ciclo de vida de la base (`TestDatabase`), fixture de xUnit (`TestDatabaseFixture`), esquema provisional (`Schema.sql`), datos semilla (`DatosSemilla`) y constructores (`UsuarioPruebaBuilder`, `EspacioTrabajoPruebaBuilder`) |
+| `tests/TestSupport` | Biblioteca reutilizable desde cualquier proyecto de pruebas: ciclo de vida de la base (`TestDatabase`), fixture de xUnit (`TestDatabaseFixture`), esquema provisional (`Schema.sql`), datos semilla (`SeedData`) y constructores (`TestUserBuilder`, `TestWorkspaceBuilder`) |
 | `tests/TestSupport.Tool` | Comando `prepare` / `clean` para preparar o limpiar el entorno a mano |
 | `tests/TestSupport.Tests` | Pruebas del propio entorno; las que necesitan la base se omiten si no hay cadena de conexión |
 
-Los datos semilla y constructores viven en `life-backend/tests/` y son solo del backend: el frontend mantiene su propia configuración y dependencias de pruebas y no los comparte. Los usuarios y espacios de trabajo de `TestSupport` son tipos provisionales de pruebas. Cuando existan las entidades y las migraciones, `Schema.sql` y los constructores se reemplazan por ellas.
+Los datos semilla y constructores viven en `life-backend/tests/` y son solo del backend: el frontend mantiene su propia configuración y dependencias de pruebas y no los comparte. Los usuarios (`dbo.Users`) y espacios de trabajo (`dbo.Workspaces`) de `TestSupport` son tipos provisionales de pruebas. Cuando existan las entidades y las migraciones, `Schema.sql` y los constructores se reemplazan por ellas.
 
 ### Configurar la cadena de conexión
 
@@ -167,8 +171,8 @@ dotnet run --project tests/TestSupport.Tool -- clean
 
 | Cuenta | Correo | Rol en la semilla |
 |---|---|---|
-| Propietario de prueba | `propietario@life.test` | Propietario de "Espacio principal de prueba" |
-| Miembro de prueba | `miembro@life.test` | Usuario adicional |
+| Test owner | `owner@life.test` | Propietario de "Main test workspace" |
+| Test member | `member@life.test` | Usuario adicional |
 
 Todavía no hay autenticación, por lo que las cuentas no llevan contraseña; se agrega cuando exista ese modelo.
 
@@ -177,15 +181,28 @@ Todavía no hay autenticación, por lo que las cuentas no llevan contraseña; se
 Se referencia `tests/TestSupport` y se usa el fixture, que prepara la base antes de las pruebas de la clase y la elimina al terminar:
 
 ```csharp
-public class MiPruebaDeIntegracion : IClassFixture<TestDatabaseFixture>
+public class MyIntegrationTests : IClassFixture<TestDatabaseFixture>
 {
     private readonly TestDatabaseFixture _database;
 
-    public MiPruebaDeIntegracion(TestDatabaseFixture database) => _database = database;
+    public MyIntegrationTests(TestDatabaseFixture database) => _database = database;
 }
 ```
 
-Para datos adicionales se usan los constructores, por ejemplo `new UsuarioPruebaBuilder().ConEmail("otro@life.test").Build()`, y `TestDatabase.InsertarAsync` para guardarlos. Las pruebas que dependen de la base se marcan con `[RequiereBaseDePruebasFact]` para omitirlas cuando no hay cadena configurada.
+Para datos adicionales se usan los constructores, por ejemplo `new TestUserBuilder().WithEmail("other@life.test").Build()`, y `TestDatabase.InsertAsync` para guardarlos. Las pruebas que dependen de la base se marcan con `[RequiresTestDatabaseFact]` para omitirlas cuando no hay cadena configurada.
+
+### Pruebas de integración de la API
+
+`tests/API.Tests` levanta la aplicación completa en memoria (`WebApplicationFactory<Program>`, entorno `Testing`) y la prueba por HTTP contra la base `life_test` de `TestSupport`. Referencia `API` y `TestSupport`, y se ejecuta por separado de las unitarias:
+
+```powershell
+dotnet test tests/API.Tests/API.Tests.csproj
+```
+
+- `ApiFactory` es una sola instancia compartida (colección `Api`): prepara la base al empezar y la elimina al terminar, y las clases se ejecutan en serie. Sin `ConnectionStrings:Test` las pruebas con base se omiten; las que no la necesitan (por ejemplo, el 401) corren igual.
+- `ApiFactory.CreateApiClient(userId)` devuelve un cliente autenticado con la cabecera `X-Test-User` y el esquema de autenticación de pruebas; sin argumento, el cliente es anónimo.
+- Cada prueba crea sus propios datos con `TemporaryWorkspace.CreateAsync(...)` y los elimina al terminar (`await using`), así no depende del orden ni deja residuos.
+- Hay un `TestWorkspacesController` que solo existe en el servidor de pruebas: representa el patrón de permiso del propietario y aislamiento por espacio de trabajo sobre las tablas provisionales. Cuando existan la autenticación y los espacios de trabajo reales, se sustituye por sus endpoints y se reutilizan las mismas pruebas.
 
 ## Docker para desarrollo local
 

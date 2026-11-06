@@ -4,22 +4,22 @@ namespace TestSupport.Tests;
 
 public class TestDatabaseOptionsTests
 {
-    private const string Servidor = "Server=localhost,1433;User Id=sa;Password=x;TrustServerCertificate=True";
+    private const string Server = "Server=localhost,1433;User Id=sa;Password=x;TrustServerCertificate=True";
 
     [Fact]
-    public void Constructor_ConNombreValido_ApuntaLaConexionALaBaseDePruebas()
+    public void Constructor_WithValidName_PointsTheConnectionToTheTestDatabase()
     {
-        var opciones = new TestDatabaseOptions(Servidor, "life_test");
+        var options = new TestDatabaseOptions(Server, "life_test");
 
-        Assert.Equal("life_test", new SqlConnectionStringBuilder(opciones.ConnectionString).InitialCatalog);
+        Assert.Equal("life_test", new SqlConnectionStringBuilder(options.ConnectionString).InitialCatalog);
     }
 
     [Fact]
-    public void Constructor_ConNombreValido_UsaMasterParaLaConexionAdministrativa()
+    public void Constructor_WithValidName_UsesMasterForTheAdminConnection()
     {
-        var opciones = new TestDatabaseOptions(Servidor, "life_test");
+        var options = new TestDatabaseOptions(Server, "life_test");
 
-        Assert.Equal("master", new SqlConnectionStringBuilder(opciones.AdminConnectionString).InitialCatalog);
+        Assert.Equal("master", new SqlConnectionStringBuilder(options.AdminConnectionString).InitialCatalog);
     }
 
     [Theory]
@@ -27,28 +27,28 @@ public class TestDatabaseOptionsTests
     [InlineData("life_prod")]
     [InlineData("master")]
     [InlineData("life_test; DROP DATABASE x")]
-    public void Constructor_ConNombreQueNoEsDePruebas_LanzaExcepcion(string nombre)
+    public void Constructor_WithNonTestName_ThrowsException(string name)
     {
-        var crear = () => new TestDatabaseOptions(Servidor, nombre);
+        var create = () => new TestDatabaseOptions(Server, name);
 
-        Assert.Throws<InvalidOperationException>(crear);
+        Assert.Throws<InvalidOperationException>(create);
     }
 
     [Fact]
-    public void Constructor_SinCadenaDeConexion_LanzaExcepcion()
+    public void Constructor_WithoutConnectionString_ThrowsException()
     {
-        var crear = () => new TestDatabaseOptions(null);
+        var create = () => new TestDatabaseOptions(null);
 
-        Assert.Throws<InvalidOperationException>(crear);
+        Assert.Throws<InvalidOperationException>(create);
     }
 
     [Fact]
-    public void Constructor_ConCadenaQueApuntaAOtraBase_IgualUsaLaBaseDePruebas()
+    public void Constructor_WithConnectionStringPointingToAnotherDatabase_StillUsesTheTestDatabase()
     {
-        var conexionADesarrollo = Servidor + ";Database=life_dev";
+        var developmentConnection = Server + ";Database=life_dev";
 
-        var opciones = new TestDatabaseOptions(conexionADesarrollo);
+        var options = new TestDatabaseOptions(developmentConnection);
 
-        Assert.Equal("life_test", new SqlConnectionStringBuilder(opciones.ConnectionString).InitialCatalog);
+        Assert.Equal("life_test", new SqlConnectionStringBuilder(options.ConnectionString).InitialCatalog);
     }
 }
