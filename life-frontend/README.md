@@ -79,8 +79,8 @@ import { ModulButton, ModulText, ModulView } from '@life/ui';
 
 | Ruta (en `ui/`)           | Contenido                                                        |
 | ------------------------- | ---------------------------------------------------------------- |
-| `components/atoms/`       | `ModulView`, `ModulText`, `ModulButton`, `ModulFloatingButton`, `ModulIcon`, `ModulFieldMessage`, `ModulBadge`, `ModulAvatar`, `ModulProgress`, `ModulChip` |
-| `components/molecules/`   | `ModulInput`, `ModulSwitch`, `ModulCheckbox`, `ModulChipGroup`, `ModulLoadingState`, `ModulEmptyState`, `ModulErrorState` |
+| `components/atoms/`       | `ModulView`, `ModulText`, `ModulButton`, `ModulFloatingButton`, `ModulIcon`, `ModulFieldMessage`, `ModulBadge`, `ModulAvatar`, `ModulProgress`, `ModulChip`, `ModulModal` |
+| `components/molecules/`   | `ModulInput`, `ModulSwitch`, `ModulCheckbox`, `ModulChipGroup`, `ModulLoadingState`, `ModulEmptyState`, `ModulErrorState`, `ModulOptionGroup`, `ModulListItem`, `ModulList`, `ModulMenu`, `ModulToast`, `ModulConfirmDialog`, `ModulMessagesProvider`, `ModulBarChart`, `ModulCircularProgress`, `ModulDragProvider`, `ModulDraggable`, `ModulDropZone` |
 | `components/organisms/`   | Reservada: los organismos viven en cada app hasta que se repitan |
 | `theme/ThemeProvider.tsx` | Tema claro, oscuro o del sistema (`ThemeProvider`, `useTheme`)   |
 | `utils/`                  | `useStyles`, `useBreakpoint` y funciones auxiliares              |
@@ -90,9 +90,9 @@ import { ModulButton, ModulText, ModulView } from '@life/ui';
 - `ModulText`: `variant` define el tamaño; los títulos (`screenTitle`, `sectionTitle`, `headerTitle`) llevan rol de encabezado. Con `link` se muestra como enlace (color de marca, subrayado y rol de enlace) y se usa con `onPress`.
 - `ModulButton`: `variant` es `primary`, `secondary` o `danger` (`danger` queda por compatibilidad). Con `icon` y sin `label` es un botón de solo icono y exige `accessibilityLabel`.
 - `ModulFloatingButton`: botón de solo icono anclado abajo a la derecha; va dentro de un contenedor que ocupe la pantalla (`ModulView flex1`). Abre lo que defina la pantalla desde `onPress`.
-- `ModulInput`: un solo campo con `type` (`text`, `password`, `number`, `textarea`), etiqueta, ayuda y error incluidos.
+- `ModulInput`: un solo campo con `type` (`text`, `password` con botón de mostrar y ocultar, `number`, `textarea`, `search` con botón de borrar, `date` y `time` con máscara `DD/MM/AAAA` y `HH:mm`, `select` con `options`), etiqueta, ayuda y error incluidos. `actionLabel` es el nombre accesible del botón del final del campo.
 - `ModulSwitch` y `ModulCheckbox` (`type` `checkbox` o `radio`; `round` para la casilla redonda de tarea): controlados desde afuera con `checked` y `onChange`.
-- `ModulBadge` (insignia y contador), `ModulAvatar` (imagen o iniciales), `ModulProgress` (valor de 0 a 100) y `ModulChip`. `ModulChipGroup` muestra los chips en un deslizador horizontal.
+- `ModulBadge` (insignia y contador), `ModulAvatar` (imagen o iniciales), `ModulProgress` (valor de 0 a 100) y `ModulChip`. `ModulChipGroup` muestra los chips en un deslizador horizontal, o como control segmentado con `segmented`. `ModulChip` con `onRemove` es un chip de filtro activo.
 
 ```tsx
 <ModulInput label="Correo" value={correo} onChangeText={setCorreo} error={errorCorreo} />
@@ -100,7 +100,16 @@ import { ModulButton, ModulText, ModulView } from '@life/ui';
 <ModulFloatingButton icon="AddCircleIcon" accessibilityLabel="Nueva tarea" onPress={abrirNueva} />
 ```
 
-Cada app envuelve su raíz con `<ThemeProvider>`. La web resuelve `react-native` a `react-native-web` con un alias en `apps/web/vite.config.ts`.
+- `ModulList`: lista virtualizada (solo renderiza lo cercano a la pantalla) con estados de carga, error y vacío; sus filas son `ModulListItem` (icono, descripción, acciones secundarias, `compact`). `ModulMenu` es el menú contextual y el selector de `ModulInput` lo reutiliza.
+- `ModulMessagesProvider` (una vez por app, dentro de `ThemeProvider`) habilita `useMessages()`: `toast('Guardado', { type: 'success' })` y `await confirm({ title: '¿Eliminar?', destructive: true })`.
+- `ModulDragProvider`, `ModulDraggable` y `ModulDropZone`: se arrastra con ratón o dedo; con teclado o lector de pantalla se activa el elemento y luego la zona. `ModulBarChart` y `ModulCircularProgress` dibujan con vistas y colores del tema, sin SVG.
+
+```tsx
+const { toast, confirm } = useMessages();
+if (await confirm({ title: '¿Eliminar la tarea?', destructive: true })) toast('Tarea eliminada', { type: 'success' });
+```
+
+Cada app envuelve su raíz con `<ThemeProvider>` y `<ModulMessagesProvider>`. La web resuelve `react-native` a `react-native-web` con un alias en `apps/web/vite.config.ts`.
 
 ### Convenciones
 
