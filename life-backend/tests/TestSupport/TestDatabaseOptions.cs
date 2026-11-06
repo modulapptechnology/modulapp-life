@@ -15,14 +15,14 @@ public sealed partial class TestDatabaseOptions
         if (string.IsNullOrWhiteSpace(serverConnectionString))
         {
             throw new InvalidOperationException(
-                $"Falta la cadena de conexión de pruebas '{ConnectionStringKey}'. " +
-                "Defínala con user-secrets (dotnet user-secrets set --project TestSupport) o con la variable ConnectionStrings__Test.");
+                $"Missing the test connection string '{ConnectionStringKey}'. " +
+                "Set it with user-secrets (dotnet user-secrets set --project TestSupport) or with the ConnectionStrings__Test environment variable.");
         }
 
-        if (!NombreValido().IsMatch(databaseName))
+        if (!ValidName().IsMatch(databaseName))
         {
             throw new InvalidOperationException(
-                $"El nombre de base '{databaseName}' no es válido para pruebas: debe terminar en '_test'.");
+                $"The database name '{databaseName}' is not valid for tests: it must end in '_test'.");
         }
 
         var builder = new SqlConnectionStringBuilder(serverConnectionString) { InitialCatalog = "master" };
@@ -48,5 +48,5 @@ public sealed partial class TestDatabaseOptions
     }
 
     [GeneratedRegex("^[A-Za-z][A-Za-z0-9]*_test$")]
-    private static partial Regex NombreValido();
+    private static partial Regex ValidName();
 }

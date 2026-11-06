@@ -6,9 +6,9 @@ namespace TestSupport.Tests;
 public class BuildersTests
 {
     [Fact]
-    public void Build_SinValoresFijados_GeneraUsuariosConEmailUnico()
+    public void Build_WithoutFixedValues_GeneratesUsersWithUniqueEmail()
     {
-        var builder = new UsuarioPruebaBuilder();
+        var builder = new TestUserBuilder();
 
         var emails = new[] { builder.Build().Email, builder.Build().Email };
 
@@ -16,43 +16,43 @@ public class BuildersTests
     }
 
     [Fact]
-    public void Build_ConValoresFijados_ConservaLosValores()
+    public void Build_WithFixedValues_KeepsTheValues()
     {
-        var builder = new UsuarioPruebaBuilder().ConEmail("a@life.test").ConNombre("Ana");
+        var builder = new TestUserBuilder().WithEmail("a@life.test").WithName("Ana");
 
-        var usuario = builder.Build();
+        var user = builder.Build();
 
-        Assert.Equal(("a@life.test", "Ana"), (usuario.Email, usuario.Nombre));
+        Assert.Equal(("a@life.test", "Ana"), (user.Email, user.Name));
     }
 
     [Fact]
-    public void Build_ConPropietario_AsignaElPropietarioAlEspacio()
+    public void Build_WithOwner_AssignsTheOwnerToTheWorkspace()
     {
-        var propietario = new UsuarioPruebaBuilder().Build();
-        var builder = new EspacioTrabajoPruebaBuilder(propietario.Id);
+        var owner = new TestUserBuilder().Build();
+        var builder = new TestWorkspaceBuilder(owner.Id);
 
-        var espacio = builder.Build();
+        var workspace = builder.Build();
 
-        Assert.Equal(propietario.Id, espacio.PropietarioId);
+        Assert.Equal(owner.Id, workspace.OwnerId);
     }
 
     [Fact]
-    public void DatosSemilla_Espacios_TienenComoPropietarioUnUsuarioSemilla()
+    public void SeedData_Workspaces_HaveASeedUserAsOwner()
     {
-        var idsDeUsuarios = DatosSemilla.Usuarios.Select(usuario => usuario.Id);
+        var userIds = SeedData.Users.Select(user => user.Id);
 
-        var propietarios = DatosSemilla.Espacios.Select(espacio => espacio.PropietarioId);
+        var ownerIds = SeedData.Workspaces.Select(workspace => workspace.OwnerId);
 
-        Assert.All(propietarios, propietario => Assert.Contains(propietario, idsDeUsuarios));
+        Assert.All(ownerIds, ownerId => Assert.Contains(ownerId, userIds));
     }
 
     [Fact]
-    public void DatosSemilla_Usuarios_TienenEmailsDistintos()
+    public void SeedData_Users_HaveDistinctEmails()
     {
-        var usuarios = DatosSemilla.Usuarios;
+        var users = SeedData.Users;
 
-        var emails = usuarios.Select(usuario => usuario.Email).Distinct();
+        var emails = users.Select(user => user.Email).Distinct();
 
-        Assert.Equal(usuarios.Count, emails.Count());
+        Assert.Equal(users.Count, emails.Count());
     }
 }
