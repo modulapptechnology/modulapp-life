@@ -1,16 +1,17 @@
-using TestSupport;
+using Support;
 
-var command = args.FirstOrDefault()?.ToLowerInvariant();
+var command = args.ElementAtOrDefault(0)?.ToLowerInvariant();
+var project = args.ElementAtOrDefault(1);
 
-if (command is not ("prepare" or "clean"))
+if (command is not ("prepare" or "clean") || string.IsNullOrWhiteSpace(project))
 {
-    Console.Error.WriteLine("Usage: dotnet run --project TestSupport.Tool -- <prepare|clean>");
+    Console.Error.WriteLine("Usage: dotnet run --project tests/Support.Tool -- <prepare|clean> <Project>  (for example: prepare Api)");
     return 2;
 }
 
 try
 {
-    var options = TestDatabaseOptions.FromConfiguration(TestConfiguration.Build());
+    var options = TestDatabaseOptions.FromConfiguration(TestConfiguration.Build(), project);
     var database = new TestDatabase(options);
 
     if (command == "prepare")

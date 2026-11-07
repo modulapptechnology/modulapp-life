@@ -63,7 +63,7 @@ No se agregan comentarios salvo que sean necesarios: solo cuando explican un por
 
 ### Idioma del código
 
-Todo el código se escribe en inglés: nombres de clases, métodos, propiedades, variables, carpetas, namespaces, rutas, campos de JSON, nombres de las pruebas (`Metodo_Escenario_Resultado` con las tres partes en inglés) y mensajes de excepción. La documentación (README, `docs/`) y los textos que ve el usuario final siguen en español. El esquema provisional de `TestSupport` (`dbo.Users`, `dbo.Workspaces`) también está en inglés; cuando existan las entidades y migraciones reales, las reemplazan.
+Todo el código se escribe en inglés: nombres de clases, métodos, propiedades, variables, carpetas, namespaces, rutas, campos de JSON, nombres de las pruebas (`Metodo_Escenario_Resultado` con las tres partes en inglés) y mensajes de excepción. La documentación (README, `docs/`) y los textos que ve el usuario final siguen en español. El esquema provisional de `Support` (`dbo.Users`, `dbo.Workspaces`) también está en inglés; cuando existan las entidades y migraciones reales, las reemplazan.
 
 ## Versiones requeridas
 
@@ -137,35 +137,37 @@ Todo cambio de lógica en `Domain` o `Application` incluye su prueba en el proye
 
 ## Entorno de pruebas de integración
 
-Las pruebas de integración y de flujos críticos usan una base SQL Server aislada, `life_test`, que se crea y se elimina en cada ejecución. Nunca se usa la base de desarrollo ni la de producción: `TestDatabaseOptions` rechaza cualquier nombre de base que no termine en `_test` y siempre reemplaza la base indicada en la cadena de conexión.
+Las pruebas de integración y de flujos críticos usan una base SQL Server aislada por proyecto de pruebas, que se crea y se elimina en cada ejecución. El nombre es `ModulLife<Proyecto>Test`: `ModulLifeApiTest` para `API.Tests` y `ModulLifeSupportTest` para `Support.Tests`. Preparar o limpiar una base no afecta a las demás. Los ambientes usan `ModulLifeDev` (desarrollo) y `ModulLifeProd` (producción).
 
-| Proyecto (en `tests/`) | Qué contiene |
+Nunca se usa la base de desarrollo ni la de producción: `TestDatabaseOptions` rechaza cualquier nombre de base que no termine en `Test` (incluidos `ModulLifeDev`, `ModulLifeProd` y `master`) y siempre reemplaza la base indicada en la cadena de conexión.
+
+| Proyecto | Qué contiene |
 |---|---|
-| `tests/TestSupport` | Biblioteca reutilizable desde cualquier proyecto de pruebas: ciclo de vida de la base (`TestDatabase`), fixture de xUnit (`TestDatabaseFixture`), esquema provisional (`Schema.sql`), datos semilla (`SeedData`) y constructores (`TestUserBuilder`, `TestWorkspaceBuilder`) |
-| `tests/TestSupport.Tool` | Comando `prepare` / `clean` para preparar o limpiar el entorno a mano |
-| `tests/TestSupport.Tests` | Pruebas del propio entorno; las que necesitan la base se omiten si no hay cadena de conexión |
+| `Support` | Biblioteca reutilizable desde cualquier proyecto de pruebas: ciclo de vida de la base (`TestDatabase`), fixture de xUnit (`TestDatabaseFixture`), esquema provisional (`Schema.sql`), datos semilla (`SeedData`) y constructores (`TestUserBuilder`, `TestWorkspaceBuilder`) |
+| `tests/Support.Tool` | Comando `prepare` / `clean` para preparar o limpiar el entorno a mano |
+| `tests/Support.Tests` | Pruebas del propio entorno; las que necesitan la base se omiten si no hay cadena de conexión |
 
-Los datos semilla y constructores viven en `life-backend/tests/` y son solo del backend: el frontend mantiene su propia configuración y dependencias de pruebas y no los comparte. Los usuarios (`dbo.Users`) y espacios de trabajo (`dbo.Workspaces`) de `TestSupport` son tipos provisionales de pruebas. Cuando existan las entidades y las migraciones, `Schema.sql` y los constructores se reemplazan por ellas.
+Los datos semilla y constructores viven en `life-backend/Support` y son solo del backend: el frontend mantiene su propia configuración y dependencias de pruebas y no los comparte. Los usuarios (`dbo.Users`) y espacios de trabajo (`dbo.Workspaces`) de `Support` son tipos provisionales de pruebas. Cuando existan las entidades y las migraciones, `Schema.sql` y los constructores se reemplazan por ellas.
 
 ### Configurar la cadena de conexión
 
 Se apunta al servidor de `docker-compose.yml` (la base de `Database=` se ignora). Desde `life-backend`:
 
 ```powershell
-dotnet user-secrets set "ConnectionStrings:Test" "Server=localhost,1433;User Id=sa;Password=<contraseña de .env>;TrustServerCertificate=True" --project tests/TestSupport
+dotnet user-secrets set "ConnectionStrings:Test" "Server=localhost,1433;User Id=sa;Password=<contraseña de .env>;TrustServerCertificate=True" --project Support
 ```
 
-También se acepta la variable de entorno `ConnectionStrings__Test`. La cadena no se versiona. `TestDatabase:Name` cambia el nombre de la base (debe terminar en `_test`; por defecto `life_test`).
+También se acepta la variable de entorno `ConnectionStrings__Test`. La cadena no se versiona. El nombre de la base no se configura: sale del proyecto de pruebas que la usa.
 
 ### Preparar y limpiar con un único comando
 
 ```powershell
 docker compose up -d
-dotnet run --project tests/TestSupport.Tool -- prepare
-dotnet run --project tests/TestSupport.Tool -- clean
+dotnet run --project tests/Support.Tool -- prepare Api
+dotnet run --project tests/Support.Tool -- clean Api
 ```
 
-`prepare` crea la base si no existe, recrea el esquema y carga los datos semilla, así que siempre parte del mismo estado. `clean` elimina la base completa y no deja datos residuales.
+El último argumento es el proyecto de pruebas (`Api` o `Support`) y define la base: `Api` usa `ModulLifeApiTest`. `prepare` crea la base si no existe, recrea el esquema y carga los datos semilla, así que siempre parte del mismo estado. `clean` elimina esa base completa y no deja datos residuales ni afecta a las bases de otros proyectos.
 
 ### Datos semilla cargados por `prepare`
 
@@ -178,14 +180,21 @@ Todavía no hay autenticación, por lo que las cuentas no llevan contraseña; se
 
 ### Usar el entorno desde otro proyecto de pruebas
 
-Se referencia `tests/TestSupport` y se usa el fixture, que prepara la base antes de las pruebas de la clase y la elimina al terminar:
+Se referencia `Support` y se usa el fixture, que prepara la base antes de las pruebas de la clase y la elimina al terminar. Cada proyecto de pruebas declara su fixture con el nombre del proyecto, que define su base (`ModulLife<Proyecto>Test`):
 
 ```csharp
-public class MyIntegrationTests : IClassFixture<TestDatabaseFixture>
+public sealed class DatabaseFixture : TestDatabaseFixture
 {
-    private readonly TestDatabaseFixture _database;
+    public DatabaseFixture() : base("MyProject")
+    {
+    }
+}
 
-    public MyIntegrationTests(TestDatabaseFixture database) => _database = database;
+public class MyIntegrationTests : IClassFixture<DatabaseFixture>
+{
+    private readonly DatabaseFixture _database;
+
+    public MyIntegrationTests(DatabaseFixture database) => _database = database;
 }
 ```
 
@@ -193,7 +202,7 @@ Para datos adicionales se usan los constructores, por ejemplo `new TestUserBuild
 
 ### Pruebas de integración de la API
 
-`tests/API.Tests` levanta la aplicación completa en memoria (`WebApplicationFactory<Program>`, entorno `Testing`) y la prueba por HTTP contra la base `life_test` de `TestSupport`. Referencia `API` y `TestSupport`, y se ejecuta por separado de las unitarias:
+`tests/API.Tests` levanta la aplicación completa en memoria (`WebApplicationFactory<Program>`, entorno `Testing`) y la prueba por HTTP contra la base `ModulLifeApiTest`. Referencia `API` y `Support`, y se ejecuta por separado de las unitarias:
 
 ```powershell
 dotnet test tests/API.Tests/API.Tests.csproj
@@ -243,7 +252,7 @@ Se guarda la cadena de conexión con `user-secrets` (la misma contraseña de `.e
 dotnet user-secrets set "ConnectionStrings:Default" "Server=localhost,1433;Database=master;User Id=sa;Password=<contraseña de .env>;TrustServerCertificate=True" --project API
 ```
 
-Se usa `Database=master` porque la base `life_dev` se crea con las migraciones, que no forman parte de esta configuración. Con la API en marcha (`dotnet run --project API`), en Desarrollo:
+Se usa `Database=master` porque la base `ModulLifeDev` se crea con las migraciones, que no forman parte de esta configuración. Con la API en marcha (`dotnet run --project API`), en Desarrollo:
 
 - `http://localhost:5041/swagger` abre Swagger UI (el documento está en `/openapi/v1.json`).
 - `GET http://localhost:5041/house/database` responde `200` con `{"database":"master","status":"connected"}` cuando la API alcanza SQL Server, y `500` si no puede.
@@ -266,9 +275,9 @@ El backend tiene tres entornos, que se eligen con la variable `ASPNETCORE_ENVIRO
 
 | Entorno | `ASPNETCORE_ENVIRONMENT` | Archivo | Base de datos (`Database:Name`) | URL local |
 |---|---|---|---|---|
-| Desarrollo | `Development` | `appsettings.Development.json` | `life_dev` | `http://localhost:5041` |
-| Pruebas | `Testing` | `appsettings.Testing.json` | `life_test` | `http://localhost:5042` |
-| Producción | `Production` | `appsettings.Production.json` | `life_prod` | La define el despliegue |
+| Desarrollo | `Development` | `appsettings.Development.json` | `ModulLifeDev` | `http://localhost:5041` |
+| Pruebas | `Testing` | `appsettings.Testing.json` | `ModulLifeApiTest` | `http://localhost:5042` |
+| Producción | `Production` | `appsettings.Production.json` | `ModulLifeProd` | La define el despliegue |
 
 Cada entorno usa su propia base de datos: los datos de producción no se usan fuera de producción. Los archivos versionados solo llevan el nombre de la base; el servidor, el usuario y la contraseña no se versionan (ver Convenciones).
 
@@ -341,7 +350,7 @@ El `DbContext` usa `EnableRetryOnFailure`: ante un error transitorio de conexió
 En cada ambiente la API se conecta con un usuario propio, no con `sa` ni con una cuenta administradora. Ese usuario solo lee y escribe datos (`db_datareader` y `db_datawriter`); no es `sysadmin`, `dbcreator` ni `db_owner` y no puede cambiar el esquema. El script `Persistence/Scripts/create-application-user.sql` lo crea. Lo ejecuta una persona con una cuenta administradora, una vez por ambiente y con la base ya creada; la API nunca lo ejecuta. Desde `life-backend`, solo en tu base local:
 
 ```powershell
-sqlcmd -S localhost,1433 -U sa -C -i Persistence/Scripts/create-application-user.sql -v AppUser=life_app AppPassword="<contraseña>" Database=life_dev
+sqlcmd -S localhost,1433 -U sa -C -i Persistence/Scripts/create-application-user.sql -v AppUser=life_app AppPassword="<contraseña>" Database=ModulLifeDev
 ```
 
 Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Password=<contraseña>`), guardada con `user-secrets`. La contraseña no se escribe en el repositorio. Como las migraciones cambian el esquema, se aplican con otra cuenta con permisos de esquema (en local, la del contenedor).

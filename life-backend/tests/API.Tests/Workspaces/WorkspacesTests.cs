@@ -2,8 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using API.Tests.Support;
 using Microsoft.Data.SqlClient;
-using TestSupport;
-using TestSupport.Seed;
+using Support;
+using Support.Seed;
 
 namespace API.Tests.Workspaces;
 

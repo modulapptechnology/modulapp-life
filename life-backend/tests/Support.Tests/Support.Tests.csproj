@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TestSupport\TestSupport.csproj" />
+    <ProjectReference Include="..\..\Support\Support.csproj" />
   </ItemGroup>
 
   <ItemGroup>
