@@ -373,6 +373,28 @@ Solo se permiten los orígenes de `Cors:AllowedOrigins`, definidos por ambiente 
 
 Un origen no configurado no recibe la cabecera `Access-Control-Allow-Origin` y el navegador bloquea la respuesta.
 
+### Validación de entradas y contratos (DTOs)
+
+- Los endpoints reciben y devuelven DTOs (por ejemplo `HouseStatusResponse`), nunca entidades de `Domain`. Los DTOs de petición y respuesta viven en `Application`, en la carpeta de su funcionalidad (`Application/<Funcionalidad>/`).
+- Cada DTO de petición tiene su validador: una clase que hereda de `AbstractValidator<TPetición>` (FluentValidation) en `Application`. `AddApplication` registra automáticamente todos los validadores del ensamblado.
+- `API/Filters/ValidationFilter.cs` es un filtro global: valida cada argumento de la acción que tenga validador registrado. Un endpoint nuevo solo necesita su DTO y su validador; el controlador no llama a la validación.
+- Si hay errores responde `400` con `application/problem+json` y los campos con sus mensajes:
+
+```json
+{
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "Name": ["'Name' must not be empty."],
+    "Quantity": ["'Quantity' must be between 1 and 100. You entered 0."]
+  }
+}
+```
+
+- Un cuerpo JSON con un tipo incorrecto también responde `400`, pero con el mensaje genérico `El valor no es válido.`, para no exponer tipos, rutas ni posiciones internas (`ValidationProblemFactory`).
+- No se validan aquí las reglas de negocio de módulos específicos.
+- `tests/API.Tests/Validation` prueba el patrón con un controlador y un validador que solo existen en el servidor de pruebas.
+
 ### Swagger y `API.http`
 
 En Desarrollo, `http://localhost:5041/swagger` abre Swagger UI y el documento OpenAPI está en `/openapi/v1.json`. `API/API.http` trae peticiones de ejemplo para la ruta base versionada y para comprobar CORS.
