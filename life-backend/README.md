@@ -223,6 +223,21 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 
 `ExternalAccount` vincula un usuario con una cuenta de un proveedor externo: `UserId` (obligatorio, sin borrado en cascada), `Provider` (hasta 50) y `ProviderUserId` (hasta 256). El par proveedor + identificador es único entre las cuentas no eliminadas, por lo que la misma cuenta externa no se vincula a dos usuarios.
 
+### Restricciones de integridad
+
+La base impide los estados inconsistentes sin depender del código. Toda entidad nueva sigue esta convención:
+
+| Aspecto | Convención |
+|---|---|
+| Claves foráneas | Una por relación, `IsRequired()` salvo que la relación sea opcional por negocio. Nombre `FK_<Tabla>_<Principal>_<Columna>`, el que genera EF. |
+| Borrado | Restringido (`Restrict`) por defecto: la base rechaza borrar un registro con dependientes. `ApplyIntegrityConventions` (en `LifeDbContext`) cambia a `Restrict` toda relación que no declare su comportamiento, en lugar de la cascada que EF asigna a las claves obligatorias. La cascada solo se admite declarándola con `OnDelete(DeleteBehavior.Cascade)` y justificándola en el cambio. |
+| Índices | Toda clave foránea tiene un índice sobre sus columnas (EF lo crea, `IX_<Tabla>_<Columna>`), y las columnas de búsqueda frecuente declaran el suyo con `HasIndex`. Una prueba de `API.Tests` falla si una clave foránea queda sin índice. |
+| Unicidad | Índice único con `HasFilter("[IsDeleted] = 0")`: la unicidad solo rige entre los registros activos, para que uno eliminado lógicamente no bloquee su reutilización. |
+| Nulabilidad | Las columnas son obligatorias salvo que el dato sea opcional por negocio; los textos declaran siempre `HasMaxLength`. |
+| Valores enumerados | Una columna `enum` lleva una restricción `CHECK` (`CK_<Tabla>_<Columna>`) con sus valores válidos. |
+
+En `Users`, `CK_Users_Status` limita `Status` a los valores de `UserStatus`; la base rechaza cualquier otro. El borrado restringido protege el borrado físico: la eliminación lógica (`Remove` de EF) no la bloquea la base, y su política se define aparte. Las restricciones de los módulos funcionales se agregan con cada módulo siguiendo esta misma convención.
+
 ### Resiliencia ante fallos transitorios
 
 El `DbContext` usa `EnableRetryOnFailure`: ante un error transitorio de conexión reintenta hasta **6 veces**, con una espera máxima de **30 segundos** entre intentos (`DependencyInjection.MaxRetryCount` y `MaxRetryDelay` en `Persistence`). Un error que no es transitorio (credenciales inválidas, base inexistente) falla de inmediato sin reintentar. Para cambiar la política se modifican esas dos constantes.
@@ -239,7 +254,7 @@ Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Passwor
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, y `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 

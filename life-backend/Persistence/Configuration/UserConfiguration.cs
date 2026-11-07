@@ -20,9 +20,14 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
     public const int TimeZoneMaxLength = 64;
 
+    public const string StatusCheckConstraintName = "CK_Users_Status";
+
+    public static readonly string StatusCheckSql =
+        $"[Status] IN ({string.Join(", ", Enum.GetValues<UserStatus>().Select(status => (int)status))})";
+
     public void Configure(EntityTypeBuilder<User> builder)
     {
-        builder.ToTable("Users");
+        builder.ToTable("Users", table => table.HasCheckConstraint(StatusCheckConstraintName, StatusCheckSql));
         builder.Property(user => user.Email)
             .IsRequired()
             .HasMaxLength(EmailMaxLength)

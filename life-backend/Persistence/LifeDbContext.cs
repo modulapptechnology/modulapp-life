@@ -41,5 +41,6 @@ public class LifeDbContext(
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LifeDbContext).Assembly);
         modelBuilder.ApplyBaseEntityConfiguration();
+        modelBuilder.ApplyIntegrityConventions();
     }
 }

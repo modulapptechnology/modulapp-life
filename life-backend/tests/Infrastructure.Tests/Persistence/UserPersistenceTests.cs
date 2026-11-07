@@ -127,6 +127,30 @@ public class UserPersistenceTests(MigratedDatabaseFixture database)
     }
 
     [RequiresTestDatabaseFact]
+    public async Task SaveChangesAsync_WhenTheStatusIsNotAKnownValue_RejectsTheUser()
+    {
+        var user = NewUser();
+        user.Status = (UserStatus)99;
+        await using var context = database.CreateContext();
+        context.Users.Add(user);
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+    }
+
+    [RequiresTestDatabaseFact]
+    public async Task SaveChangesAsync_WhenTheStatusIsAKnownValue_StoresTheUser()
+    {
+        var user = NewUser();
+        user.Status = UserStatus.Blocked;
+        await using var context = database.CreateContext();
+        context.Users.Add(user);
+
+        var written = await context.SaveChangesAsync();
+
+        Assert.Equal(1, written);
+    }
+
+    [RequiresTestDatabaseFact]
     public async Task SaveChangesAsync_WhenTheEmailHasTheMaximumLength_StoresTheUser()
     {
         var email = $"{Guid.NewGuid():N}" + new string('a', UserConfiguration.EmailMaxLength - 32);
