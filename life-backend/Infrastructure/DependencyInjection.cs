@@ -1,3 +1,4 @@
+using System.Text;
 using Application.Users;
 using Infrastructure.Email;
 using Infrastructure.Security;
@@ -22,7 +23,10 @@ public static class DependencyInjection
 
         services.AddSingleton(BuildEmailVerificationOptions(configuration));
         services.AddSingleton(BuildSmtpOptions(configuration));
+        services.AddSingleton(BuildLoginOptions(configuration));
+        services.AddSingleton(BuildAccessTokenOptions(configuration));
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
         services.AddSingleton<IVerificationTokenService, VerificationTokenService>();
         AddVerificationEmailSender(services, configuration);
 
@@ -78,6 +82,64 @@ public static class DependencyInjection
         }
 
         return new EmailVerificationOptions(lifetime, url);
+    }
+
+    private static LoginOptions BuildLoginOptions(IConfiguration configuration)
+    {
+        var section = configuration.GetSection(LoginOptions.SectionName);
+        var attempts = ReadPositiveNumber(
+            section,
+            LoginOptions.MaxFailedAttemptsKey,
+            LoginOptions.DefaultMaxFailedAttempts);
+        var minutes = ReadPositiveNumber(
+            section,
+            LoginOptions.LockoutMinutesKey,
+            (int)LoginOptions.DefaultLockoutDuration.TotalMinutes);
+
+        return new LoginOptions(attempts, TimeSpan.FromMinutes(minutes));
+    }
+
+    private static AccessTokenOptions BuildAccessTokenOptions(IConfiguration configuration)
+    {
+        var section = configuration.GetSection(AccessTokenOptions.SectionName);
+        var signingKey = section[AccessTokenOptions.SigningKeyKey] ?? string.Empty;
+
+        if (Encoding.UTF8.GetByteCount(signingKey) < AccessTokenOptions.SigningKeyMinBytes)
+        {
+            throw new InvalidOperationException(
+                $"The setting '{AccessTokenOptions.SectionName}:{AccessTokenOptions.SigningKeyKey}' must be "
+                    + $"at least {AccessTokenOptions.SigningKeyMinBytes} bytes long. "
+                    + "Set it with user-secrets or an environment variable.");
+        }
+
+        var minutes = ReadPositiveNumber(
+            section,
+            AccessTokenOptions.LifetimeMinutesKey,
+            (int)AccessTokenOptions.DefaultLifetime.TotalMinutes);
+
+        return new AccessTokenOptions(
+            signingKey,
+            section[AccessTokenOptions.IssuerKey] ?? AccessTokenOptions.DefaultIssuer,
+            section[AccessTokenOptions.AudienceKey] ?? AccessTokenOptions.DefaultAudience,
+            TimeSpan.FromMinutes(minutes));
+    }
+
+    private static int ReadPositiveNumber(IConfigurationSection section, string key, int defaultValue)
+    {
+        var value = section[key];
+
+        if (value is null)
+        {
+            return defaultValue;
+        }
+
+        if (!int.TryParse(value, out var number) || number <= 0)
+        {
+            throw new InvalidOperationException(
+                $"The setting '{section.Path}:{key}' must be a positive number, but was '{value}'.");
+        }
+
+        return number;
     }
 
     private static SmtpOptions BuildSmtpOptions(IConfiguration configuration)

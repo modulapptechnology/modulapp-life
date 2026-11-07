@@ -11,11 +11,14 @@ public class DependencyInjectionTests
 {
     private const string _verificationUrl = "https://life.test/api/v1/auth/verify-email";
 
+    private const string _signingKey = "test-only-signing-key-not-a-secret-0123456789";
+
     private static IConfiguration BuildConfiguration(params (string Key, string Value)[] values)
     {
         var settings = new Dictionary<string, string?>
         {
             ["EmailVerification:VerificationUrl"] = _verificationUrl,
+            ["Authentication:AccessToken:SigningKey"] = _signingKey,
         };
 
         foreach (var (key, value) in values)
@@ -129,6 +132,68 @@ public class DependencyInjectionTests
         var action = () => new ServiceCollection().AddInfrastructure(configuration);
 
         Assert.Throws<InvalidOperationException>(action);
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithoutLoginSettings_UsesFiveAttemptsAndFifteenMinutes()
+    {
+        using var provider = BuildProvider(BuildConfiguration());
+
+        var options = provider.GetRequiredService<LoginOptions>();
+
+        Assert.Equal((5, TimeSpan.FromMinutes(15)), (options.MaxFailedAttempts, options.LockoutDuration));
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithConfiguredLoginSettings_UsesThoseValues()
+    {
+        var configuration = BuildConfiguration(
+            ("Authentication:Login:MaxFailedAttempts", "3"),
+            ("Authentication:Login:LockoutMinutes", "30"));
+        using var provider = BuildProvider(configuration);
+
+        var options = provider.GetRequiredService<LoginOptions>();
+
+        Assert.Equal((3, TimeSpan.FromMinutes(30)), (options.MaxFailedAttempts, options.LockoutDuration));
+    }
+
+    [Theory]
+    [InlineData("Authentication:Login:MaxFailedAttempts", "0")]
+    [InlineData("Authentication:Login:LockoutMinutes", "-1")]
+    [InlineData("Authentication:AccessToken:LifetimeMinutes", "soon")]
+    public void AddInfrastructure_WithInvalidAuthenticationNumber_ThrowsInvalidOperationException(
+        string key,
+        string value)
+    {
+        var configuration = BuildConfiguration((key, value));
+
+        var action = () => new ServiceCollection().AddInfrastructure(configuration);
+
+        Assert.Throws<InvalidOperationException>(action);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("too-short")]
+    public void AddInfrastructure_WithoutAStrongSigningKey_ThrowsInvalidOperationException(string key)
+    {
+        var configuration = BuildConfiguration(("Authentication:AccessToken:SigningKey", key));
+
+        var action = () => new ServiceCollection().AddInfrastructure(configuration);
+
+        Assert.Throws<InvalidOperationException>(action);
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithoutTokenSettings_UsesTheDefaultIssuerAudienceAndLifetime()
+    {
+        using var provider = BuildProvider(BuildConfiguration());
+
+        var options = provider.GetRequiredService<AccessTokenOptions>();
+
+        Assert.Equal(
+            (AccessTokenOptions.DefaultIssuer, AccessTokenOptions.DefaultAudience, TimeSpan.FromMinutes(15)),
+            (options.Issuer, options.Audience, options.Lifetime));
     }
 
     [Fact]

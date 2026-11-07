@@ -18,6 +18,8 @@ public class LifeDbContext(
 
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
 
+    public DbSet<LoginAttempt> LoginAttempts => Set<LoginAttempt>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         EntityAuditing.Apply(ChangeTracker, _timeProvider.GetUtcNow().UtcDateTime);

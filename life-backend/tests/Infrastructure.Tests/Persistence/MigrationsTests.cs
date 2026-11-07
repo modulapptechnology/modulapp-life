@@ -56,7 +56,7 @@ public class MigrationsTests : IAsyncLifetime
 
         var businessTables = tables.Where(name => name != "__EFMigrationsHistory").Order();
 
-        Assert.Equal(["EmailVerificationTokens", "ExternalAccounts", "Users"], businessTables);
+        Assert.Equal(["EmailVerificationTokens", "ExternalAccounts", "LoginAttempts", "Users"], businessTables);
     }
 
     private LifeDbContext CreateContext()
