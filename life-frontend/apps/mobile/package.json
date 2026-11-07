@@ -6,6 +6,7 @@
     "@expo-google-fonts/audiowide": "^0.4.1",
     "@expo-google-fonts/comfortaa": "^0.4.2",
     "@life/constants": "*",
+    "@life/core": "*",
     "@life/icons": "*",
     "@life/theme": "*",
     "@life/ui": "*",

@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithTheme } from '../../../testing/renderWithTheme/renderWithTheme';
 import { ModulLayoutWeb, type NavSection } from './ModulLayoutWeb';
 
@@ -10,12 +10,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 function renderLayout(activePath = '/', onNavigate = jest.fn()) {
   return renderWithTheme(
-    <ModulLayoutWeb
-      title="ModulApp"
-      sections={NAV_SECTIONS}
-      activePath={activePath}
-      onNavigate={onNavigate}
-    >
+    <ModulLayoutWeb sections={NAV_SECTIONS} activePath={activePath} onNavigate={onNavigate}>
       <></>
     </ModulLayoutWeb>,
   );
@@ -23,13 +18,32 @@ function renderLayout(activePath = '/', onNavigate = jest.fn()) {
 
 describe('ModulLayoutWeb', () => {
   it('muestra el encabezado, la barra lateral y el contenido', async () => {
-    const titulo = 'ModulApp';
+    const botonDelSidebar = 'Cerrar barra lateral';
 
     await renderLayout();
 
-    expect(screen.getByText(titulo)).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: botonDelSidebar })).toBeOnTheScreen();
     expect(screen.getByTestId('web-sidebar')).toBeOnTheScreen();
     expect(screen.getByTestId('web-main')).toBeOnTheScreen();
+  });
+
+  it('oculta la barra lateral con el botón del encabezado cuando termina la animación', async () => {
+    const botonCerrar = 'Cerrar barra lateral';
+
+    await renderLayout();
+    await fireEvent.press(screen.getByRole('button', { name: botonCerrar }));
+
+    await waitFor(() => expect(screen.queryByTestId('web-sidebar')).toBeNull());
+  });
+
+  it('vuelve a mostrar la barra lateral al tocar el botón por segunda vez', async () => {
+    const botonDelSidebar = { name: /barra lateral/ };
+
+    await renderLayout();
+    await fireEvent.press(screen.getByRole('button', botonDelSidebar));
+    await fireEvent.press(screen.getByRole('button', botonDelSidebar));
+
+    expect(screen.getByTestId('web-sidebar')).toBeOnTheScreen();
   });
 
   it('marca como activa solo la sección de la ruta actual', async () => {
@@ -45,7 +59,7 @@ describe('ModulLayoutWeb', () => {
     const onNavigate = jest.fn();
 
     await renderLayout('/', onNavigate);
-    fireEvent.press(screen.getByRole('tab', { name: 'Agenda' }));
+    await fireEvent.press(screen.getByRole('tab', { name: 'Agenda' }));
 
     expect(onNavigate).toHaveBeenCalledWith('/agenda');
   });
