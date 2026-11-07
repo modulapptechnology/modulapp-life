@@ -20,4 +20,26 @@ export type SessionUser = {
   id: string;
   name: string;
   avatarUri?: string;
+  token?: string;
 };
+
+export type ApiFieldErrors = Record<string, string[]>;
+
+export type ApiProblem = {
+  title?: string;
+  detail?: string;
+  errors?: ApiFieldErrors;
+};
+
+export type ApiResult<T> =
+  | { kind: 'success'; status: number; data: T }
+  | { kind: 'badRequest'; status: 400; problem: ApiProblem }
+  | { kind: 'unauthorized'; status: 401 }
+  | { kind: 'forbidden'; status: 403; problem: ApiProblem }
+  | { kind: 'notFound'; status: 404; problem: ApiProblem }
+  | { kind: 'conflict'; status: 409; problem: ApiProblem }
+  | { kind: 'serverError'; status: number }
+  | { kind: 'unexpected'; status: number }
+  | { kind: 'networkError' }
+  | { kind: 'timeout' }
+  | { kind: 'cancelled' };
