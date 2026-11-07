@@ -44,3 +44,28 @@ jobs:
       - run: dotnet restore life-backend.slnx
 
       - run: dotnet build life-backend.slnx --no-restore --configuration Release
+
+  validate:
+    name: Validar código del backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: life-backend/global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('life-backend/Directory.Packages.props', 'life-backend/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - run: dotnet restore life-backend.slnx
+
+      # Cada validación es un paso aparte para ver cuál falló
+      - name: Formato (.editorconfig)
+        run: dotnet format life-backend.slnx --no-restore --verify-no-changes
+
+      - name: Analizadores y reglas de estilo (advertencias como errores)
+        run: dotnet build life-backend.slnx --no-restore --configuration Release -warnaserror
