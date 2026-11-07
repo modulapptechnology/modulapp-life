@@ -192,6 +192,23 @@ Cuando el proyecto necesite otro servicio (caché, cola de mensajes, correo de p
 
 `Persistence` accede a SQL Server con EF Core (`Microsoft.EntityFrameworkCore.SqlServer`). `AddPersistence(configuration)` registra `LifeDbContext` con tiempo de vida Scoped y la cadena `ConnectionStrings:Default` del ambiente (ver "Variables de entorno y secretos"). La cadena nunca se versiona. Si falta, el error se produce al pedir el `DbContext` por primera vez, con un mensaje que indica dónde configurarla; la API no falla al arrancar. El modelo de datos de los módulos se agrega después en `Persistence`.
 
+### Base común de persistencia
+
+Toda entidad hereda de `BaseEntity` (`Domain/Common`) y `Persistence` le aplica sin configuración adicional la misma configuración (`ApplyBaseEntityConfiguration` en `LifeDbContext`):
+
+| Campo | Comportamiento |
+|---|---|
+| `Id` (GUID) | Lo puede generar el cliente o el backend: si llega con valor se conserva; si llega vacío, EF genera uno secuencial. |
+| `CreatedAt`, `UpdatedAt` | En UTC; los fija `LifeDbContext` al guardar (la creación no se modifica después). |
+| `IsDeleted`, `DeletedAt` | Eliminación lógica: `Remove` marca el registro como eliminado en lugar de borrarlo y las consultas lo excluyen por defecto; se incluye con `IgnoreQueryFilters()`. |
+| `RowVersion` | Versión de fila (`rowversion`) para control de concurrencia, expuesta a los clientes. Para detectar un conflicto al sincronizar, el caso de uso asigna la versión que envió el cliente a `Entry(entity).Property(e => e.RowVersion).OriginalValue`; si está desactualizada, `SaveChanges` lanza `DbUpdateConcurrencyException`. |
+
+Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kind = Utc` (`UtcDateTimeConverter`).
+
+**Transacción por caso de uso.** `Application` define `IUnitOfWork`, registrado Scoped por `AddPersistence`. Cada caso de uso que modifica datos ejecuta su lógica con `ExecuteInTransactionAsync`: guarda los cambios y confirma al terminar, y ante cualquier excepción revierte todo. Respeta la política de reintentos del `DbContext`, por lo que la operación puede ejecutarse más de una vez y no debe tener efectos fuera de la base.
+
+**Historial de versiones.** Una entidad con contenido de texto que conserva su historial declara `IHasVersionHistory` (`Domain/Common`), un marcador sin miembros. El periodo de retención se configura en `VersionHistory:RetentionDays` (90 por defecto, en `appsettings.json`) y se lee con `VersionHistoryOptions`; un valor no numérico o menor que 1 hace fallar `AddPersistence`. El almacenamiento y la consulta del historial no forman parte de esta base.
+
 ### Resiliencia ante fallos transitorios
 
 El `DbContext` usa `EnableRetryOnFailure`: ante un error transitorio de conexión reintenta hasta **6 veces**, con una espera máxima de **30 segundos** entre intentos (`DependencyInjection.MaxRetryCount` y `MaxRetryDelay` en `Persistence`). Un error que no es transitorio (credenciales inválidas, base inexistente) falla de inmediato sin reintentar. Para cambiar la política se modifican esas dos constantes.

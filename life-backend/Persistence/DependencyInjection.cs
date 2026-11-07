@@ -1,3 +1,5 @@
+using Application.Common;
+using Application.VersionHistory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +34,28 @@ public static class DependencyInjection
                     errorNumbersToAdd: null));
         });
 
+        services.AddSingleton(BuildVersionHistoryOptions(configuration));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
         return services;
+    }
+
+    private static VersionHistoryOptions BuildVersionHistoryOptions(IConfiguration configuration)
+    {
+        var key = $"{VersionHistoryOptions.SectionName}:{VersionHistoryOptions.RetentionDaysKey}";
+        var value = configuration[key];
+
+        if (value is null)
+        {
+            return new VersionHistoryOptions();
+        }
+
+        if (!int.TryParse(value, out var retentionDays) || retentionDays <= 0)
+        {
+            throw new InvalidOperationException(
+                $"The setting '{key}' must be a positive number of days, but was '{value}'.");
+        }
+
+        return new VersionHistoryOptions(retentionDays);
     }
 }
