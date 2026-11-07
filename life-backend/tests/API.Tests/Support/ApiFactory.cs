@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -60,6 +61,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 .AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(TestAuthentication.Scheme, null);
 
             services.AddSingleton(new TestConnection(ConnectionString));
+            services.AddValidatorsFromAssemblyContaining<CreateSampleRequestValidator>();
             services.AddControllers().AddApplicationPart(typeof(TestWorkspacesController).Assembly);
         });
     }
