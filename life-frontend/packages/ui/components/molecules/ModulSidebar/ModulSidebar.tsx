@@ -1,8 +1,13 @@
-import { Pressable } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Animated, Easing, Platform, Pressable, ScrollView } from 'react-native';
+import { useStyles } from '../../../utils/useStyles/useStyles';
 import type { ThemeColors } from '@life/theme';
+import { useTheme } from '../../../theme/ThemeProvider';
+import { ModulAvatar } from '../../atoms/ModulAvatar/ModulAvatar';
 import { ModulIcon, type IconName } from '../../atoms/ModulIcon/ModulIcon';
 import { ModulText } from '../../atoms/ModulText/ModulText';
 import { ModulView } from '../../atoms/ModulView/ModulView';
+import { ModulConfirmDialog } from '../ModulConfirmDialog/ModulConfirmDialog';
 
 export type ModulSidebarSection = {
   path: string;
@@ -11,10 +16,29 @@ export type ModulSidebarSection = {
   accent?: keyof ThemeColors;
 };
 
+export type ModulSidebarUser = {
+  name: string;
+  avatarUri?: string;
+  path: string;
+  caption?: string;
+};
+
+export type ModulSidebarSignOut = {
+  label: string;
+  onSignOut: () => void;
+  pendingOperations?: number;
+  confirmTitle: string;
+  confirmMessage: string;
+  cancelLabel: string;
+};
+
 export type ModulSidebarProps = {
   sections: ModulSidebarSection[];
   activePath: string;
   onNavigate: (path: string) => void;
+  user?: ModulSidebarUser | null;
+  footerSections?: ModulSidebarSection[];
+  signOut?: ModulSidebarSignOut;
 };
 
 function isActive(sectionPath: string, activePath: string) {
@@ -22,34 +46,180 @@ function isActive(sectionPath: string, activePath: string) {
   return activePath === sectionPath || activePath.startsWith(`${sectionPath}/`);
 }
 
-// Lista de secciones con la activa resaltada. La usan la web (dentro de ModulLayoutWeb) y el móvil (dentro de ModulDrawer);
-// abrirla y cerrarla es trabajo del botón de ModulHeader.
-export function ModulSidebar({ sections, activePath, onNavigate }: ModulSidebarProps) {
-  return (
-    <ModulView accessibilityRole="tablist" p8 gap4>
-      {sections.map((section) => {
-        const active = isActive(section.path, activePath);
+type ItemProps = {
+  label: string;
+  active?: boolean;
+  destructive?: boolean;
+  caption?: string;
+  onPress: () => void;
+  children: ReactNode;
+};
 
-        return (
-          <Pressable
-            key={section.path}
-            accessibilityRole="tab"
-            accessibilityLabel={section.label}
-            accessibilityState={{ selected: active }}
-            onPress={() => onNavigate(section.path)}
+function SidebarItem({
+  label,
+  active = false,
+  destructive = false,
+  caption,
+  onPress,
+  children,
+}: ItemProps) {
+  const { colors } = useTheme();
+  const { view } = useStyles();
+  const [hovered, setHovered] = useState(false);
+  const [hover] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    Animated.timing(hover, {
+      toValue: hovered ? 1 : 0,
+      duration: 150,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+
+    return () => hover.stopAnimation();
+  }, [hovered, hover]);
+
+  return (
+    <Pressable
+      accessibilityRole="tab"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+    >
+      <ModulView rounded bg={active}>
+        {!active ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              view.absoluteFill,
+              view.rounded,
+              { zIndex: 0 },
+              { backgroundColor: colors.border, opacity: hover },
+            ]}
+          />
+        ) : null}
+        <ModulView row alignCenter gap8 p8 minH44 style={{ zIndex: 1 }}>
+          {children}
+          <ModulView row gap4 style={{ alignItems: 'flex-end' }}>
+            <ModulText
+              variant="label"
+              textBrand={active && !destructive}
+              textSecondary={!active && !destructive}
+              textDanger={destructive}
+            >
+              {label}
+            </ModulText>
+            {caption ? (
+              <Animated.View style={{ opacity: hover }}>
+                <ModulText variant="label" textSecondary style={{ fontSize: 10, lineHeight: 14 }}>
+                  {caption}
+                </ModulText>
+              </Animated.View>
+            ) : null}
+          </ModulView>
+        </ModulView>
+      </ModulView>
+    </Pressable>
+  );
+}
+
+function SectionItem({
+  section,
+  activePath,
+  onNavigate,
+}: {
+  section: ModulSidebarSection;
+  activePath: string;
+  onNavigate: (path: string) => void;
+}) {
+  const active = isActive(section.path, activePath);
+
+  return (
+    <SidebarItem label={section.label} active={active} onPress={() => onNavigate(section.path)}>
+      <ModulIcon
+        name={section.icon}
+        color={section.accent ?? (active ? 'primary' : 'textSecondary')}
+      />
+    </SidebarItem>
+  );
+}
+
+export function ModulSidebar({
+  sections,
+  activePath,
+  onNavigate,
+  user,
+  footerSections = [],
+  signOut,
+}: ModulSidebarProps) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  function requestSignOut() {
+    if (!signOut) return;
+    if ((signOut.pendingOperations ?? 0) > 0) setConfirmOpen(true);
+    else signOut.onSignOut();
+  }
+
+  return (
+    <ModulView accessibilityRole="tablist" flex1 p8 gap8>
+      {user ? (
+        <ModulView gap4>
+          <SidebarItem
+            label={user.name}
+            caption={user.caption}
+            active={isActive(user.path, activePath)}
+            onPress={() => onNavigate(user.path)}
           >
-            <ModulView row alignCenter gap8 p8 minH44 rounded bg={active}>
-              <ModulIcon
-                name={section.icon}
-                color={section.accent ?? (active ? 'primary' : 'textSecondary')}
-              />
-              <ModulText variant="label" textBrand={active} textSecondary={!active}>
-                {section.label}
-              </ModulText>
-            </ModulView>
-          </Pressable>
-        );
-      })}
+            <ModulAvatar name={user.name} uri={user.avatarUri} size="sm" />
+          </SidebarItem>
+          <ModulView divider />
+        </ModulView>
+      ) : null}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 4 }}>
+        {sections.map((section) => (
+          <SectionItem
+            key={section.path}
+            section={section}
+            activePath={activePath}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </ScrollView>
+      {user ? (
+        <ModulView gap4>
+          <ModulView divider />
+          {footerSections.map((section) => (
+            <SectionItem
+              key={section.path}
+              section={section}
+              activePath={activePath}
+              onNavigate={onNavigate}
+            />
+          ))}
+          {signOut ? (
+            <SidebarItem label={signOut.label} destructive onPress={requestSignOut}>
+              <ModulIcon name="Logout2Icon" color="danger" />
+            </SidebarItem>
+          ) : null}
+        </ModulView>
+      ) : null}
+      {signOut ? (
+        <ModulConfirmDialog
+          visible={confirmOpen}
+          title={signOut.confirmTitle}
+          message={signOut.confirmMessage}
+          confirmLabel={signOut.label}
+          cancelLabel={signOut.cancelLabel}
+          destructive
+          onConfirm={() => {
+            setConfirmOpen(false);
+            signOut.onSignOut();
+          }}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      ) : null}
     </ModulView>
   );
 }

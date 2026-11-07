@@ -1,17 +1,21 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, Easing, ScrollView } from 'react-native';
 import { layout } from '@life/theme';
 import { useStyles } from '../../../utils/useStyles/useStyles';
 import { ModulView } from '../../atoms/ModulView/ModulView';
 import { ModulHeader } from '../../molecules/ModulHeader/ModulHeader';
-import { ModulSidebar, type ModulSidebarSection } from '../../molecules/ModulSidebar/ModulSidebar';
+import {
+  ModulSidebar,
+  type ModulSidebarProps,
+  type ModulSidebarSection,
+} from '../../molecules/ModulSidebar/ModulSidebar';
 
 export type NavSection = ModulSidebarSection;
 
-export type ModulLayoutWebProps = {
-  sections: NavSection[];
-  activePath: string;
-  onNavigate: (path: string) => void;
+export type ModulLayoutWebProps = Pick<
+  ModulSidebarProps,
+  'sections' | 'activePath' | 'onNavigate' | 'user' | 'footerSections' | 'signOut'
+> & {
   // Contenido del encabezado exclusivo de la web, se pasa tal cual a ModulHeader.
   headerContent?: ReactNode;
   headerEnd?: ReactNode;
@@ -23,6 +27,9 @@ export function ModulLayoutWeb({
   sections,
   activePath,
   onNavigate,
+  user,
+  footerSections,
+  signOut,
   headerContent,
   headerEnd,
   children,
@@ -49,7 +56,7 @@ export function ModulLayoutWeb({
   }, [sidebarOpen, width]);
 
   return (
-    <ModulView flex1 bg>
+    <ModulView h100 flex1 bg overflowHidden>
       <ModulHeader
         sidebarOpen={sidebarOpen}
         onToggleSidebar={() => setSidebarOpen((open) => !open)}
@@ -60,13 +67,20 @@ export function ModulLayoutWeb({
       <ModulView flex1 row>
         <Animated.View style={[view.bgSurface, view.overflowHidden, { width }]}>
           {mounted && (
-            <ModulView testID="web-sidebar" style={view.sidebar}>
-              <ModulSidebar sections={sections} activePath={activePath} onNavigate={onNavigate} />
+            <ModulView testID="web-sidebar" flex1 style={view.sidebar}>
+              <ModulSidebar
+                sections={sections}
+                activePath={activePath}
+                onNavigate={onNavigate}
+                user={user}
+                footerSections={footerSections}
+                signOut={signOut}
+              />
             </ModulView>
           )}
         </Animated.View>
         <ModulView testID="web-main" flex1>
-          {children}
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>{children}</ScrollView>
         </ModulView>
       </ModulView>
     </ModulView>
