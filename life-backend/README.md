@@ -33,7 +33,7 @@ Cada capa expone un método de extensión que `API` invoca en `Program.cs`:
 |---|---|---|
 | `Application` | `AddApplication()` | Casos de uso |
 | `Infrastructure` | `AddInfrastructure()` | Servicios externos |
-| `Persistence` | `AddPersistence()` | `DbContext` y repositorios |
+| `Persistence` | `AddPersistence(configuration)` | `DbContext` y repositorios |
 
 Tiempos de vida:
 
@@ -327,6 +327,24 @@ env:
 ```
 
 Los secretos de producción se gestionan fuera de este repositorio.
+
+## Acceso a la base de datos
+
+`Persistence` accede a SQL Server con EF Core (`Microsoft.EntityFrameworkCore.SqlServer`). `AddPersistence(configuration)` registra `LifeDbContext` con tiempo de vida Scoped y la cadena `ConnectionStrings:Default` del ambiente (ver "Variables de entorno y secretos"). La cadena nunca se versiona. Si falta, el error se produce al pedir el `DbContext` por primera vez, con un mensaje que indica dónde configurarla; la API no falla al arrancar. El modelo de datos de los módulos se agrega después en `Persistence`.
+
+### Resiliencia ante fallos transitorios
+
+El `DbContext` usa `EnableRetryOnFailure`: ante un error transitorio de conexión reintenta hasta **6 veces**, con una espera máxima de **30 segundos** entre intentos (`DependencyInjection.MaxRetryCount` y `MaxRetryDelay` en `Persistence`). Un error que no es transitorio (credenciales inválidas, base inexistente) falla de inmediato sin reintentar. Para cambiar la política se modifican esas dos constantes.
+
+### Usuario de aplicación de privilegios mínimos
+
+En cada ambiente la API se conecta con un usuario propio, no con `sa` ni con una cuenta administradora. Ese usuario solo lee y escribe datos (`db_datareader` y `db_datawriter`); no es `sysadmin`, `dbcreator` ni `db_owner` y no puede cambiar el esquema. El script `Persistence/Scripts/create-application-user.sql` lo crea. Lo ejecuta una persona con una cuenta administradora, una vez por ambiente y con la base ya creada; la API nunca lo ejecuta. Desde `life-backend`, solo en tu base local:
+
+```powershell
+sqlcmd -S localhost,1433 -U sa -C -i Persistence/Scripts/create-application-user.sql -v AppUser=life_app AppPassword="<contraseña>" Database=life_dev
+```
+
+Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Password=<contraseña>`), guardada con `user-secrets`. La contraseña no se escribe en el repositorio. Como las migraciones cambian el esquema, se aplican con otra cuenta con permisos de esquema (en local, la del contenedor).
 
 ## Estructura de la API
 
