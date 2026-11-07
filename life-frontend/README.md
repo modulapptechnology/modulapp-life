@@ -213,15 +213,17 @@ Con `nvm`, `nvm use` toma la versión de `.nvmrc`. `npm ci` instala exactamente 
 
 ## Integración continua
 
-El flujo `.github/workflows/frontend.yml` instala las dependencias con `npm ci` y ejecuta `npm run typecheck` en GitHub Actions. Se ejecuta en los pull requests hacia `review` y `main`, y en los push a `review`, `main` y `release/**`, cuando cambia algo en `life-frontend`. La versión de Node sale de `.nvmrc` y la caché de npm se basa en `package-lock.json`. La compilación no necesita secretos.
+El flujo `.github/workflows/frontend.yml` tiene dos jobs en GitHub Actions: `Compilar frontend` (instala con `npm ci` y ejecuta `npm run typecheck`) y `Validar código del frontend` (ejecuta, en pasos separados, `npm run typecheck`, `npm run lint` y `npm run format:check`). Se ejecutan en los pull requests hacia `review` y `main`, y en los push a `review`, `main` y `release/**`, cuando cambia algo en `life-frontend`. La versión de Node sale de `.nvmrc` y la caché de npm se basa en `package-lock.json`. No necesitan secretos. Las reglas que se aplican son las versionadas en el repositorio (ver "Formato y estilo").
 
-Para que una compilación fallida bloquee el pull request, en GitHub (Settings > Branches > regla de protección de `review` y `main`) se activa "Require status checks to pass before merging" y se marca el check `Compilar frontend`.
+Para que un error de validación bloquee el pull request, en GitHub (Settings > Branches > regla de protección de `review` y `main`) se activa "Require status checks to pass before merging" y se marcan los checks `Compilar frontend` y `Validar código del frontend`.
 
-Para reproducir el mismo paso en local, desde `life-frontend`:
+Para reproducir los mismos pasos en local, desde `life-frontend`:
 
 ```powershell
 npm ci
 npm run typecheck
+npm run lint
+npm run format:check
 ```
 
 ## Entornos
@@ -276,6 +278,8 @@ Solo las variables `EXPO_PUBLIC_*` llegan a la app, y por eso nunca llevan contr
 
 Las reglas están versionadas en el repositorio: `.prettierrc` y `.prettierignore` (Prettier: comillas simples, punto y coma, coma final, ancho de 100, finales de línea LF) y `.editorconfig` (indentación de 2 espacios, UTF-8, LF). El formato no depende de carpetas de IDE: `.idea/`, `.vs/` y `.vscode/` no se versionan (están en el `.gitignore` de la raíz). Para formatear al guardar basta activar Prettier en el editor, que lee `.prettierrc` y `.editorconfig` del proyecto.
 
+Los finales de línea LF se fuerzan con el `.gitattributes` de la raíz del repositorio, para que `format:check` dé el mismo resultado en Windows y en el CI. El lint corre en las tres aplicaciones (`mobile`, `web` y `desktop`) y en todos los paquetes con `npm run lint`; cada uno tiene su `eslint.config.*`, y todos comparten la regla de `eslint.english.cjs` (ver "Idioma del código").
+
 Prettier se integra con ESLint mediante `eslint-config-prettier`, que debe añadirse al final de `extends` (o como `prettier` en `eslint.config.js`) cuando exista la configuración de ESLint de la app, para que las reglas de lint no contradigan el formato.
 
 Desde `life-frontend`:
@@ -290,6 +294,112 @@ npm run format
 npm run format:check
 ```
 
+### Idioma del código
+
+Todo el código se escribe en inglés, igual que en el backend: nombres de componentes, funciones, hooks, variables, propiedades, tipos, carpetas y archivos, rutas y nombres de las pruebas. La documentación (README, `docs/`) y los textos que ve el usuario final siguen en español. ESLint lo comprueba de forma parcial con la regla `id-match` de `eslint.english.cjs`: los identificadores solo pueden llevar letras sin tilde, dígitos, `_` y `$`, de modo que `número` o `año` hacen fallar `npm run lint`. La regla no detecta palabras en español sin tilde (`lista`, `tarea`); eso se revisa en la revisión de código.
+
 ### Comentarios
 
 No se agregan comentarios salvo que sean necesarios: solo cuando explican un porqué que el código no deja claro por sí mismo. No se comenta lo que el código ya expresa y no se deja código comentado.
+
+## Reglas y estándares de desarrollo
+
+Referencia para desarrollar, mantener y modificar el frontend (React Native, Expo, React y TypeScript). Las reglas de formato, idioma y comentarios de las secciones anteriores siguen vigentes; aquí se completan. Las reglas generales (puntos 1 a 4 y 7 a 12) son las mismas que las del README del backend, y las específicas de cada tecnología están en el punto 5.
+
+### 1. Formato y análisis estático
+
+- El código se formatea con las configuraciones versionadas: Prettier (`.prettierrc`), ESLint (`eslint.config.*`), TypeScript (`tsconfig.base.json` y el `tsconfig.json` de cada proyecto) y EditorConfig (`.editorconfig`).
+- No se introducen configuraciones nuevas ni se modifican las existentes sin una justificación técnica, y ninguna regla nueva contradice las actuales (por ejemplo, ESLint no impone un formato distinto al de Prettier; ver `eslint-config-prettier`).
+- Las mismas convenciones se aplican a todos los archivos equivalentes: un componente, un hook o una prueba nueva se formatea igual que los existentes, en las tres plataformas.
+
+### 2. Idioma y nomenclatura
+
+- Nombres de archivos, carpetas, variables, constantes, funciones, componentes, clases, interfaces, tipos y propiedades, en inglés (ver "Idioma del código").
+- `PascalCase` para componentes, clases, interfaces y tipos; `camelCase` para variables, funciones, métodos y propiedades; `UPPER_SNAKE_CASE` para constantes globales (como `MIN_FONT_SIZE`). Los archivos de un componente o de una unidad de lógica llevan el nombre de lo que exportan.
+- Un identificador existente en español se corrige solo cuando el cambio lo toca o lo requiere, y en el mismo cambio se actualizan todas sus referencias. Los ejemplos de código de este README que usan nombres en español son ilustrativos y no son un modelo a seguir.
+- Los términos son los mismos que en el backend (por ejemplo `Workspace`, `Task`), para que un concepto tenga un único nombre en todo el proyecto.
+- No se traducen los textos que ve el usuario ni el contenido de negocio que debe seguir en español.
+
+### 3. Comentarios y limpieza
+
+- En los archivos que se crean o modifican se eliminan los comentarios innecesarios, redundantes u obsoletos; no se explica código evidente. Se conservan los que necesitan las herramientas (`eslint-disable` justificado, directivas de TypeScript, `/** */` que alimenta el autocompletado del IDE) y la documentación externa y técnica existente.
+- Se eliminan los imports, variables, funciones y código muerto sin uso, y las duplicaciones innecesarias. No se agregan abstracciones que no aporten valor.
+- Los archivos y carpetas se organizan por responsabilidad, sin dependencias circulares entre módulos ni entre paquetes.
+
+### 4. Tipado y seguridad de tipos
+
+- TypeScript en modo estricto: las props, estados, eventos, respuestas de la API, parámetros y retornos de funciones públicas están tipados.
+- No se usa `any`, `@ts-ignore` ni conversiones (`as`) que no sean necesarias. Si el tipo no se conoce, se usa `unknown` y se acota antes de usarlo.
+- Para representar los datos se usan interfaces o tipos concretos (los compartidos viven en `@life/types`); se evitan los tipos genéricos cuando se conoce el concreto.
+- Se aprovecha la inferencia de tipos cuando no resta claridad.
+
+### 5. Reglas específicas del frontend
+
+- Componentes funcionales y Hooks; no se usan componentes de clase.
+- Un componente no crece de más: cuando mezcla presentación y lógica, la lógica se separa en un hook o una utilidad con su prueba.
+- La lógica de negocio no va en los componentes de presentación (ver "Convenciones" de `@life/ui`).
+- Las llamadas HTTP se centralizan en los servicios (`services/` en móvil y `@life/api-client`); los componentes y las pantallas no llaman a la API directamente. La URL sale de `EXPO_PUBLIC_API_URL`.
+- Los estilos se mantienen organizados y reutilizables en el tema y en las props de `@life/ui`; no se repiten valores en cada pantalla.
+- Mobile, web y escritorio comparten lo común en `packages/*`. No se duplica lógica entre plataformas; lo que difiere se separa con archivos `.web.tsx` y `.native.tsx`, y el cambio se comprueba en las plataformas afectadas.
+- Se reutiliza el layout principal y los componentes compartidos (`ModulLayoutWeb`, `ModulHeader`, `ModulSidebar`, etc.). Los módulos funcionales entran como vistas dentro de ese layout y no crean uno propio.
+- Los textos visibles pasan por `translate` (`@life/core`), que hoy es una implementación temporal y se reemplazará por ModulApp Translation: el resto del código solo depende de su firma, y no se crean mecanismos de traducción paralelos.
+- Se evitan las dependencias circulares y el acoplamiento innecesario entre apps y paquetes (los paquetes no importan de las apps).
+
+### 6. Servicios, dependencias y autocompletado
+
+- Los servicios, hooks, contextos y proveedores (`useTheme`, `useMessages`, `useSession`) se usan con sus tipos concretos, sin perder la información de tipos con `any`, `object` ni conversiones.
+- Se aprovechan el autocompletado, la navegación y el análisis estático del IDE; por eso los tipos se exportan y se importan por el paquete (`@life/types`, `@life/ui`) y no por rutas relativas entre paquetes.
+- No se agregan mecanismos de resolución o de acceso alternativos cuando el proyecto ya tiene uno establecido (proveedores y hooks para el tema y los mensajes, y el cliente de la API).
+
+### 7. Seguridad y dependencias
+
+- No se versionan credenciales, tokens, secretos ni datos sensibles; las variables `EXPO_PUBLIC_*` solo llevan valores públicos (ver "Variables de entorno y plantilla").
+- No se registra información sensible en la consola ni en logs.
+- Se validan los datos de entrada (con `@life/validations`) y se respetan la autenticación, la autorización y los mecanismos de protección existentes.
+- No se agregan dependencias innecesarias: se reutilizan las del proyecto, y las versiones se actualizan según la "Política de actualización", nunca por motivos estéticos.
+- La configuración de entorno solo cambia con una justificación técnica.
+
+### 8. Arquitectura y reutilización
+
+- Se respeta la arquitectura actual (apps, paquetes compartidos y sistema de diseño) y la separación de responsabilidades.
+- No se duplican componentes, hooks, servicios, utilidades ni lógica de negocio; no se crean sistemas independientes para lo que ya está centralizado (tema, mensajes, traducción, sesión).
+- Se mantiene un único layout principal reutilizable, y los módulos reutilizan el layout y los componentes de `@life/ui`.
+
+### 9. Reutilizar antes de crear y control del alcance
+
+Esta regla tiene prioridad sobre las demás al implementar o modificar algo: reutilizar antes que crear, extender antes que duplicar y modificar solo lo necesario.
+
+- Antes de implementar, se inspecciona el código para identificar componentes, hooks, servicios, utilidades, tipos y patrones reutilizables, y se usan de preferencia. No se crea una implementación nueva si ya existe una que cubra la necesidad; si hay que ampliarla, se modifica o se extiende la existente.
+- Se implementa únicamente lo necesario para el objetivo. No se hacen refactorizaciones, mejoras ni cambios de comportamiento, de contratos o de componentes fuera del alcance.
+- Se revisan las referencias de lo modificado para detectar efectos secundarios y se comprueba que no cambie nada fuera del alcance.
+- Una mejora que exceda el alcance se indica en el informe final, sin implementarla.
+
+### 10. Restricciones de modificación
+
+- No se altera la funcionalidad existente por motivos de estilo.
+- No se cambian contratos de la API, estructuras de datos ni reglas de negocio si el objetivo no lo requiere.
+- No se eliminan pruebas existentes.
+- No se reorganizan la arquitectura ni las carpetas sin necesidad, y no se agregan funcionalidades ajenas al objetivo.
+- Si una corrección exige tocar funcionalidad o arquitectura fuera del alcance, se documenta el problema en lugar de cambiarlo.
+
+### 11. Validación final
+
+Cuando se modifica código, antes de pedir revisión se ejecuta, desde `life-frontend`:
+
+```powershell
+npm run format:check
+npm run lint
+npm run typecheck
+npm test
+npm run build -w @life/web
+```
+
+- El formato, el lint y el tipado no reportan errores, ni imports o referencias sin uso.
+- Las pruebas existentes y las de lo modificado pasan.
+- No cambiaron contratos ni comportamientos funcionales, y se revisaron los efectos secundarios en las funcionalidades relacionadas.
+- Los errores que introdujo el cambio se corrigen; los problemas que ya existían y no se pueden corregir sin ampliar el alcance se identifican y se reportan.
+- No se afirma que una validación fue exitosa si no se ejecutó.
+
+### 12. Informe de resultados
+
+Al terminar un cambio de código, el resumen incluye: (1) archivos creados, modificados y eliminados; (2) reglas de formato y estilo aplicadas; (3) identificadores corregidos al inglés; (4) comentarios eliminados y anotaciones técnicas conservadas; (5) limpieza realizada; (6) problemas de tipado detectados y corregidos; (7) resultado de la compilación; (8) resultado de las pruebas; (9) problemas preexistentes o pendientes; (10) posibles mejoras fuera del alcance.

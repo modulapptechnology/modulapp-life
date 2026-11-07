@@ -12,7 +12,17 @@ export type ModulHeaderProps = {
 
 export function ModulHeader({ sidebarOpen, onToggleSidebar, children, end }: ModulHeaderProps) {
   return (
-    <ModulView accessibilityRole="header" row alignCenter justifyBetween gap8 px16 py4 bgSurface minH44>
+    <ModulView
+      accessibilityRole="header"
+      row
+      alignCenter
+      justifyBetween
+      gap8
+      px16
+      py4
+      bgSurface
+      minH44
+    >
       <ModulView row alignCenter gap8>
         <Pressable
           accessibilityRole="button"

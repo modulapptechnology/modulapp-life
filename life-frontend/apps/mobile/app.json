@@ -21,11 +21,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-font",
-      "@react-native-community/datetimepicker"
-    ],
+    "plugins": ["expo-router", "expo-font", "@react-native-community/datetimepicker"],
     "scheme": "lifefrontend",
     "experiments": {
       "typedRoutes": true

@@ -1,6 +1,12 @@
 const SPACING_PROPS = new Set([
-  'padding', 'paddingHorizontal', 'paddingVertical',
-  'margin', 'marginTop', 'marginBottom', 'marginHorizontal', 'marginVertical',
+  'padding',
+  'paddingHorizontal',
+  'paddingVertical',
+  'margin',
+  'marginTop',
+  'marginBottom',
+  'marginHorizontal',
+  'marginVertical',
   'gap',
 ]);
 
