@@ -355,6 +355,54 @@ sqlcmd -S localhost,1433 -U sa -C -i Persistence/Scripts/create-application-user
 
 Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Password=<contraseña>`), guardada con `user-secrets`. La contraseña no se escribe en el repositorio. Como las migraciones cambian el esquema, se aplican con otra cuenta con permisos de esquema (en local, la del contenedor).
 
+## Migraciones de la base de datos
+
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate`: aún no hay modelo de datos de módulos, así que solo crea la tabla de historial `__EFMigrationsHistory`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+
+### Convención de nombres
+
+El nombre lo define quien genera la migración y describe el cambio en inglés, en PascalCase y empezando por un verbo (`AddTasksTable`, `AddDueDateToTasks`, `RenameListsColumn`). EF antepone la marca de tiempo (`yyyyMMddHHmmss_`), que fija el orden. El nombre no lleva el número de ticket.
+
+### Herramienta
+
+`dotnet-ef` se fija en `.config/dotnet-tools.json` (versión igual a la de EF Core en `Directory.Packages.props`), así que todos usan la misma. Una sola vez, desde `life-backend`:
+
+```powershell
+dotnet tool restore
+```
+
+Los comandos usan `Persistence` como proyecto de migraciones y `API` como proyecto de inicio, y leen la cadena `ConnectionStrings:Default` del ambiente (ver "Variables de entorno y secretos"). Generar una migración no se conecta a la base.
+
+### Generar y revisar una migración
+
+```powershell
+dotnet ef migrations add <Nombre> --project Persistence --startup-project API --output-dir Migrations
+```
+
+Antes de aplicarla se revisa lo que generó: los archivos `<marca>_<Nombre>.cs` y `.Designer.cs` y el `LifeDbContextModelSnapshot.cs`, y el SQL que ejecutará:
+
+```powershell
+dotnet ef migrations script --idempotent --project Persistence --startup-project API
+```
+
+Una migración ya compartida (subida a una rama) no se edita: el cambio se corrige con una migración nueva. Solo una migración que nadie más tiene se puede deshacer con `dotnet ef migrations remove --project Persistence --startup-project API`. Los archivos de `Persistence/Migrations` los genera la herramienta y no se reformatean a mano (`.editorconfig` los marca como código generado).
+
+### Aplicar migraciones
+
+Solo en tu base local de pruebas, con la cuenta con permisos de esquema (no con el usuario de aplicación):
+
+```powershell
+dotnet ef database update --project Persistence --startup-project API
+```
+
+Sobre una base vacía o inexistente, aplica todas las migraciones en orden y termina sin errores. Para ver cuáles están aplicadas:
+
+```powershell
+dotnet ef migrations list --project Persistence --startup-project API
+```
+
+Las pruebas de `MigrationsTests` (en `API.Tests`) comprueban que la migración inicial existe y que el modelo coincide con el snapshot; si falla la segunda, falta generar una migración.
+
 ## Estructura de la API
 
 La estructura común de la API vive en el proyecto `API`:
