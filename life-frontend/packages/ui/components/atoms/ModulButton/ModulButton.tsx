@@ -12,6 +12,8 @@ export type ModulButtonProps = Omit<PressableProps, 'style' | 'children'> & {
   icon?: IconName;
   variant?: ModulButtonVariant;
   danger?: boolean;
+  // Alto de 32 en lugar del área táctil de 44: para la web, donde se usa el puntero.
+  compact?: boolean;
 };
 
 export function ModulButton({
@@ -19,6 +21,7 @@ export function ModulButton({
   icon,
   variant = 'primary',
   danger = false,
+  compact = false,
   disabled,
   accessibilityLabel,
   onFocus,
@@ -48,9 +51,9 @@ export function ModulButton({
       }}
       {...props}
       style={[
-        view.minH44,
-        view.minW44,
-        view.py8,
+        compact ? view.minH32 : view.minH44,
+        compact ? view.minW32 : view.minW44,
+        compact ? view.py4 : view.py8,
         iconOnly ? view.p8 : view.px16,
         view.row,
         view.gap8,
