@@ -20,12 +20,15 @@ public sealed class TestAuthenticationHandler(
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (!Request.Headers.TryGetValue(TestAuthentication.Header, out var value) || !Guid.TryParse(value, out var userId))
+        if (!Request.Headers.TryGetValue(TestAuthentication.Header, out var value)
+            || !Guid.TryParse(value, out var userId))
         {
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId.ToString())], TestAuthentication.Scheme);
+        var identity = new ClaimsIdentity(
+            [new Claim(ClaimTypes.NameIdentifier, userId.ToString())],
+            TestAuthentication.Scheme);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), TestAuthentication.Scheme);
 
         return Task.FromResult(AuthenticateResult.Success(ticket));

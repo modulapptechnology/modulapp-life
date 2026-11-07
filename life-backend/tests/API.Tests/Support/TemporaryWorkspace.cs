@@ -29,7 +29,9 @@ public sealed class TemporaryWorkspace : IAsyncDisposable
     public async Task<string?> ReadNameAsync()
     {
         await using var connection = await _api.OpenConnectionAsync();
-        await using var command = new SqlCommand("SELECT Name FROM dbo.Workspaces WHERE Id = @Id", connection);
+        await using var command = new SqlCommand(
+            "SELECT Name FROM dbo.Workspaces WHERE Id = @Id",
+            connection);
         command.Parameters.AddWithValue("@Id", Workspace.Id);
 
         return await command.ExecuteScalarAsync() as string;

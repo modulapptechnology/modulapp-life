@@ -30,7 +30,11 @@ public class ValidationTests(ApiFactory api)
 
         var errors = await ReadErrorsAsync(response);
         Assert.Equal((HttpStatusCode.BadRequest, "application/problem+json", true, false),
-            (response.StatusCode, response.Content.Headers.ContentType?.MediaType, errors.ContainsKey("Name"), errors.ContainsKey("Quantity")));
+            (
+                response.StatusCode,
+                response.Content.Headers.ContentType?.MediaType,
+                errors.ContainsKey("Name"),
+                errors.ContainsKey("Quantity")));
     }
 
     [Fact]
@@ -41,7 +45,9 @@ public class ValidationTests(ApiFactory api)
         var response = await client.PostAsJsonAsync(Route, new { name = "", quantity = 0 });
 
         var errors = await ReadErrorsAsync(response);
-        Assert.Equal((HttpStatusCode.BadRequest, true, true), (response.StatusCode, errors.ContainsKey("Name"), errors.ContainsKey("Quantity")));
+        Assert.Equal(
+            (HttpStatusCode.BadRequest, true, true),
+            (response.StatusCode, errors.ContainsKey("Name"), errors.ContainsKey("Quantity")));
     }
 
     [Theory]
@@ -66,7 +72,9 @@ public class ValidationTests(ApiFactory api)
         var response = await client.PostAsJsonAsync(Route, new { name = "Sample", quantity = "abc" });
 
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Equal((HttpStatusCode.BadRequest, false, false), (response.StatusCode, body.Contains("System."), body.Contains("LineNumber")));
+        Assert.Equal(
+            (HttpStatusCode.BadRequest, false, false),
+            (response.StatusCode, body.Contains("System."), body.Contains("LineNumber")));
     }
 
     [Fact]
@@ -74,7 +82,9 @@ public class ValidationTests(ApiFactory api)
     {
         var client = api.CreateApiClient();
 
-        var response = await client.PostAsync(Route, new StringContent("{}", System.Text.Encoding.UTF8, "application/json"));
+        var response = await client.PostAsync(
+            Route,
+            new StringContent("{}", System.Text.Encoding.UTF8, "application/json"));
 
         var errors = await ReadErrorsAsync(response);
         Assert.Equal((HttpStatusCode.BadRequest, true), (response.StatusCode, errors.ContainsKey("Name")));
@@ -87,6 +97,8 @@ public class ValidationTests(ApiFactory api)
 
         return errors.EnumerateObject().ToDictionary(
             property => property.Name,
-            property => property.Value.EnumerateArray().Select(item => item.GetString() ?? string.Empty).ToArray());
+            property => property.Value.EnumerateArray()
+                .Select(item => item.GetString() ?? string.Empty)
+                .ToArray());
     }
 }

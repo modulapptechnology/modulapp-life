@@ -19,7 +19,9 @@ public class WorkspacesTests(ApiFactory api)
         var response = await client.GetAsync($"/api/v1/TestWorkspaces/{workspace.Workspace.Id}");
 
         var body = await response.Content.ReadFromJsonAsync<WorkspaceResponse>();
-        Assert.Equal((HttpStatusCode.OK, workspace.Workspace.Id, workspace.Workspace.Name), (response.StatusCode, body?.Id, body?.Name));
+        Assert.Equal(
+            (HttpStatusCode.OK, workspace.Workspace.Id, workspace.Workspace.Name),
+            (response.StatusCode, body?.Id, body?.Name));
     }
 
     [RequiresTestDatabaseFact]
@@ -41,7 +43,9 @@ public class WorkspacesTests(ApiFactory api)
         var response = await client.GetAsync($"/api/v1/TestWorkspaces/{workspace.Workspace.Id}");
 
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Equal((HttpStatusCode.Forbidden, false), (response.StatusCode, body.Contains(workspace.Workspace.Name)));
+        Assert.Equal(
+            (HttpStatusCode.Forbidden, false),
+            (response.StatusCode, body.Contains(workspace.Workspace.Name)));
     }
 
     [RequiresTestDatabaseFact]
@@ -50,9 +54,13 @@ public class WorkspacesTests(ApiFactory api)
         await using var workspace = await TemporaryWorkspace.CreateAsync(api, SeedData.Owner.Id);
         var client = api.CreateApiClient(SeedData.Owner.Id);
 
-        var response = await client.PutAsJsonAsync($"/api/v1/TestWorkspaces/{workspace.Workspace.Id}", new { name = "Updated name" });
+        var response = await client.PutAsJsonAsync(
+            $"/api/v1/TestWorkspaces/{workspace.Workspace.Id}",
+            new { name = "Updated name" });
 
-        Assert.Equal((HttpStatusCode.NoContent, "Updated name"), (response.StatusCode, await workspace.ReadNameAsync()));
+        Assert.Equal(
+            (HttpStatusCode.NoContent, "Updated name"),
+            (response.StatusCode, await workspace.ReadNameAsync()));
     }
 
     [RequiresTestDatabaseFact]
@@ -61,9 +69,13 @@ public class WorkspacesTests(ApiFactory api)
         await using var workspace = await TemporaryWorkspace.CreateAsync(api, SeedData.Owner.Id);
         var client = api.CreateApiClient(SeedData.Owner.Id);
 
-        var response = await client.PutAsJsonAsync($"/api/v1/TestWorkspaces/{workspace.Workspace.Id}", new { name = "" });
+        var response = await client.PutAsJsonAsync(
+            $"/api/v1/TestWorkspaces/{workspace.Workspace.Id}",
+            new { name = "" });
 
-        Assert.Equal((HttpStatusCode.BadRequest, workspace.Workspace.Name), (response.StatusCode, await workspace.ReadNameAsync()));
+        Assert.Equal(
+            (HttpStatusCode.BadRequest, workspace.Workspace.Name),
+            (response.StatusCode, await workspace.ReadNameAsync()));
     }
 
     [RequiresTestDatabaseFact]
@@ -71,7 +83,9 @@ public class WorkspacesTests(ApiFactory api)
     {
         var client = api.CreateApiClient(SeedData.Owner.Id);
 
-        var response = await client.PutAsJsonAsync($"/api/v1/TestWorkspaces/{Guid.NewGuid()}", new { name = "Name" });
+        var response = await client.PutAsJsonAsync(
+            $"/api/v1/TestWorkspaces/{Guid.NewGuid()}",
+            new { name = "Name" });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -82,9 +96,13 @@ public class WorkspacesTests(ApiFactory api)
         await using var workspace = await TemporaryWorkspace.CreateAsync(api, SeedData.Owner.Id);
         var client = api.CreateApiClient(SeedData.Member.Id);
 
-        var response = await client.PutAsJsonAsync($"/api/v1/TestWorkspaces/{workspace.Workspace.Id}", new { name = "Foreign name" });
+        var response = await client.PutAsJsonAsync(
+            $"/api/v1/TestWorkspaces/{workspace.Workspace.Id}",
+            new { name = "Foreign name" });
 
-        Assert.Equal((HttpStatusCode.Forbidden, workspace.Workspace.Name), (response.StatusCode, await workspace.ReadNameAsync()));
+        Assert.Equal(
+            (HttpStatusCode.Forbidden, workspace.Workspace.Name),
+            (response.StatusCode, await workspace.ReadNameAsync()));
     }
 
     [RequiresTestDatabaseFact]

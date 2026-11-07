@@ -5,7 +5,9 @@ var project = args.ElementAtOrDefault(1);
 
 if (command is not ("prepare" or "clean") || string.IsNullOrWhiteSpace(project))
 {
-    Console.Error.WriteLine("Usage: dotnet run --project tests/Support.Tool -- <prepare|clean> <Project>  (for example: prepare Api)");
+    Console.Error.WriteLine(
+        "Usage: dotnet run --project tests/Support.Tool -- <prepare|clean> <Project>  "
+        + "(for example: prepare Api)");
     return 2;
 }
 

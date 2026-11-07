@@ -53,7 +53,9 @@ public class TestDatabaseOptionsTests
 
         var options = new TestDatabaseOptions(developmentConnection, "ModulLifeApiTest");
 
-        Assert.Equal("ModulLifeApiTest", new SqlConnectionStringBuilder(options.ConnectionString).InitialCatalog);
+        Assert.Equal(
+            "ModulLifeApiTest",
+            new SqlConnectionStringBuilder(options.ConnectionString).InitialCatalog);
     }
 
     [Theory]

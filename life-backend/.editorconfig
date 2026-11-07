@@ -2,19 +2,45 @@ root = true
 
 [*]
 charset = utf-8
-end_of_line = lf
+end_of_line = crlf
 insert_final_newline = true
 trim_trailing_whitespace = true
+
+# JSON
+[*.json]
 indent_style = space
-indent_size = 4
-
-[*.{csproj,slnx,props,targets,json,yml,yaml,xml}]
 indent_size = 2
+max_line_length = 110
 
+# XML y proyectos .NET
+[*.{xml,csproj,slnx,props,targets,resx,config}]
+indent_style = space
+indent_size = 2
+max_line_length = 110
+
+# YAML
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+max_line_length = 110
+
+# Markdown
 [*.md]
 trim_trailing_whitespace = false
 
+# Scripts
+[*.{ps1,sh}]
+indent_style = space
+indent_size = 4
+max_line_length = 110
+
+# C# — .NET
 [*.cs]
+indent_style = space
+indent_size = 4
+tab_width = 4
+max_line_length = 110
+
 # Orden de using
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false

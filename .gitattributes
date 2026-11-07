@@ -1,0 +1,6 @@
+# Texto con LF por defecto, igual que Prettier y el .editorconfig del frontend.
+* text=auto eol=lf
+
+# El backend usa CRLF (end_of_line = crlf en life-backend/.editorconfig). Sin esto,
+# dotnet format --verify-no-changes fallaría en el CI de Linux, que descargaría los archivos con LF.
+life-backend/** text=auto eol=crlf

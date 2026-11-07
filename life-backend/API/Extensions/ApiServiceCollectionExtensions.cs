@@ -7,7 +7,9 @@ public static class ApiServiceCollectionExtensions
 {
     public const string CorsPolicyName = "AllowedOrigins";
 
-    public static IServiceCollection AddApiStructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApiStructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         services
             .AddControllers(options => options.Filters.Add<ValidationFilter>())
