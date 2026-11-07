@@ -56,7 +56,9 @@ public class TestWorkspacesController(TestConnection connection) : ApiController
 
         await using var sqlConnection = new SqlConnection(connection.ConnectionString);
         await sqlConnection.OpenAsync();
-        await using var command = new SqlCommand("UPDATE dbo.Workspaces SET Name = @Name WHERE Id = @Id", sqlConnection);
+        await using var command = new SqlCommand(
+            "UPDATE dbo.Workspaces SET Name = @Name WHERE Id = @Id",
+            sqlConnection);
         command.Parameters.AddWithValue("@Name", request.Name);
         command.Parameters.AddWithValue("@Id", id);
         await command.ExecuteNonQueryAsync();
@@ -73,7 +75,9 @@ public class TestWorkspacesController(TestConnection connection) : ApiController
     {
         await using var sqlConnection = new SqlConnection(connection.ConnectionString);
         await sqlConnection.OpenAsync();
-        await using var command = new SqlCommand("SELECT OwnerId, Name FROM dbo.Workspaces WHERE Id = @Id", sqlConnection);
+        await using var command = new SqlCommand(
+            "SELECT OwnerId, Name FROM dbo.Workspaces WHERE Id = @Id",
+            sqlConnection);
         command.Parameters.AddWithValue("@Id", id);
         await using var reader = await command.ExecuteReaderAsync();
 

@@ -7,7 +7,8 @@ namespace API.Tests.Database;
 
 public class PersistenceRegistrationTests
 {
-    private const string _connectionString = "Server=localhost;Database=life_unit;User Id=none;Password=none;TrustServerCertificate=True";
+    private const string _connectionString =
+        "Server=localhost;Database=life_unit;User Id=none;Password=none;TrustServerCertificate=True";
 
     private static IConfiguration BuildConfiguration(string? connectionString)
     {

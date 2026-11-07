@@ -1,0 +1,9 @@
+<Project>
+
+  <PropertyGroup>
+    <!-- Las reglas de estilo del .editorconfig también se evalúan al compilar, no solo en el IDE -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+  </PropertyGroup>
+
+</Project>

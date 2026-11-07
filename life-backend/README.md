@@ -45,7 +45,9 @@ Las capas internas dependen de interfaces definidas en `Application`; las implem
 
 ## Formato y estilo
 
-Las reglas están en `.editorconfig` (indentación de 4 espacios, finales de línea LF, UTF-8, `using` fuera del namespace con `System` primero, namespaces con alcance de archivo, llaves siempre y nombres: PascalCase para tipos y miembros, camelCase para parámetros y variables, `_camelCase` para campos privados e `I` para interfaces). Visual Studio, Rider y VS Code las leen sin configuración adicional, así que el formato no depende de carpetas de IDE: `.idea/`, `.vs/` y `.vscode/` no se versionan y están en el `.gitignore`.
+Las reglas están en `.editorconfig` (indentación de 4 espacios en C# y 2 en JSON, XML y YAML, ancho de línea objetivo de 110 caracteres, finales de línea CRLF, UTF-8, `using` fuera del namespace con `System` primero, namespaces con alcance de archivo, llaves siempre y nombres: PascalCase para tipos y miembros, camelCase para parámetros y variables, `_camelCase` para campos privados e `I` para interfaces). Visual Studio, Rider y VS Code las leen sin configuración adicional, así que el formato no depende de carpetas de IDE: `.idea/`, `.vs/` y `.vscode/` no se versionan y están en el `.gitignore`.
+
+El `.gitattributes` de la raíz del repositorio fuerza CRLF en `life-backend` para que `dotnet format` dé el mismo resultado en Windows y en el CI de Linux. `dotnet format` no parte las líneas largas: el límite de 110 se respeta a mano y el IDE lo muestra con la regla `max_line_length`.
 
 Desde `life-backend`:
 
@@ -263,11 +265,11 @@ Cuando el proyecto necesite otro servicio (caché, cola de mensajes, correo de p
 
 ## Integración continua
 
-El flujo `.github/workflows/backend.yml` restaura y compila `life-backend.slnx` en GitHub Actions. Se ejecuta en los pull requests hacia `review` y `main`, y en los push a `review`, `main` y `release/**`, cuando cambia algo en `life-backend`. La versión del SDK sale de `global.json` y los paquetes de NuGet se guardan en caché según `Directory.Packages.props` y los `.csproj`. La compilación no necesita secretos.
+El flujo `.github/workflows/backend.yml` tiene dos jobs en GitHub Actions: `Compilar backend` (restaura y compila `life-backend.slnx`) y `Validar código del backend` (ejecuta, en pasos separados, `dotnet format --verify-no-changes` y una compilación con las advertencias como errores, para que los analizadores y las reglas de estilo del `.editorconfig` bloqueen el pull request). Las reglas son las versionadas en el repositorio: `.editorconfig` y `Directory.Build.props` (`EnforceCodeStyleInBuild` y `AnalysisLevel`). Se ejecutan en los pull requests hacia `review` y `main`, y en los push a `review`, `main` y `release/**`, cuando cambia algo en `life-backend`. La versión del SDK sale de `global.json` y los paquetes de NuGet se guardan en caché según `Directory.Packages.props` y los `.csproj`. La compilación no necesita secretos.
 
-Para que una compilación fallida bloquee el pull request, en GitHub (Settings > Branches > regla de protección de `review` y `main`) se activa "Require status checks to pass before merging" y se marca el check `Compilar backend`.
+Para que un error de compilación o de validación bloquee el pull request, en GitHub (Settings > Branches > regla de protección de `review` y `main`) se activa "Require status checks to pass before merging" y se marcan los checks `Compilar backend` y `Validar código del backend`.
 
-Para reproducir el mismo paso en local: `dotnet restore life-backend.slnx` y `dotnet build life-backend.slnx --configuration Release`.
+Para reproducir los mismos pasos en local: `dotnet restore life-backend.slnx`, `dotnet build life-backend.slnx --configuration Release`, `dotnet format life-backend.slnx --verify-no-changes` y `dotnet build life-backend.slnx --configuration Release -warnaserror`.
 
 ## Entornos
 
@@ -459,3 +461,106 @@ En Desarrollo, `http://localhost:5041/swagger` abre Swagger UI y el documento Op
 ## Control de versiones
 
 El `.gitignore` excluye `bin/`, `obj/`, los archivos de entorno, los secretos y los archivos de IDE (`.idea/`, `.vs/`, `.vscode/`). Tras compilar, `git status` no debe mostrar archivos de `bin/` ni `obj/`.
+
+## Reglas y estándares de desarrollo
+
+Referencia para desarrollar, mantener y modificar el backend (.NET 10, C#, SQL Server y Entity Framework Core). Las reglas de formato, idioma y comentarios de las secciones anteriores siguen vigentes; aquí se completan. Las reglas generales (puntos 1 a 4 y 7 a 12) son las mismas que las del README del frontend, y las específicas de cada tecnología están en el punto 5.
+
+### 1. Formato y análisis estático
+
+- El código se formatea con las configuraciones versionadas: `.editorconfig`, `Directory.Build.props` (`EnforceCodeStyleInBuild` y `AnalysisLevel`), los analizadores de Roslyn y `dotnet format`.
+- No se introducen configuraciones nuevas ni se modifican las existentes sin una justificación técnica, y ninguna regla nueva contradice las actuales.
+- Las mismas convenciones se aplican a todos los archivos equivalentes: una clase, una prueba o un `.csproj` nuevo se formatea igual que los existentes.
+
+### 2. Idioma y nomenclatura
+
+- Nombres de archivos, carpetas, namespaces, clases, interfaces, métodos, propiedades, variables y constantes, en inglés (ver "Idioma del código").
+- Convenciones oficiales de C#: `PascalCase` para clases, interfaces (con prefijo `I`), métodos, propiedades y constantes; `camelCase` para variables locales y parámetros; `_camelCase` para campos privados.
+- Un identificador existente en español se corrige solo cuando el cambio lo toca o lo requiere, y en el mismo cambio se actualizan todas sus referencias. Los ejemplos de este README que usan nombres en español (`Tareas/`, `CrearTarea`) son ilustrativos y no son un modelo a seguir.
+- Los términos son los mismos que en el frontend (por ejemplo `Workspace`, `Task`), para que un concepto tenga un único nombre en todo el proyecto.
+- No se traducen los textos que ve el usuario ni el contenido de negocio que debe seguir en español.
+
+### 3. Comentarios y limpieza
+
+- En los archivos que se crean o modifican se eliminan los comentarios innecesarios, redundantes u obsoletos; no se explica código evidente. Se conservan las directivas para el compilador y los analizadores (`#pragma`, `[SuppressMessage]` justificado, `#nullable`), y la documentación XML (`///`) de los contratos y de la API pública o la que genera documentación. No se elimina documentación externa ni técnica existente.
+- Se eliminan los `using`, variables, métodos y código muerto sin uso (el IDE los marca con IDE0005 y similares), y las duplicaciones innecesarias. No se agregan abstracciones ni patrones que no aporten valor.
+- Los archivos y carpetas se organizan por funcionalidad dentro de cada capa, sin dependencias circulares.
+
+### 4. Tipado y seguridad de tipos
+
+- `Nullable` habilitado en todos los proyectos: los parámetros, propiedades y retornos reflejan si admiten `null`.
+- No se usa `dynamic` ni `object` si existe el tipo concreto o la interfaz; se evitan las conversiones inseguras (`(T)x`) a favor de `is`, `as` con comprobación o genéricos.
+- Los datos se representan con tipos concretos (DTOs, `record`, entidades); `var` solo cuando el tipo es evidente en la misma línea.
+- Los servicios, dependencias, propiedades, parámetros y respuestas están correctamente tipados.
+
+### 5. Reglas específicas del backend
+
+- Se respeta Clean Architecture y la "Regla de dependencias": `API`, `Application`, `Domain`, `Infrastructure` y `Persistence` mantienen sus responsabilidades, y no se agregan referencias distintas a las de la tabla de capas.
+- Los controladores no llevan lógica de negocio: reciben el DTO, invocan el caso de uso de `Application` y devuelven el resultado.
+- Todo se resuelve con inyección de dependencias, con contratos definidos en `Application` e implementados en `Infrastructure` y `Persistence`.
+- Las operaciones de E/S son asíncronas (`async`/`await`, métodos `Async`) y propagan el `CancellationToken` a las operaciones que lo aceptan (EF Core, `HttpClient`, etc.); no se bloquea con `.Result` ni `.Wait()`.
+- La entrada y la salida de la API usan DTOs (ver "Validación de entradas y contratos"); las entidades de `Domain` no se exponen.
+- En EF Core se evitan las consultas duplicadas y los problemas N+1: se cargan los datos relacionados con `Include` o proyecciones (`Select`) y no se consulta dentro de un bucle; las consultas de solo lectura usan `AsNoTracking()`.
+- Las excepciones y los errores de entrada se gestionan con los mecanismos centralizados (hoy el `ValidationFilter` y `ValidationProblemFactory`); no se atrapan excepciones en cada controlador para devolver respuestas ad hoc, y no se exponen detalles internos al cliente.
+- No se introducen patrones innecesarios (repositorios genéricos, mediadores, etc.) si el proyecto no los usa.
+
+### 6. Servicios, dependencias y autocompletado
+
+- Los servicios se piden por constructor con su interfaz o tipo concreto. Si hay que resolver uno manualmente, se prefiere `GetRequiredService<T>()` a `GetService(Type)`, y `object` o `dynamic` no se usan para guardarlo.
+- La resolución por `Type` en tiempo de ejecución solo se acepta cuando el tipo no se conoce en compilación, como en el `ValidationFilter`, que busca el validador de cada argumento.
+- No se crean mecanismos alternativos de resolución cuando ya existe uno (los métodos `AddApplication`, `AddInfrastructure` y `AddPersistence`).
+- Los contratos se respetan tal como los define la arquitectura; se aprovechan el autocompletado, la navegación y el análisis estático del IDE, que dependen de los tipos explícitos.
+
+### 7. Seguridad y dependencias
+
+- No se versionan credenciales, tokens, secretos ni cadenas de conexión; se usan `user-secrets`, `appsettings.Development.local.json` o variables de entorno (ver "Variables de entorno y secretos").
+- No se registra información sensible en los logs ni en las respuestas de error.
+- Se validan los datos de entrada con FluentValidation y se respetan los mecanismos de autenticación, autorización y protección existentes (usuario de aplicación de privilegios mínimos, CORS, `ValidationFilter`).
+- No se agregan paquetes innecesarios: se reutilizan los de `Directory.Packages.props`, y las versiones se actualizan según la "Política de actualización", nunca por motivos estéticos.
+- La configuración de entorno solo cambia con una justificación técnica.
+
+### 8. Arquitectura y reutilización
+
+- Se respeta la arquitectura actual y las dependencias entre las capas establecidas.
+- No se duplican servicios, utilidades, validaciones, consultas ni lógica de negocio; no se crean sistemas independientes para lo que ya está centralizado.
+- Cada responsabilidad vive en una sola capa.
+
+### 9. Reutilizar antes de crear y control del alcance
+
+Esta regla tiene prioridad sobre las demás al implementar o modificar algo: reutilizar antes que crear, extender antes que duplicar y modificar solo lo necesario.
+
+- Antes de implementar, se inspecciona el código para identificar clases, interfaces, servicios, métodos, validadores y patrones reutilizables, y se usan de preferencia. No se crea una implementación nueva si ya existe una que cubra la necesidad; si hay que ampliarla, se modifica o se extiende la existente.
+- Se implementa únicamente lo necesario para el objetivo. No se hacen refactorizaciones, mejoras ni cambios de comportamiento, de contratos o de procesos fuera del alcance.
+- Se revisan las referencias de lo modificado para detectar efectos secundarios y se comprueba que no cambie nada fuera del alcance.
+- Una mejora que exceda el alcance se indica en el informe final, sin implementarla.
+
+### 10. Restricciones de modificación
+
+- No se altera la funcionalidad existente por motivos de estilo.
+- No se cambian contratos de la API, estructuras de datos ni reglas de negocio si el objetivo no lo requiere.
+- No se eliminan pruebas existentes.
+- No se modifican las migraciones de EF Core ni otros archivos históricos por motivos de normalización (están marcadas como código generado en `.editorconfig`).
+- No se reorganizan la arquitectura ni las carpetas sin necesidad, y no se agregan funcionalidades ajenas al objetivo.
+- Si una corrección exige tocar funcionalidad o arquitectura fuera del alcance, se documenta el problema en lugar de cambiarlo.
+
+### 11. Validación final
+
+Cuando se modifica código, antes de pedir revisión se ejecuta, desde `life-backend`:
+
+```powershell
+dotnet format life-backend.slnx --verify-no-changes
+dotnet build life-backend.slnx --configuration Release -warnaserror
+dotnet test tests/Domain.Tests/Domain.Tests.csproj
+dotnet test tests/Application.Tests/Application.Tests.csproj
+```
+
+- Las pruebas de integración (`tests/API.Tests`) usan la base de pruebas y se ejecutan solo en el entorno local (ver "Entorno de pruebas de integración").
+- El formato, la compilación y los analizadores no reportan errores, ni `using` o referencias sin uso.
+- Las pruebas existentes y las de lo modificado pasan.
+- No cambiaron contratos ni comportamientos funcionales, y se revisaron los efectos secundarios en las funcionalidades relacionadas.
+- Los errores que introdujo el cambio se corrigen; los problemas que ya existían y no se pueden corregir sin ampliar el alcance se identifican y se reportan.
+- No se afirma que una validación fue exitosa si no se ejecutó.
+
+### 12. Informe de resultados
+
+Al terminar un cambio de código, el resumen incluye: (1) archivos creados, modificados y eliminados; (2) reglas de formato y estilo aplicadas; (3) identificadores corregidos al inglés; (4) comentarios eliminados y anotaciones técnicas conservadas; (5) limpieza realizada; (6) problemas de tipado detectados y corregidos; (7) resultado de la compilación; (8) resultado de las pruebas; (9) problemas preexistentes o pendientes; (10) posibles mejoras fuera del alcance.
