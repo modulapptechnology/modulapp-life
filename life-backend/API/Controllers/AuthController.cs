@@ -29,6 +29,29 @@ public class AuthController : ApiControllerBase
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
+    [HttpPost("login")]
+    [EnableRateLimiting(ApiServiceCollectionExtensions.LoginRateLimitPolicy)]
+    [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<LoginResponse>> Login(
+        [FromBody] LoginRequest request,
+        [FromServices] LoginUser loginUser,
+        CancellationToken cancellationToken)
+    {
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var response = await loginUser.ExecuteAsync(request, ipAddress, cancellationToken);
+
+        if (response is null)
+        {
+            return Problem(
+                title: "El correo electrónico o la contraseña no son correctos.",
+                statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        return Ok(response);
+    }
+
     [HttpGet("verify-email")]
     [EnableRateLimiting(ApiServiceCollectionExtensions.RegistrationRateLimitPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

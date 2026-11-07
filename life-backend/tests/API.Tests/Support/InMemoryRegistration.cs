@@ -11,6 +11,8 @@ public sealed class InMemoryUserRepository : IUserRepository
 
     private readonly ConcurrentDictionary<string, EmailVerificationToken> _tokensByHash = new();
 
+    private readonly ConcurrentQueue<LoginAttempt> _loginAttempts = new();
+
     public IReadOnlyCollection<User> Users => _usersByEmail.Values.ToList();
 
     public IReadOnlyCollection<EmailVerificationToken> Tokens => _tokensByHash.Values.ToList();
@@ -38,6 +40,26 @@ public sealed class InMemoryUserRepository : IUserRepository
         _tokensByHash.TryGetValue(tokenHash, out var token);
 
         return Task.FromResult(token);
+    }
+
+    public Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        _usersByEmail.TryGetValue(email, out var user);
+
+        return Task.FromResult(user);
+    }
+
+    public void AddLoginAttempt(LoginAttempt attempt)
+    {
+        _loginAttempts.Enqueue(attempt);
+    }
+
+    public IReadOnlyCollection<LoginAttempt> LoginAttempts => _loginAttempts.ToList();
+
+    public void Seed(User user)
+    {
+        user.Id = Guid.NewGuid();
+        _usersByEmail[user.Email] = user;
     }
 }
 

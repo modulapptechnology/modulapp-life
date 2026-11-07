@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using API.Filters;
 using Asp.Versioning;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Extensions;
 
@@ -9,6 +10,8 @@ public static class ApiServiceCollectionExtensions
     public const string CorsPolicyName = "AllowedOrigins";
 
     public const string RegistrationRateLimitPolicy = "Registration";
+
+    public const string LoginRateLimitPolicy = "Login";
 
     public const string RateLimitingSectionName = "RateLimiting";
 
@@ -42,7 +45,7 @@ public static class ApiServiceCollectionExtensions
             });
 
         services.AddOpenApi("v1");
-        services.AddRegistrationRateLimiter(configuration);
+        services.AddRateLimiting(configuration);
 
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
         services.AddCors(options => options.AddPolicy(CorsPolicyName, policy =>
@@ -51,31 +54,45 @@ public static class ApiServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection AddRegistrationRateLimiter(
+    private static IServiceCollection AddRateLimiting(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var section = $"{RateLimitingSectionName}:Registration";
-        var permitLimit = ReadPositiveNumber(configuration, $"{section}:PermitLimit", DefaultPermitLimit);
-        var windowSeconds = ReadPositiveNumber(
-            configuration,
-            $"{section}:WindowSeconds",
-            DefaultWindowSeconds);
+        var registration = ReadRateLimit(configuration, RegistrationRateLimitPolicy);
+        var login = ReadRateLimit(configuration, LoginRateLimitPolicy);
 
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            options.AddPolicy(RegistrationRateLimitPolicy, context => RateLimitPartition.GetFixedWindowLimiter(
-                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = permitLimit,
-                    Window = TimeSpan.FromSeconds(windowSeconds),
-                    QueueLimit = 0,
-                }));
+            AddRateLimitPolicy(options, RegistrationRateLimitPolicy, registration);
+            AddRateLimitPolicy(options, LoginRateLimitPolicy, login);
         });
 
         return services;
+    }
+
+    private static (int PermitLimit, int WindowSeconds) ReadRateLimit(IConfiguration configuration, string policy)
+    {
+        var section = $"{RateLimitingSectionName}:{policy}";
+
+        return (
+            ReadPositiveNumber(configuration, $"{section}:PermitLimit", DefaultPermitLimit),
+            ReadPositiveNumber(configuration, $"{section}:WindowSeconds", DefaultWindowSeconds));
+    }
+
+    private static void AddRateLimitPolicy(
+        RateLimiterOptions options,
+        string policy,
+        (int PermitLimit, int WindowSeconds) limit)
+    {
+        options.AddPolicy(policy, context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = limit.PermitLimit,
+                Window = TimeSpan.FromSeconds(limit.WindowSeconds),
+                QueueLimit = 0,
+            }));
     }
 
     private static int ReadPositiveNumber(IConfiguration configuration, string key, int defaultValue)

@@ -82,4 +82,72 @@ public class UserRepositoryTests(MigratedDatabaseFixture database)
 
         Assert.Null(found);
     }
+
+    [RequiresTestDatabaseFact]
+    public async Task FindByEmailAsync_WithTheEmailInDifferentCase_ReturnsTheUser()
+    {
+        var user = NewUser();
+        await using var writer = database.CreateContext();
+        await new UserRepository(writer).AddAsync(user, NewToken(user));
+        await using var context = database.CreateContext();
+        var repository = new UserRepository(context);
+
+        var found = await repository.FindByEmailAsync(user.Email.ToUpperInvariant());
+
+        Assert.Equal(user.Id, found?.Id);
+    }
+
+    [RequiresTestDatabaseFact]
+    public async Task FindByEmailAsync_WithUnknownEmail_ReturnsNull()
+    {
+        await using var context = database.CreateContext();
+        var repository = new UserRepository(context);
+
+        var found = await repository.FindByEmailAsync($"{Guid.NewGuid():N}@life.test");
+
+        Assert.Null(found);
+    }
+
+    [RequiresTestDatabaseFact]
+    public async Task AddLoginAttempt_WithUserAndOutcome_StoresTheAttemptWhenSaving()
+    {
+        var user = NewUser();
+        await using var writer = database.CreateContext();
+        var repository = new UserRepository(writer);
+        await repository.AddAsync(user, NewToken(user));
+
+        repository.AddLoginAttempt(new LoginAttempt
+        {
+            UserId = user.Id,
+            Email = user.Email,
+            IpAddress = "10.0.0.1",
+            Outcome = LoginOutcome.InvalidCredentials,
+            OccurredAt = DateTime.UtcNow,
+        });
+        await writer.SaveChangesAsync();
+
+        await using var reader = database.CreateContext();
+        var stored = await reader.LoginAttempts.AsNoTracking().SingleAsync(attempt => attempt.UserId == user.Id);
+        Assert.Equal(("10.0.0.1", LoginOutcome.InvalidCredentials), (stored.IpAddress, stored.Outcome));
+    }
+
+    [RequiresTestDatabaseFact]
+    public async Task AddLoginAttempt_WithoutUser_StoresTheAttemptForAnUnknownEmail()
+    {
+        var email = $"{Guid.NewGuid():N}@life.test";
+        await using var writer = database.CreateContext();
+        var repository = new UserRepository(writer);
+
+        repository.AddLoginAttempt(new LoginAttempt
+        {
+            Email = email,
+            Outcome = LoginOutcome.InvalidCredentials,
+            OccurredAt = DateTime.UtcNow,
+        });
+        await writer.SaveChangesAsync();
+
+        await using var reader = database.CreateContext();
+        var stored = await reader.LoginAttempts.AsNoTracking().SingleAsync(attempt => attempt.Email == email);
+        Assert.Null(stored.UserId);
+    }
 }

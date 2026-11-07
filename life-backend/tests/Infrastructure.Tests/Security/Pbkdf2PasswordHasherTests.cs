@@ -52,6 +52,49 @@ public class Pbkdf2PasswordHasherTests
     }
 
     [Fact]
+    public void Verify_WithTheOriginalPassword_ReturnsTrue()
+    {
+        var hash = _hasher.Hash("Abcdefgh12");
+
+        var matches = _hasher.Verify("Abcdefgh12", hash);
+
+        Assert.True(matches);
+    }
+
+    [Fact]
+    public void Verify_WithADifferentPassword_ReturnsFalse()
+    {
+        var hash = _hasher.Hash("Abcdefgh12");
+
+        var matches = _hasher.Verify("Abcdefgh13", hash);
+
+        Assert.False(matches);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("plain-text")]
+    [InlineData("PBKDF2-SHA256$600000$not-base64$not-base64")]
+    [InlineData("PBKDF2-SHA256$600000$AA==$")]
+    [InlineData("PBKDF2-SHA256$0$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")]
+    [InlineData("OTHER$600000$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")]
+    public void Verify_WithMissingOrMalformedHash_ReturnsFalse(string? hash)
+    {
+        var matches = _hasher.Verify("Abcdefgh12", hash);
+
+        Assert.False(matches);
+    }
+
+    [Fact]
+    public void Verify_WithNullPassword_ThrowsArgumentNullException()
+    {
+        Action action = () => _ = _hasher.Verify(null!, null);
+
+        Assert.Throws<ArgumentNullException>(action);
+    }
+
+    [Fact]
     public void Hash_WithNullPassword_ThrowsArgumentNullException()
     {
         var action = () => _hasher.Hash(null!);

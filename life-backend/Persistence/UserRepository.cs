@@ -41,6 +41,20 @@ public sealed class UserRepository(LifeDbContext context) : IUserRepository
             .FirstOrDefaultAsync(token => token.TokenHash == tokenHash, cancellationToken);
     }
 
+    public Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(email);
+
+        return context.Users.FirstOrDefaultAsync(user => user.Email == email, cancellationToken);
+    }
+
+    public void AddLoginAttempt(LoginAttempt attempt)
+    {
+        ArgumentNullException.ThrowIfNull(attempt);
+
+        context.LoginAttempts.Add(attempt);
+    }
+
     private static bool IsDuplicateKey(DbUpdateException exception)
     {
         return exception.InnerException is SqlException

@@ -35,6 +35,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.PasswordHash).HasMaxLength(PasswordHashMaxLength);
         builder.Property(user => user.Name).IsRequired().HasMaxLength(NameMaxLength);
         builder.Property(user => user.Status).IsRequired();
+        builder.Property(user => user.FailedLoginAttempts).IsRequired();
         builder.Property(user => user.AvatarUrl).HasMaxLength(AvatarUrlMaxLength);
         builder.Property(user => user.Locale).HasMaxLength(LocaleMaxLength);
         builder.Property(user => user.TimeZone).HasMaxLength(TimeZoneMaxLength);

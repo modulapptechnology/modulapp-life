@@ -9,4 +9,8 @@ public interface IUserRepository
     Task<EmailVerificationToken?> FindVerificationTokenAsync(
         string tokenHash,
         CancellationToken cancellationToken = default);
+
+    Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    void AddLoginAttempt(LoginAttempt attempt);
 }

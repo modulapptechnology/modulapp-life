@@ -216,7 +216,8 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 | Campo de `User` | Detalle |
 |---|---|
 | `Email` | Obligatorio, hasta 320 caracteres. Se compara sin distinguir mayúsculas (columna con collation `SQL_Latin1_General_CP1_CI_AS`, fija y no depende de la base). Índice único filtrado `[IsDeleted] = 0`: la base rechaza dos usuarios activos con el mismo correo; el de un usuario eliminado lógicamente se puede volver a registrar. |
-| `PasswordHash` | Solo el hash de la contraseña; el modelo no tiene ningún campo con la contraseña en texto plano. Es opcional para las cuentas que solo ingresan con una cuenta externa. El registro se describe en "Registro con correo y contraseña"; el inicio de sesión no forma parte de este modelo. |
+| `PasswordHash` | Solo el hash de la contraseña; el modelo no tiene ningún campo con la contraseña en texto plano. Es opcional para las cuentas que solo ingresan con una cuenta externa. El registro y el inicio de sesión se describen en "Registro con correo y contraseña" e "Inicio de sesión con correo y contraseña". |
+| `FailedLoginAttempts`, `LockedUntil` | Contraseñas incorrectas seguidas (0 por defecto) y fin del bloqueo temporal (vacío si no está bloqueado). |
 | `EmailVerifiedAt` | Momento en que el usuario confirmó su correo; vacío mientras no lo confirme. |
 | `Name` | Obligatorio, hasta 200 caracteres. |
 | `Status` | `Pending` (valor inicial), `Active` o `Blocked`; se guarda como número. |
@@ -247,6 +248,38 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 | `RateLimiting:Registration:PermitLimit` / `WindowSeconds` | Intentos permitidos por IP y duración de la ventana; 5 por 600 segundos por defecto (1000 en Pruebas). |
 
 `tests/API.Tests/Registration` prueba los endpoints sin base de datos, con un repositorio en memoria; `Infrastructure.Tests` prueba `UserRepository` contra la base de pruebas.
+
+### Inicio de sesión con correo y contraseña
+
+`AuthController` expone `POST /api/v1/auth/login`. El caso de uso es `LoginUser` (`Application/Users`): busca al usuario por correo (sin distinguir mayúsculas), verifica la contraseña, aplica el bloqueo, audita el intento y emite la sesión. `AddInfrastructure(configuration)` registra la verificación del hash, el emisor del token y las opciones; `AddPersistence`, el repositorio.
+
+| Endpoint | Resultado |
+|---|---|
+| `POST /api/v1/auth/login` con `{ "email", "password" }` | `200` con `{ accessToken, tokenType: "Bearer", expiresAt }`. `401` con el mismo mensaje si el correo no existe, la contraseña es incorrecta, la cuenta está bloqueada temporalmente o el usuario no está `Active`. `400` con el detalle por campo si falta el correo o la contraseña o el correo no tiene formato válido. `429` al superar el límite de intentos por IP. |
+
+- **Mensaje genérico y tiempo constante**: todas las causas de rechazo devuelven `401` con el mismo cuerpo, así que la respuesta no revela si el correo existe, si la cuenta está bloqueada o si falta verificar el correo. `Pbkdf2PasswordHasher.Verify` compara con `CryptographicOperations.FixedTimeEquals` y, si no hay hash (correo inexistente o cuenta sin contraseña) o está malformado, calcula igual un PBKDF2 contra un hash fijo para que el tiempo de respuesta no delate la diferencia.
+- **Quién puede entrar**: solo los usuarios `Active` (correo verificado). Un usuario `Pending` o `Blocked` recibe `401` aunque la contraseña sea correcta.
+- **Bloqueo temporal**: cada contraseña incorrecta de un usuario existente suma a `Users.FailedLoginAttempts`. Al llegar al máximo, `Users.LockedUntil` queda en el momento actual más la duración del bloqueo y, mientras dure, se rechaza el inicio de sesión aunque la contraseña sea correcta, sin sumar intentos ni extender el bloqueo. Al vencer, el conteo empieza de nuevo. Un inicio de sesión correcto lo reinicia. Un bloqueo es por cuenta y no afecta a otras. La respuesta `429` con el tiempo restante, la espera creciente y el registro de los bloqueos son del límite de intentos fallidos de la funcionalidad siguiente y no están en este cambio.
+- **Auditoría**: cada intento, exitoso o fallido, guarda una fila en `LoginAttempts` con el usuario (vacío si el correo no existe), el correo indicado, la IP de origen, el resultado (`LoginOutcome`: `Succeeded`, `InvalidCredentials`, `AccountLocked`, `AccountInactive`) y el momento en UTC. Nunca se guarda la contraseña. Se escribe en la misma transacción que el contador, por lo que el intento fallido no se pierde.
+- **Sesión**: un token de acceso JWT firmado con HMAC-SHA256 (`JwtAccessTokenIssuer`) con `sub`, `email`, `jti`, `iss`, `aud`, `iat` y `exp`. La emisión es lo único que cubre este cambio: la validación del token en cada petición, el token de renovación y la revocación de sesiones son de la gestión de sesiones.
+- **Límite de frecuencia**: política `Login` de ASP.NET Core, ventana fija por IP, que se suma al bloqueo por cuenta. Detrás de un proxy hay que configurar los encabezados reenviados para que la IP sea la del cliente.
+
+| Configuración | Detalle |
+|---|---|
+| `Authentication:AccessToken:SigningKey` | **Obligatoria**, de al menos 32 bytes. Es un secreto: va en `user-secrets` o en variable de entorno (`Authentication__AccessToken__SigningKey`), nunca en un archivo versionado. Sin ella la API no inicia. En Pruebas hay un valor falso en `appsettings.Testing.json`. |
+| `Authentication:AccessToken:LifetimeMinutes` | Vigencia del token de acceso; 15 por defecto. |
+| `Authentication:AccessToken:Issuer` / `Audience` | Emisor y audiencia del token; `life-api` y `life-app` por defecto. |
+| `Authentication:Login:MaxFailedAttempts` | Contraseñas incorrectas seguidas que bloquean la cuenta; 5 por defecto. |
+| `Authentication:Login:LockoutMinutes` | Duración del bloqueo; 15 por defecto. |
+| `RateLimiting:Login:PermitLimit` / `WindowSeconds` | Intentos permitidos por IP y duración de la ventana; 5 por 600 segundos por defecto (1000 en Pruebas). |
+
+Para desarrollo local, desde `life-backend`:
+
+```powershell
+dotnet user-secrets set "Authentication:AccessToken:SigningKey" "<valor aleatorio de al menos 32 caracteres>" --project API
+```
+
+`tests/API.Tests/Login` prueba el endpoint sin base de datos, con un repositorio en memoria; `Infrastructure.Tests` prueba el hash, el emisor del token y `UserRepository`.
 
 ### Restricciones de integridad
 
@@ -279,7 +312,7 @@ Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Passwor
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, y `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 
@@ -293,7 +326,7 @@ El nombre lo define quien genera la migración y describe el cambio en inglés, 
 dotnet tool restore
 ```
 
-Los comandos usan `Persistence` como proyecto de migraciones y `API` como proyecto de inicio, y leen la cadena `ConnectionStrings:Default` del ambiente. Generar una migración no se conecta a la base.
+Los comandos usan `Persistence` como proyecto de migraciones y `API` como proyecto de inicio, y leen la cadena `ConnectionStrings:Default` del ambiente. Como arrancan la API, también necesitan `Authentication:AccessToken:SigningKey` (ver "Inicio de sesión con correo y contraseña"); sin ella fallan con "must be at least 32 bytes long". Generar una migración no se conecta a la base.
 
 ### Generar y revisar una migración
 
