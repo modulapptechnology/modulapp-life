@@ -18,4 +18,12 @@ describe('ModulAvatar', () => {
 
     expect(screen.queryByText('AP')).toBeNull();
   });
+
+  it('usa un círculo de 24 px en el tamaño xs', async () => {
+    const size = 'xs';
+
+    await renderWithTheme(<ModulAvatar name="Ana Pérez" size={size} />);
+
+    expect(screen.getByLabelText('Ana Pérez')).toHaveStyle({ width: 24, height: 24 });
+  });
 });

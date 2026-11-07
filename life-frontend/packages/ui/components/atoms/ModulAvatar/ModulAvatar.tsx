@@ -3,7 +3,7 @@ import { getInitials } from '../../../utils/getInitials/getInitials';
 import { ModulText } from '../ModulText/ModulText';
 import { ModulView } from '../ModulView/ModulView';
 
-export type ModulAvatarSize = 'sm' | 'md' | 'lg';
+export type ModulAvatarSize = 'xs' | 'sm' | 'md' | 'lg';
 
 export type ModulAvatarProps = {
   name: string;
@@ -11,7 +11,7 @@ export type ModulAvatarProps = {
   size?: ModulAvatarSize;
 };
 
-const SIZES = { sm: 32, md: 40, lg: 56 } as const;
+const SIZES = { xs: 24, sm: 32, md: 40, lg: 56 } as const;
 
 export function ModulAvatar({ name, uri, size = 'md' }: ModulAvatarProps) {
   const dimension = SIZES[size];
@@ -33,7 +33,11 @@ export function ModulAvatar({ name, uri, size = 'md' }: ModulAvatarProps) {
           style={{ width: dimension, height: dimension }}
         />
       ) : (
-        <ModulText variant="label" textOnPrimary>
+        <ModulText
+          variant="label"
+          textOnPrimary
+          style={size === 'xs' ? { fontSize: 10, lineHeight: 14 } : undefined}
+        >
           {getInitials(name)}
         </ModulText>
       )}
