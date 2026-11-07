@@ -9,6 +9,10 @@ import { ModulListItem } from '../../molecules/ModulListItem/ModulListItem';
 import { ModulLoadingState } from '../../molecules/ModulLoadingState/ModulLoadingState';
 import { ModulSwitch } from '../../molecules/ModulSwitch/ModulSwitch';
 import { ModulToast } from '../../molecules/ModulToast/ModulToast';
+import {
+  ModulAppearanceModal,
+  type ModulAppearanceProps,
+} from '../../molecules/ModulAppearanceModal/ModulAppearanceModal';
 
 export type ModulSettingsToggle = { id: string; label: string; checked: boolean };
 export type ModulSettingsGroup = { id: string; label: string; toggles: ModulSettingsToggle[] };
@@ -37,6 +41,8 @@ export type ModulSettingsProps = {
   onDismissSaveError: () => void;
   preferencesTitle: string;
   preferenceLinks: readonly ModulSettingsLink[];
+  appearance?: ModulAppearanceProps;
+  device?: 'desktop' | 'mobile';
 };
 
 // Pantalla de ajustes por secciones. Habilitar un módulo es inmediato; deshabilitarlo pide confirmación.
@@ -58,8 +64,11 @@ export function ModulSettings({
   onDismissSaveError,
   preferencesTitle,
   preferenceLinks,
+  appearance,
+  device = 'mobile',
 }: ModulSettingsProps) {
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
   const pending = modules.find((module) => module.id === pendingId);
 
   return (
@@ -111,7 +120,14 @@ export function ModulSettings({
         <ModulText variant="sectionTitle">{preferencesTitle}</ModulText>
         <ModulView>
           {preferenceLinks.map((link) => (
-            <ModulListItem key={link.id} title={link.label} icon={link.icon} />
+            <ModulListItem
+              key={link.id}
+              title={link.label}
+              icon={link.icon}
+              onPress={
+                link.id === 'appearance' && appearance ? () => setAppearanceOpen(true) : undefined
+              }
+            />
           ))}
         </ModulView>
       </ModulView>
@@ -129,6 +145,15 @@ export function ModulSettings({
         }}
         onCancel={() => setPendingId(null)}
       />
+      {appearance ? (
+        <ModulAppearanceModal
+          {...appearance}
+          visible={appearanceOpen}
+          onClose={() => setAppearanceOpen(false)}
+          closeLabel={closeLabel}
+          device={device}
+        />
+      ) : null}
     </ScrollView>
   );
 }

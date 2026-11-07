@@ -10,3 +10,5 @@ export * from './notificationPreferences/notificationPreferencesStore';
 export * from './useNotificationPreferences/useNotificationPreferences';
 export * from './settingsViewModel/settingsViewModel';
 export * from './useSettings/useSettings';
+export * from './appearance/appearanceStore';
+export * from './useAppearance/useAppearance';

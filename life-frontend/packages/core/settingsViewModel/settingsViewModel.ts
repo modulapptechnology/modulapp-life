@@ -68,6 +68,19 @@ export function createSettingsViewModel({
     saveError: notifications.saveFailed ? translate('settings.notifications.saveError') : undefined,
     closeLabel: translate('common.close'),
     preferencesTitle: translate('settings.preferences.title'),
+    appearanceTexts: {
+      title: translate('settings.appearance.title'),
+      themeTitle: translate('settings.appearance.theme'),
+      accentTitle: translate('settings.appearance.accent'),
+      themeOptions: (['light', 'dark', 'system'] as const).map((id) => ({
+        id,
+        label: translate(`settings.appearance.${id}`),
+      })),
+      accentOptions: (['modul', 'violet', 'ocean'] as const).map((id) => ({
+        id,
+        label: translate(`settings.appearance.accent.${id}`),
+      })),
+    },
     preferenceLinks: [
       {
         id: 'appearance',
