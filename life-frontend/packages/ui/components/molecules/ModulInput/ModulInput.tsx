@@ -27,6 +27,8 @@ export type ModulInputProps = Omit<
   help?: string;
   error?: string;
   disabled?: boolean;
+  // Alto de 32 en lugar del área táctil de 44: para la web, donde se usa el puntero.
+  compact?: boolean;
   // Solo type="select": opciones del desplegable; `value` y `onChangeText` trabajan con el `value` de la opción.
   options?: ModulInputOption[];
   // Nombre accesible del botón al final del campo (mostrar u ocultar contraseña, borrar búsqueda) y del cierre del selector.
@@ -43,6 +45,7 @@ export function ModulInput({
   help,
   error,
   disabled = false,
+  compact = false,
   options = [],
   actionLabel,
   value,
@@ -65,8 +68,8 @@ export function ModulInput({
     typography.body,
     text.textPrimary,
     view.flex1,
-    view.minH44,
-    view.py8,
+    compact ? view.minH32 : view.minH44,
+    compact ? view.py4 : view.py8,
     noOutline,
   ];
 
@@ -105,7 +108,7 @@ export function ModulInput({
             accessibilityState={{ expanded: menuOpen, disabled }}
             disabled={disabled}
             onPress={() => setMenuOpen(true)}
-            style={[view.flex1, view.minH44, view.justifyCenter]}
+            style={[view.flex1, compact ? view.minH32 : view.minH44, view.justifyCenter]}
           >
             <ModulText variant="body" textSecondary={!selectedOption}>
               {selectedOption?.label ?? props.placeholder}
@@ -143,7 +146,12 @@ export function ModulInput({
             accessibilityLabel={actionLabel}
             disabled={disabled}
             onPress={trailing.onPress}
-            style={[view.minW44, view.minH44, view.alignCenter, view.justifyCenter]}
+            style={[
+              compact ? view.minW32 : view.minW44,
+              compact ? view.minH32 : view.minH44,
+              view.alignCenter,
+              view.justifyCenter,
+            ]}
           >
             <ModulIcon name={trailing.icon} color="textSecondary" />
           </Pressable>

@@ -10,6 +10,8 @@ export const createViewStyles = (colors: ThemeColors) =>
     h100: { height: '100%' },
     minH44: { minHeight: 44 },
     minW44: { minWidth: 44 },
+    minH32: { minHeight: 32 },
+    minW32: { minWidth: 32 },
     maxW480: { maxWidth: 480 },
     maxH70: { maxHeight: '70%' },
     w10: { width: 10 },

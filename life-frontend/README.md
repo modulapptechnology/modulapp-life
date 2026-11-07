@@ -187,6 +187,9 @@ import { ModulButton, ModulText, ModulView } from '@life/ui';
 | --- | --- |
 | `components/atoms/` | `ModulView`, `ModulText`, `ModulButton`, `ModulFloatingButton`, `ModulIcon`, `ModulFieldMessage`, `ModulBadge`, `ModulAvatar`, `ModulProgress`, `ModulChip`, `ModulModal`, `ModulDrawer`, `ModulDatePicker` |
 | `components/molecules/` | `ModulInput`, `ModulSwitch`, `ModulCheckbox`, `ModulChipGroup`, `ModulLoadingState`, `ModulEmptyState`, `ModulErrorState`, `ModulOptionGroup`, `ModulListItem`, `ModulList`, `ModulMenu`, `ModulToast`, `ModulConfirmDialog`, `ModulMessages` (`ModulMessagesProvider`), `ModulBarChart`, `ModulCircularProgress`, `ModulDragDrop` (`ModulDragProvider`, `ModulDraggable`, `ModulDropZone`), `ModulHeader`, `ModulSidebar` |
+| `components/organisms/` | `ModulDialog`, `ModulBottomSheet`, `ModulListPattern`, `ModulFormContainer` (`toFieldErrors`) |
+| `components/templates/mobile/` | `ModulListView`, `ModulFormView`, `ModulDetailView`, `ModulAuthView`, `ModulSettingsView`, `ModulAgendaView` |
+| `components/templates/web/` | `ModulPageWeb`, `ModulListViewWeb`, `ModulFormViewWeb`, `ModulDetailViewWeb`, `ModulAuthViewWeb`, `ModulSettingsViewWeb`, `ModulAgendaViewWeb` |
 | `components/layouts/` | `ModulLayoutWeb`, el layout principal reutilizable |
 | `theme/ThemeProvider.tsx` | Tema claro, oscuro o del sistema (`ThemeProvider`, `useTheme`) |
 | `utils/` | `useStyles`, `useBreakpoint` y funciones auxiliares |
@@ -214,6 +217,21 @@ if (await confirm({ title: 'Delete the task?', destructive: true })) toast('Task
 ```
 
 Cada app envuelve su raíz con `<ThemeProvider>` y `<ModulMessagesProvider>`. La web resuelve `react-native` a `react-native-web` con un alias en `apps/web/vite.config.ts`.
+
+#### Organismos, patrones y plantillas
+
+Se arman solo con átomos y moléculas, sin diseño propio, y los textos llegan por props.
+
+- `ModulDialog` y `ModulBottomSheet`: envuelven a `ModulModal` (que no cambia) con título y botón de cierre. Al abrirse llevan el foco al título; se cierran con el botón de retroceso de Android, con Escape en web y con el botón de cierre. `ModulBottomSheet` es el mismo diálogo anclado abajo. Se abren desde cualquier pantalla con `visible` y `onClose`; el contenido lo define cada pantalla.
+- `ModulListPattern`: búsqueda (`ModulInput` `search`), filtros opcionales (`ModulChipGroup`) y `ModulList` con sus estados de carga, error y vacío.
+- `ModulFormContainer`: muestra los errores generales del servidor (`serverErrors`) como alerta y las acciones de enviar y cancelar; `submitting` las deshabilita. `toFieldErrors(problem.errors)` convierte los errores por campo del servidor (`ApiProblem.errors`) en el `error` de cada `ModulInput`.
+- Plantillas de pantalla, una por plataforma. Móvil (`templates/mobile/`, una sola columna y controles táctiles de 44): `ModulListView`, `ModulFormView`, `ModulDetailView`, `ModulAuthView`, `ModulSettingsView` y `ModulAgendaView`. Web (`templates/web/`, sufijo `Web`, controles `compact` de 32): `ModulPageWeb` es la estructura común (contenido centrado de 1120 como máximo y encabezado con título y acciones) y las demás se apoyan en ella. `ModulListViewWeb` pone búsqueda y filtros en una fila y la lista en una tarjeta; `ModulFormViewWeb` muestra los campos en dos columnas dentro de una tarjeta de 720; `ModulDetailViewWeb` suma un panel lateral (`aside`); `ModulSettingsViewWeb` lista las secciones a la izquierda y muestra la elegida a la derecha; `ModulAgendaViewWeb` pone el título y la barra de herramientas en la misma fila; `ModulAuthViewWeb` centra el formulario en una tarjeta. `ModulButton` y `ModulInput` aceptan `compact`.
+
+```tsx
+<ModulListScreen title="Tasks" searchLabel="Search" searchValue={query} onSearchChange={setQuery} data={tasks} renderItem={renderTask} emptyTitle="No tasks" />
+<ModulBottomSheet visible={open} title="Filters" closeLabel="Close" onClose={() => setOpen(false)}>{filters}</ModulBottomSheet>
+<ModulInput label="Email" value={email} onChangeText={setEmail} error={toFieldErrors(problem.errors).Email} />
+```
 
 ### Convenciones de los componentes
 
