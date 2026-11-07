@@ -1,3 +1,4 @@
+using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Auditing;
 using Persistence.Configuration;
@@ -10,6 +11,10 @@ public class LifeDbContext(
     TimeProvider? timeProvider = null) : DbContext(options)
 {
     private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+
+    public DbSet<User> Users => Set<User>();
+
+    public DbSet<ExternalAccount> ExternalAccounts => Set<ExternalAccount>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
@@ -34,6 +39,7 @@ public class LifeDbContext(
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(LifeDbContext).Assembly);
         modelBuilder.ApplyBaseEntityConfiguration();
     }
 }
