@@ -1,10 +1,12 @@
-import { translate } from '@life/core';
-import { ModulText, ModulView } from '@life/ui';
+import { useSettings } from '@life/core';
+import { ModulSettings, ModulView } from '@life/ui';
 
 export default function SettingsScreen() {
+  const settings = useSettings('mobile');
+
   return (
-    <ModulView flex1 bgSurface alignCenter justifyCenter>
-      <ModulText>{translate('user.settings')}</ModulText>
+    <ModulView flex1 bgSurface>
+      <ModulSettings {...settings} />
     </ModulView>
   );
 }

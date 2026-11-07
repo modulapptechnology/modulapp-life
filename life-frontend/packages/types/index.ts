@@ -43,3 +43,13 @@ export type ApiResult<T> =
   | { kind: 'networkError' }
   | { kind: 'timeout' }
   | { kind: 'cancelled' };
+
+export type NotificationChannel = 'push' | 'email' | 'inApp';
+export type NotificationType = 'taskReminder' | 'agendaEvent' | 'dailySummary';
+
+// Preferencia de notificación: un tipo en un canal, activado o no.
+export type NotificationPreference = {
+  type: NotificationType;
+  channel: NotificationChannel;
+  enabled: boolean;
+};
