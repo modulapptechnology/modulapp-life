@@ -4,6 +4,7 @@ import { ModulLayoutWeb, ModulText, toSidebarSections, type NavSection } from '@
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ModulePage from './pages/ModulePage';
+import SettingsPage from './pages/SettingsPage';
 
 export default function App() {
   const modules = useEnabledModules(moduleRegistry);
@@ -59,7 +60,7 @@ export default function App() {
       <Route element={user ? layout : <Navigate to="/login" replace />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/profile" element={<ModulePage nameKey="user.profile" />} />
-        <Route path="/settings" element={<ModulePage nameKey="user.settings" />} />
+        <Route path="/settings" element={<SettingsPage />} />
         {modules.map((module) => (
           <Route
             key={module.id}

@@ -36,3 +36,4 @@ export * from './components/atoms/ModulDatePicker/ModulDatePicker';
 export * from './components/molecules/ModulHeader/ModulHeader';
 export * from './components/molecules/ModulSidebar/ModulSidebar';
 export * from './components/layouts/ModulLayoutWeb/ModulLayoutWeb';
+export * from './components/layouts/ModulSettings/ModulSettings';
