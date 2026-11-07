@@ -21,6 +21,7 @@ public static class ApiApplicationBuilderExtensions
 
         app.UseHttpsRedirection();
         app.UseCors(ApiServiceCollectionExtensions.CorsPolicyName);
+        app.UseRateLimiter();
         app.UseAuthorization();
         app.MapControllers();
 

@@ -45,7 +45,7 @@ public class MigrationsTests : IAsyncLifetime
     }
 
     [RequiresTestDatabaseFact]
-    public async Task MigrateAsync_OnAnEmptyDatabase_CreatesTheUsersAndExternalAccountsTables()
+    public async Task MigrateAsync_OnAnEmptyDatabase_CreatesTheUserTables()
     {
         await using var context = CreateContext();
 
@@ -56,7 +56,7 @@ public class MigrationsTests : IAsyncLifetime
 
         var businessTables = tables.Where(name => name != "__EFMigrationsHistory").Order();
 
-        Assert.Equal(["ExternalAccounts", "Users"], businessTables);
+        Assert.Equal(["EmailVerificationTokens", "ExternalAccounts", "Users"], businessTables);
     }
 
     private LifeDbContext CreateContext()

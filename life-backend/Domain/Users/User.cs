@@ -18,5 +18,17 @@ public class User : BaseEntity
 
     public string? TimeZone { get; set; }
 
+    public DateTime? EmailVerifiedAt { get; set; }
+
     public ICollection<ExternalAccount> ExternalAccounts { get; set; } = [];
+
+    public void VerifyEmail(DateTime verifiedAt)
+    {
+        EmailVerifiedAt = verifiedAt;
+
+        if (Status == UserStatus.Pending)
+        {
+            Status = UserStatus.Active;
+        }
+    }
 }

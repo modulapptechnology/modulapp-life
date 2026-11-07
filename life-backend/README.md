@@ -216,12 +216,37 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 | Campo de `User` | Detalle |
 |---|---|
 | `Email` | Obligatorio, hasta 320 caracteres. Se compara sin distinguir mayúsculas (columna con collation `SQL_Latin1_General_CP1_CI_AS`, fija y no depende de la base). Índice único filtrado `[IsDeleted] = 0`: la base rechaza dos usuarios activos con el mismo correo; el de un usuario eliminado lógicamente se puede volver a registrar. |
-| `PasswordHash` | Solo el hash de la contraseña; el modelo no tiene ningún campo con la contraseña en texto plano. Es opcional para las cuentas que solo ingresan con una cuenta externa. La lógica de registro e inicio de sesión no forma parte de este modelo. |
+| `PasswordHash` | Solo el hash de la contraseña; el modelo no tiene ningún campo con la contraseña en texto plano. Es opcional para las cuentas que solo ingresan con una cuenta externa. El registro se describe en "Registro con correo y contraseña"; el inicio de sesión no forma parte de este modelo. |
+| `EmailVerifiedAt` | Momento en que el usuario confirmó su correo; vacío mientras no lo confirme. |
 | `Name` | Obligatorio, hasta 200 caracteres. |
 | `Status` | `Pending` (valor inicial), `Active` o `Blocked`; se guarda como número. |
 | `AvatarUrl`, `Locale`, `TimeZone` | Datos de perfil opcionales. |
 
 `ExternalAccount` vincula un usuario con una cuenta de un proveedor externo: `UserId` (obligatorio, sin borrado en cascada), `Provider` (hasta 50) y `ProviderUserId` (hasta 256). El par proveedor + identificador es único entre las cuentas no eliminadas, por lo que la misma cuenta externa no se vincula a dos usuarios.
+
+### Registro con correo y contraseña
+
+`AuthController` expone el registro y la confirmación del correo. Los casos de uso son `RegisterUser` y `VerifyEmail` (`Application/Users`); `AddInfrastructure(configuration)` registra el hash, el generador de tokens y el envío de correo, y `AddPersistence` el `IUserRepository`.
+
+| Endpoint | Resultado |
+|---|---|
+| `POST /api/v1/auth/register` con `{ "email", "password" }` | `201` con `{ id, email }` y envía el correo de verificación. `409` si el correo ya está registrado (sin distinguir mayúsculas, sin datos adicionales). `400` con el detalle por campo si el correo o la contraseña no son válidos. `429` al superar el límite de intentos. |
+| `GET /api/v1/auth/verify-email?token=<token>` | `204` y el usuario pasa a `Active` con `EmailVerifiedAt`. `400` si el enlace no existe, ya se usó o venció (mismo mensaje para los tres casos). `429` al superar el límite. |
+
+- **Política de contraseña** (`RegisterUserRequestValidator`): de 10 a 128 caracteres, con al menos una mayúscula, una minúscula y un número. La contraseña nunca se guarda ni se devuelve: se almacena solo el hash PBKDF2-SHA256 con sal aleatoria y 600 000 iteraciones (`Pbkdf2PasswordHasher`, formato `PBKDF2-SHA256$<iteraciones>$<sal>$<hash>`).
+- **Enlace de verificación**: token aleatorio de 32 bytes, de un solo uso. En `EmailVerificationTokens` solo se guarda su hash SHA-256 (`TokenHash`, único entre los no eliminados), con `ExpiresAt` y `UsedAt`. El usuario queda `Pending` hasta confirmar; un usuario `Blocked` conserva su estado y solo registra `EmailVerifiedAt`.
+- **Correo**: se envía después de confirmar la transacción. Si el envío falla se registra el error (sin el correo ni el token en el mensaje) y el registro igual responde `201`; reenviar el enlace no forma parte de este cambio.
+- **Límite de frecuencia**: política `Registration` de ASP.NET Core, ventana fija por IP, que aplican los dos endpoints. Detrás de un proxy hay que configurar los encabezados reenviados para que la IP sea la del cliente.
+
+| Configuración | Detalle |
+|---|---|
+| `EmailVerification:VerificationUrl` | **Obligatoria.** URL absoluta del endpoint de confirmación; el enlace del correo es esa URL con `?token=`. En Desarrollo y Pruebas está en `appsettings.<Entorno>.json`; en Producción se define por variable de entorno (`EmailVerification__VerificationUrl`). Sin ella la API no inicia. |
+| `EmailVerification:TokenLifetimeMinutes` | Vigencia del enlace; 1440 (24 horas) por defecto. |
+| `Email:Provider` | `Smtp` (por defecto) o `Log`. `Log` solo escribe el enlace en el log y se usa en Desarrollo y Pruebas; no se usa en Producción. |
+| `Email:Smtp:Host`, `Port` (587), `EnableSsl` (`true`), `UserName`, `Password`, `FromAddress` | Servidor SMTP. El usuario y la contraseña van en `user-secrets` o variables de entorno (`Email__Smtp__Password`), nunca en archivos versionados. |
+| `RateLimiting:Registration:PermitLimit` / `WindowSeconds` | Intentos permitidos por IP y duración de la ventana; 5 por 600 segundos por defecto (1000 en Pruebas). |
+
+`tests/API.Tests/Registration` prueba los endpoints sin base de datos, con un repositorio en memoria; `Infrastructure.Tests` prueba `UserRepository` contra la base de pruebas.
 
 ### Restricciones de integridad
 
@@ -254,7 +279,7 @@ Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Passwor
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, y `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 

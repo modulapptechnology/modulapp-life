@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Users;
 using Application.VersionHistory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -36,6 +37,7 @@ public static class DependencyInjection
 
         services.AddSingleton(BuildVersionHistoryOptions(configuration));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IUserRepository, UserRepository>();
 
         return services;
     }

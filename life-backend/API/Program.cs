@@ -16,7 +16,7 @@ if (builder.Environment.IsDevelopment())
 builder.Services
     .AddApiStructure(builder.Configuration)
     .AddApplication()
-    .AddInfrastructure()
+    .AddInfrastructure(builder.Configuration)
     .AddPersistence(builder.Configuration);
 
 var app = builder.Build();
