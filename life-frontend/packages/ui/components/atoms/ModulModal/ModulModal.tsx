@@ -7,22 +7,37 @@ export type ModulModalProps = {
   visible: boolean;
   onClose: () => void;
   closeLabel: string;
+  // 'center': centrada (web). 'bottom': sube desde abajo (mobile).
+  placement?: 'center' | 'bottom';
   children: ReactNode;
 };
 
-// Capa centrada sobre la pantalla: la usan el menú y el diálogo de confirmación.
-export function ModulModal({ visible, onClose, closeLabel, children }: ModulModalProps) {
+export function ModulModal({
+  visible,
+  onClose,
+  closeLabel,
+  placement = 'center',
+  children,
+}: ModulModalProps) {
   const { view } = useStyles();
+  const isBottom = placement === 'bottom';
 
   return (
     <Modal
       transparent
       visible={visible}
-      animationType="fade"
+      animationType={isBottom ? 'slide' : 'fade'}
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <ModulView flex1 alignCenter justifyCenter p16>
+      <ModulView
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: isBottom ? 'flex-end' : 'center',
+          padding: isBottom ? 0 : 16,
+        }}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={closeLabel}
@@ -39,6 +54,11 @@ export function ModulModal({ visible, onClose, closeLabel, children }: ModulModa
           roundedLg
           p16
           gap16
+          style={
+            isBottom
+              ? { maxWidth: '100%', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }
+              : undefined
+          }
         >
           {children}
         </ModulView>

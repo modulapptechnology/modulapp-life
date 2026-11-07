@@ -46,3 +46,26 @@ export const darkColors: ThemeColors = {
 
 export type ThemeColors = typeof lightColors;
 export type ThemePreference = 'light' | 'dark' | 'system';
+
+export type ThemeAccent = 'modul' | 'violet' | 'ocean';
+
+type AccentColors = Pick<ThemeColors, 'primary' | 'secondary'>;
+
+export const accentPalettes: Record<ThemeAccent, Record<'light' | 'dark', AccentColors>> = {
+  modul: {
+    light: { primary: '#364998', secondary: '#7E3F99' },
+    dark: { primary: '#8B9DF0', secondary: '#C58ADB' },
+  },
+  violet: {
+    light: { primary: '#6D3FC4', secondary: '#B0307A' },
+    dark: { primary: '#B79CF5', secondary: '#F08CC0' },
+  },
+  ocean: {
+    light: { primary: '#0E7490', secondary: '#2563EB' },
+    dark: { primary: '#5EC8E0', secondary: '#7FA8F8' },
+  },
+};
+
+export function createThemeColors(scheme: 'light' | 'dark', accent: ThemeAccent): ThemeColors {
+  return { ...(scheme === 'dark' ? darkColors : lightColors), ...accentPalettes[accent][scheme] };
+}

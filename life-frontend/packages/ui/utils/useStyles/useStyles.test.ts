@@ -31,7 +31,7 @@ describe('useStyles', () => {
 
     const { result } = await renderHook(() => useStyles(), { wrapper: conTema('light') });
 
-    expect(result.current.colors).toBe(lightColors);
+    expect(result.current.colors).toEqual(lightColors);
   });
 
   it('falla con un mensaje claro si se usa fuera del ThemeProvider', async () => {

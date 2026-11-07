@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Pressable } from 'react-native';
 import { useStyles } from '../../../utils/useStyles/useStyles';
 import { ModulButton } from '../../atoms/ModulButton/ModulButton';
 import { ModulIcon, type IconName } from '../../atoms/ModulIcon/ModulIcon';
 import { ModulText } from '../../atoms/ModulText/ModulText';
 import { ModulView } from '../../atoms/ModulView/ModulView';
+import { useTheme } from '../../../theme/ThemeProvider';
 
 export type ModulListItemAction = {
   icon: IconName;
@@ -35,6 +37,8 @@ export function ModulListItem({
   onPress,
 }: ModulListItemProps) {
   const { view } = useStyles();
+  const [hovered, setHovered] = useState(false);
+  const { colors } = useTheme();
 
   return (
     <ModulView row alignCenter gap8 px16 style={disabled ? view.opacityDisabled : undefined}>
@@ -44,13 +48,17 @@ export function ModulListItem({
         accessibilityState={{ selected, disabled }}
         disabled={disabled || !onPress}
         onPress={onPress}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
         style={[
           view.flex1,
           view.row,
           view.alignCenter,
           view.gap8,
           view.minH44,
+          view.rounded,
           compact ? view.py4 : view.py8,
+          onPress && hovered && !disabled ? { backgroundColor: colors.border } : null,
         ]}
       >
         {icon ? <ModulIcon name={icon} color={destructive ? 'danger' : 'text'} /> : null}

@@ -8,6 +8,8 @@ import { createSettingsViewModel } from '../settingsViewModel/settingsViewModel'
 import { translate } from '../translate/translate';
 import { useEnabledModules } from '../useEnabledModules/useEnabledModules';
 import { useNotificationPreferences } from '../useNotificationPreferences/useNotificationPreferences';
+import { appearanceStore } from '../appearance/appearanceStore';
+import { useAppearance } from '../useAppearance/useAppearance';
 
 type ToggleArgs = Parameters<NotificationPreferencesStore['toggle']>;
 
@@ -15,6 +17,7 @@ type ToggleArgs = Parameters<NotificationPreferencesStore['toggle']>;
 export function useSettings(platform: SettingsPlatform) {
   const enabledModules = useEnabledModules(moduleRegistry);
   const notifications = useNotificationPreferences(notificationPreferencesStore);
+  const appearanceState = useAppearance(appearanceStore);
 
   return {
     ...createSettingsViewModel({
@@ -28,6 +31,20 @@ export function useSettings(platform: SettingsPlatform) {
     onNotificationChange: (type: string, channel: string, checked: boolean) =>
       notificationPreferencesStore.toggle(type as ToggleArgs[0], channel as ToggleArgs[1], checked),
     onRetry: () => notificationPreferencesStore.load(),
+    device: platform === 'web' ? ('desktop' as const) : ('mobile' as const),
+    appearance: {
+      ...createSettingsViewModel({
+        allModules: moduleRegistry.getAll(),
+        enabledModules,
+        notifications,
+        platform,
+        translate,
+      }).appearanceTexts,
+      preference: appearanceState.preference,
+      accent: appearanceState.accent,
+      onPreferenceChange: appearanceStore.setPreference,
+      onAccentChange: appearanceStore.setAccent,
+    },
     onDismissSaveError: () => notificationPreferencesStore.dismissSaveError(),
   };
 }

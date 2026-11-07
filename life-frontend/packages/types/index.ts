@@ -53,3 +53,5 @@ export type NotificationPreference = {
   channel: NotificationChannel;
   enabled: boolean;
 };
+
+export type { ThemeAccent, ThemePreference } from '@life/theme';
