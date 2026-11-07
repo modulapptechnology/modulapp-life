@@ -1,3 +1,4 @@
+using API.Filters;
 using Asp.Versioning;
 
 namespace API.Extensions;
@@ -8,7 +9,11 @@ public static class ApiServiceCollectionExtensions
 
     public static IServiceCollection AddApiStructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddControllers();
+        services
+            .AddControllers(options => options.Filters.Add<ValidationFilter>())
+            .ConfigureApiBehaviorOptions(options =>
+                options.InvalidModelStateResponseFactory = context =>
+                    ValidationProblemFactory.Create(context, context.ModelState));
 
         services
             .AddApiVersioning(options =>
