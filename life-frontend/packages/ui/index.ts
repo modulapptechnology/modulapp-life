@@ -31,4 +31,5 @@ export * from './components/molecules/ModulBarChart/ModulBarChart';
 export * from './components/molecules/ModulCircularProgress/ModulCircularProgress';
 export * from './components/molecules/ModulDragDrop/ModulDragDrop';
 export * from './components/atoms/ModulDatePicker/ModulDatePicker';
+export * from './components/molecules/ModulHeader/ModulHeader';
 export * from './components/layouts/ModulLayoutWeb/ModulLayoutWeb';
