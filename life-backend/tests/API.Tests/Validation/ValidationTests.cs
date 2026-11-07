@@ -8,14 +8,14 @@ namespace API.Tests.Validation;
 [Collection(ApiCollection.Name)]
 public class ValidationTests(ApiFactory api)
 {
-    private const string Route = "/api/v1/TestValidation";
+    private const string _route = "/api/v1/TestValidation";
 
     [Fact]
     public async Task Post_ValidRequest_Returns200WithTheResponseDto()
     {
         var client = api.CreateApiClient();
 
-        var response = await client.PostAsJsonAsync(Route, new { name = "Sample", quantity = 5 });
+        var response = await client.PostAsJsonAsync(_route, new { name = "Sample", quantity = 5 });
 
         var body = await response.Content.ReadFromJsonAsync<SampleResponse>();
         Assert.Equal((HttpStatusCode.OK, "Sample", 5), (response.StatusCode, body?.Name, body?.Quantity));
@@ -26,7 +26,7 @@ public class ValidationTests(ApiFactory api)
     {
         var client = api.CreateApiClient();
 
-        var response = await client.PostAsJsonAsync(Route, new { name = "", quantity = 5 });
+        var response = await client.PostAsJsonAsync(_route, new { name = "", quantity = 5 });
 
         var errors = await ReadErrorsAsync(response);
         Assert.Equal((HttpStatusCode.BadRequest, "application/problem+json", true, false),
@@ -42,7 +42,7 @@ public class ValidationTests(ApiFactory api)
     {
         var client = api.CreateApiClient();
 
-        var response = await client.PostAsJsonAsync(Route, new { name = "", quantity = 0 });
+        var response = await client.PostAsJsonAsync(_route, new { name = "", quantity = 0 });
 
         var errors = await ReadErrorsAsync(response);
         Assert.Equal(
@@ -59,7 +59,7 @@ public class ValidationTests(ApiFactory api)
     {
         var client = api.CreateApiClient();
 
-        var response = await client.PostAsJsonAsync(Route, new { name = "Sample", quantity });
+        var response = await client.PostAsJsonAsync(_route, new { name = "Sample", quantity });
 
         Assert.Equal(accepted, response.StatusCode == HttpStatusCode.OK);
     }
@@ -69,7 +69,7 @@ public class ValidationTests(ApiFactory api)
     {
         var client = api.CreateApiClient();
 
-        var response = await client.PostAsJsonAsync(Route, new { name = "Sample", quantity = "abc" });
+        var response = await client.PostAsJsonAsync(_route, new { name = "Sample", quantity = "abc" });
 
         var body = await response.Content.ReadAsStringAsync();
         Assert.Equal(
@@ -83,7 +83,7 @@ public class ValidationTests(ApiFactory api)
         var client = api.CreateApiClient();
 
         var response = await client.PostAsync(
-            Route,
+            _route,
             new StringContent("{}", System.Text.Encoding.UTF8, "application/json"));
 
         var errors = await ReadErrorsAsync(response);

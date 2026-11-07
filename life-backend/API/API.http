@@ -8,6 +8,27 @@ Accept: application/json
 GET {{API_HostAddress}}/house/database
 Accept: application/json
 
+### Register with email and password
+POST {{API_HostAddress}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "person@example.com",
+  "password": "Abcdefgh12"
+}
+
+### Log in with email and password (the user must have confirmed the email)
+POST {{API_HostAddress}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "person@example.com",
+  "password": "Abcdefgh12"
+}
+
+### Confirm the email (token from the verification link)
+GET {{API_HostAddress}}/api/v1/auth/verify-email?token=<token>
+
 ### CORS disallowed origin
 GET {{API_HostAddress}}/api/v1/house
 Origin: http://disallowed-origin.example

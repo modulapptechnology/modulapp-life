@@ -192,6 +192,110 @@ Cuando el proyecto necesite otro servicio (caché, cola de mensajes, correo de p
 
 `Persistence` accede a SQL Server con EF Core (`Microsoft.EntityFrameworkCore.SqlServer`). `AddPersistence(configuration)` registra `LifeDbContext` con tiempo de vida Scoped y la cadena `ConnectionStrings:Default` del ambiente (ver "Variables de entorno y secretos"). La cadena nunca se versiona. Si falta, el error se produce al pedir el `DbContext` por primera vez, con un mensaje que indica dónde configurarla; la API no falla al arrancar. El modelo de datos de los módulos se agrega después en `Persistence`.
 
+### Base común de persistencia
+
+Toda entidad hereda de `BaseEntity` (`Domain/Common`) y `Persistence` le aplica sin configuración adicional la misma configuración (`ApplyBaseEntityConfiguration` en `LifeDbContext`):
+
+| Campo | Comportamiento |
+|---|---|
+| `Id` (GUID) | Lo puede generar el cliente o el backend: si llega con valor se conserva; si llega vacío, EF genera uno secuencial. |
+| `CreatedAt`, `UpdatedAt` | En UTC; los fija `LifeDbContext` al guardar (la creación no se modifica después). |
+| `IsDeleted`, `DeletedAt` | Eliminación lógica: `Remove` marca el registro como eliminado en lugar de borrarlo y las consultas lo excluyen por defecto; se incluye con `IgnoreQueryFilters()`. |
+| `RowVersion` | Versión de fila (`rowversion`) para control de concurrencia, expuesta a los clientes. Para detectar un conflicto al sincronizar, el caso de uso asigna la versión que envió el cliente a `Entry(entity).Property(e => e.RowVersion).OriginalValue`; si está desactualizada, `SaveChanges` lanza `DbUpdateConcurrencyException`. |
+
+Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kind = Utc` (`UtcDateTimeConverter`).
+
+**Transacción por caso de uso.** `Application` define `IUnitOfWork`, registrado Scoped por `AddPersistence`. Cada caso de uso que modifica datos ejecuta su lógica con `ExecuteInTransactionAsync`: guarda los cambios y confirma al terminar, y ante cualquier excepción revierte todo. Respeta la política de reintentos del `DbContext`, por lo que la operación puede ejecutarse más de una vez y no debe tener efectos fuera de la base.
+
+**Historial de versiones.** Una entidad con contenido de texto que conserva su historial declara `IHasVersionHistory` (`Domain/Common`), un marcador sin miembros. El periodo de retención se configura en `VersionHistory:RetentionDays` (90 por defecto, en `appsettings.json`) y se lee con `VersionHistoryOptions`; un valor no numérico o menor que 1 hace fallar `AddPersistence`. El almacenamiento y la consulta del historial no forman parte de esta base.
+
+### Modelo de usuarios
+
+`User` y `ExternalAccount` (`Domain/Users`) heredan de `BaseEntity`, así que tienen GUID, auditoría, eliminación lógica y versión de fila. Se guardan en las tablas `Users` y `ExternalAccounts`, configuradas en `Persistence/Configuration` y expuestas en `LifeDbContext` (`Users`, `ExternalAccounts`).
+
+| Campo de `User` | Detalle |
+|---|---|
+| `Email` | Obligatorio, hasta 320 caracteres. Se compara sin distinguir mayúsculas (columna con collation `SQL_Latin1_General_CP1_CI_AS`, fija y no depende de la base). Índice único filtrado `[IsDeleted] = 0`: la base rechaza dos usuarios activos con el mismo correo; el de un usuario eliminado lógicamente se puede volver a registrar. |
+| `PasswordHash` | Solo el hash de la contraseña; el modelo no tiene ningún campo con la contraseña en texto plano. Es opcional para las cuentas que solo ingresan con una cuenta externa. El registro y el inicio de sesión se describen en "Registro con correo y contraseña" e "Inicio de sesión con correo y contraseña". |
+| `FailedLoginAttempts`, `LockedUntil` | Contraseñas incorrectas seguidas (0 por defecto) y fin del bloqueo temporal (vacío si no está bloqueado). |
+| `EmailVerifiedAt` | Momento en que el usuario confirmó su correo; vacío mientras no lo confirme. |
+| `Name` | Obligatorio, hasta 200 caracteres. |
+| `Status` | `Pending` (valor inicial), `Active` o `Blocked`; se guarda como número. |
+| `AvatarUrl`, `Locale`, `TimeZone` | Datos de perfil opcionales. |
+
+`ExternalAccount` vincula un usuario con una cuenta de un proveedor externo: `UserId` (obligatorio, sin borrado en cascada), `Provider` (hasta 50) y `ProviderUserId` (hasta 256). El par proveedor + identificador es único entre las cuentas no eliminadas, por lo que la misma cuenta externa no se vincula a dos usuarios.
+
+### Registro con correo y contraseña
+
+`AuthController` expone el registro y la confirmación del correo. Los casos de uso son `RegisterUser` y `VerifyEmail` (`Application/Users`); `AddInfrastructure(configuration)` registra el hash, el generador de tokens y el envío de correo, y `AddPersistence` el `IUserRepository`.
+
+| Endpoint | Resultado |
+|---|---|
+| `POST /api/v1/auth/register` con `{ "email", "password" }` | `201` con `{ id, email }` y envía el correo de verificación. `409` si el correo ya está registrado (sin distinguir mayúsculas, sin datos adicionales). `400` con el detalle por campo si el correo o la contraseña no son válidos. `429` al superar el límite de intentos. |
+| `GET /api/v1/auth/verify-email?token=<token>` | `204` y el usuario pasa a `Active` con `EmailVerifiedAt`. `400` si el enlace no existe, ya se usó o venció (mismo mensaje para los tres casos). `429` al superar el límite. |
+
+- **Política de contraseña** (`RegisterUserRequestValidator`): de 10 a 128 caracteres, con al menos una mayúscula, una minúscula y un número. La contraseña nunca se guarda ni se devuelve: se almacena solo el hash PBKDF2-SHA256 con sal aleatoria y 600 000 iteraciones (`Pbkdf2PasswordHasher`, formato `PBKDF2-SHA256$<iteraciones>$<sal>$<hash>`).
+- **Enlace de verificación**: token aleatorio de 32 bytes, de un solo uso. En `EmailVerificationTokens` solo se guarda su hash SHA-256 (`TokenHash`, único entre los no eliminados), con `ExpiresAt` y `UsedAt`. El usuario queda `Pending` hasta confirmar; un usuario `Blocked` conserva su estado y solo registra `EmailVerifiedAt`.
+- **Correo**: se envía después de confirmar la transacción. Si el envío falla se registra el error (sin el correo ni el token en el mensaje) y el registro igual responde `201`; reenviar el enlace no forma parte de este cambio.
+- **Límite de frecuencia**: política `Registration` de ASP.NET Core, ventana fija por IP, que aplican los dos endpoints. Detrás de un proxy hay que configurar los encabezados reenviados para que la IP sea la del cliente.
+
+| Configuración | Detalle |
+|---|---|
+| `EmailVerification:VerificationUrl` | **Obligatoria.** URL absoluta del endpoint de confirmación; el enlace del correo es esa URL con `?token=`. En Desarrollo y Pruebas está en `appsettings.<Entorno>.json`; en Producción se define por variable de entorno (`EmailVerification__VerificationUrl`). Sin ella la API no inicia. |
+| `EmailVerification:TokenLifetimeMinutes` | Vigencia del enlace; 1440 (24 horas) por defecto. |
+| `Email:Provider` | `Smtp` (por defecto) o `Log`. `Log` solo escribe el enlace en el log y se usa en Desarrollo y Pruebas; no se usa en Producción. |
+| `Email:Smtp:Host`, `Port` (587), `EnableSsl` (`true`), `UserName`, `Password`, `FromAddress` | Servidor SMTP. El usuario y la contraseña van en `user-secrets` o variables de entorno (`Email__Smtp__Password`), nunca en archivos versionados. |
+| `RateLimiting:Registration:PermitLimit` / `WindowSeconds` | Intentos permitidos por IP y duración de la ventana; 5 por 600 segundos por defecto (1000 en Pruebas). |
+
+`tests/API.Tests/Registration` prueba los endpoints sin base de datos, con un repositorio en memoria; `Infrastructure.Tests` prueba `UserRepository` contra la base de pruebas.
+
+### Inicio de sesión con correo y contraseña
+
+`AuthController` expone `POST /api/v1/auth/login`. El caso de uso es `LoginUser` (`Application/Users`): busca al usuario por correo (sin distinguir mayúsculas), verifica la contraseña, aplica el bloqueo, audita el intento y emite la sesión. `AddInfrastructure(configuration)` registra la verificación del hash, el emisor del token y las opciones; `AddPersistence`, el repositorio.
+
+| Endpoint | Resultado |
+|---|---|
+| `POST /api/v1/auth/login` con `{ "email", "password" }` | `200` con `{ accessToken, tokenType: "Bearer", expiresAt }`. `401` con el mismo mensaje si el correo no existe, la contraseña es incorrecta, la cuenta está bloqueada temporalmente o el usuario no está `Active`. `400` con el detalle por campo si falta el correo o la contraseña o el correo no tiene formato válido. `429` al superar el límite de intentos por IP. |
+
+- **Mensaje genérico y tiempo constante**: todas las causas de rechazo devuelven `401` con el mismo cuerpo, así que la respuesta no revela si el correo existe, si la cuenta está bloqueada o si falta verificar el correo. `Pbkdf2PasswordHasher.Verify` compara con `CryptographicOperations.FixedTimeEquals` y, si no hay hash (correo inexistente o cuenta sin contraseña) o está malformado, calcula igual un PBKDF2 contra un hash fijo para que el tiempo de respuesta no delate la diferencia.
+- **Quién puede entrar**: solo los usuarios `Active` (correo verificado). Un usuario `Pending` o `Blocked` recibe `401` aunque la contraseña sea correcta.
+- **Bloqueo temporal**: cada contraseña incorrecta de un usuario existente suma a `Users.FailedLoginAttempts`. Al llegar al máximo, `Users.LockedUntil` queda en el momento actual más la duración del bloqueo y, mientras dure, se rechaza el inicio de sesión aunque la contraseña sea correcta, sin sumar intentos ni extender el bloqueo. Al vencer, el conteo empieza de nuevo. Un inicio de sesión correcto lo reinicia. Un bloqueo es por cuenta y no afecta a otras. La respuesta `429` con el tiempo restante, la espera creciente y el registro de los bloqueos son del límite de intentos fallidos de la funcionalidad siguiente y no están en este cambio.
+- **Auditoría**: cada intento, exitoso o fallido, guarda una fila en `LoginAttempts` con el usuario (vacío si el correo no existe), el correo indicado, la IP de origen, el resultado (`LoginOutcome`: `Succeeded`, `InvalidCredentials`, `AccountLocked`, `AccountInactive`) y el momento en UTC. Nunca se guarda la contraseña. Se escribe en la misma transacción que el contador, por lo que el intento fallido no se pierde.
+- **Sesión**: un token de acceso JWT firmado con HMAC-SHA256 (`JwtAccessTokenIssuer`) con `sub`, `email`, `jti`, `iss`, `aud`, `iat` y `exp`. La emisión es lo único que cubre este cambio: la validación del token en cada petición, el token de renovación y la revocación de sesiones son de la gestión de sesiones.
+- **Límite de frecuencia**: política `Login` de ASP.NET Core, ventana fija por IP, que se suma al bloqueo por cuenta. Detrás de un proxy hay que configurar los encabezados reenviados para que la IP sea la del cliente.
+
+| Configuración | Detalle |
+|---|---|
+| `Authentication:AccessToken:SigningKey` | **Obligatoria**, de al menos 32 bytes. Es un secreto: va en `user-secrets` o en variable de entorno (`Authentication__AccessToken__SigningKey`), nunca en un archivo versionado. Sin ella la API no inicia. En Pruebas hay un valor falso en `appsettings.Testing.json`. |
+| `Authentication:AccessToken:LifetimeMinutes` | Vigencia del token de acceso; 15 por defecto. |
+| `Authentication:AccessToken:Issuer` / `Audience` | Emisor y audiencia del token; `life-api` y `life-app` por defecto. |
+| `Authentication:Login:MaxFailedAttempts` | Contraseñas incorrectas seguidas que bloquean la cuenta; 5 por defecto. |
+| `Authentication:Login:LockoutMinutes` | Duración del bloqueo; 15 por defecto. |
+| `RateLimiting:Login:PermitLimit` / `WindowSeconds` | Intentos permitidos por IP y duración de la ventana; 5 por 600 segundos por defecto (1000 en Pruebas). |
+
+Para desarrollo local, desde `life-backend`:
+
+```powershell
+dotnet user-secrets set "Authentication:AccessToken:SigningKey" "<valor aleatorio de al menos 32 caracteres>" --project API
+```
+
+`tests/API.Tests/Login` prueba el endpoint sin base de datos, con un repositorio en memoria; `Infrastructure.Tests` prueba el hash, el emisor del token y `UserRepository`.
+
+### Restricciones de integridad
+
+La base impide los estados inconsistentes sin depender del código. Toda entidad nueva sigue esta convención:
+
+| Aspecto | Convención |
+|---|---|
+| Claves foráneas | Una por relación, `IsRequired()` salvo que la relación sea opcional por negocio. Nombre `FK_<Tabla>_<Principal>_<Columna>`, el que genera EF. |
+| Borrado | Restringido (`Restrict`) por defecto: la base rechaza borrar un registro con dependientes. `ApplyIntegrityConventions` (en `LifeDbContext`) cambia a `Restrict` toda relación que no declare su comportamiento, en lugar de la cascada que EF asigna a las claves obligatorias. La cascada solo se admite declarándola con `OnDelete(DeleteBehavior.Cascade)` y justificándola en el cambio. |
+| Índices | Toda clave foránea tiene un índice sobre sus columnas (EF lo crea, `IX_<Tabla>_<Columna>`), y las columnas de búsqueda frecuente declaran el suyo con `HasIndex`. Una prueba de `API.Tests` falla si una clave foránea queda sin índice. |
+| Unicidad | Índice único con `HasFilter("[IsDeleted] = 0")`: la unicidad solo rige entre los registros activos, para que uno eliminado lógicamente no bloquee su reutilización. |
+| Nulabilidad | Las columnas son obligatorias salvo que el dato sea opcional por negocio; los textos declaran siempre `HasMaxLength`. |
+| Valores enumerados | Una columna `enum` lleva una restricción `CHECK` (`CK_<Tabla>_<Columna>`) con sus valores válidos. |
+
+En `Users`, `CK_Users_Status` limita `Status` a los valores de `UserStatus`; la base rechaza cualquier otro. El borrado restringido protege el borrado físico: la eliminación lógica (`Remove` de EF) no la bloquea la base, y su política se define aparte. Las restricciones de los módulos funcionales se agregan con cada módulo siguiendo esta misma convención.
+
 ### Resiliencia ante fallos transitorios
 
 El `DbContext` usa `EnableRetryOnFailure`: ante un error transitorio de conexión reintenta hasta **6 veces**, con una espera máxima de **30 segundos** entre intentos (`DependencyInjection.MaxRetryCount` y `MaxRetryDelay` en `Persistence`). Un error que no es transitorio (credenciales inválidas, base inexistente) falla de inmediato sin reintentar. Para cambiar la política se modifican esas dos constantes.
@@ -208,7 +312,7 @@ Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Passwor
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate`: aún no hay modelo de datos de módulos, así que solo crea la tabla de historial `__EFMigrationsHistory`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, y `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 
@@ -222,7 +326,7 @@ El nombre lo define quien genera la migración y describe el cambio en inglés, 
 dotnet tool restore
 ```
 
-Los comandos usan `Persistence` como proyecto de migraciones y `API` como proyecto de inicio, y leen la cadena `ConnectionStrings:Default` del ambiente. Generar una migración no se conecta a la base.
+Los comandos usan `Persistence` como proyecto de migraciones y `API` como proyecto de inicio, y leen la cadena `ConnectionStrings:Default` del ambiente. Como arrancan la API, también necesitan `Authentication:AccessToken:SigningKey` (ver "Inicio de sesión con correo y contraseña"); sin ella fallan con "must be at least 32 bytes long". Generar una migración no se conecta a la base.
 
 ### Generar y revisar una migración
 
@@ -252,7 +356,7 @@ Sobre una base vacía o inexistente, aplica todas las migraciones en orden y ter
 dotnet ef migrations list --project Persistence --startup-project API
 ```
 
-Las pruebas de `MigrationsTests` (en `API.Tests`) comprueban que la migración inicial existe y que el modelo coincide con el snapshot; si falla la segunda, falta generar una migración.
+Las pruebas de `MigrationsTests` (en `API.Tests`) comprueban que la migración inicial existe y que el modelo coincide con el snapshot; si falla la segunda, falta generar una migración. Las de `MigrationsTests` en `Infrastructure.Tests` aplican todas las migraciones sobre una base vacía de pruebas.
 
 ## Estructura de la API
 
@@ -357,6 +461,7 @@ Nunca se usa la base de desarrollo ni la de producción: `TestDatabaseOptions` r
 | `tests/Support.Tool` | Comando `prepare` / `clean` para preparar o limpiar el entorno a mano |
 | `tests/Support.Tests` | Pruebas del propio entorno; las que necesitan la base se omiten si no hay cadena de conexión |
 | `tests/API.Tests` | Pruebas de integración de la API |
+| `tests/Infrastructure.Tests` | Pruebas de integración de `Persistence` e `Infrastructure` contra SQL Server (ver "Pruebas de integración de Persistence e Infrastructure") |
 
 Los datos semilla y constructores viven en `life-backend/Support` y son solo del backend: el frontend mantiene su propia configuración y dependencias de pruebas y no los comparte. Los usuarios (`dbo.Users`) y espacios de trabajo (`dbo.Workspaces`) de `Support` son tipos provisionales de pruebas. Cuando existan las entidades y las migraciones, `Schema.sql` y los constructores se reemplazan por ellas.
 
@@ -423,6 +528,21 @@ dotnet test tests/API.Tests/API.Tests.csproj
 - `ApiFactory.CreateApiClient(userId)` devuelve un cliente autenticado con la cabecera `X-Test-User` y el esquema de autenticación de pruebas; sin argumento, el cliente es anónimo.
 - Cada prueba crea sus propios datos con `TemporaryWorkspace.CreateAsync(...)` y los elimina al terminar (`await using`), así no depende del orden ni deja residuos.
 - Hay un `TestWorkspacesController` que solo existe en el servidor de pruebas: representa el patrón de permiso del propietario y aislamiento por espacio de trabajo sobre las tablas provisionales. Cuando existan la autenticación y los espacios de trabajo reales, se sustituye por sus endpoints y se reutilizan las mismas pruebas.
+
+#### Pruebas de integración de Persistence e Infrastructure
+
+`tests/Infrastructure.Tests` prueba `Persistence` e `Infrastructure` contra SQL Server real, para detectar errores de mapeo, restricciones y esquema que no aparecen con pruebas en memoria. Está separado de las pruebas unitarias, referencia `Infrastructure`, `Persistence` y `Support` (no referencia `API`) y se ejecuta con un solo comando:
+
+```powershell
+dotnet test tests/Infrastructure.Tests/Infrastructure.Tests.csproj
+```
+
+- Usa la cadena `ConnectionStrings:Test` (ver "Configurar la cadena de conexión"), que no se versiona. Sin ella, las pruebas con base se omiten.
+- Cada ejecución parte de una base vacía: `TestDatabase.PrepareEmptyAsync` elimina y crea la base sin el esquema provisional ni datos semilla. La base se elimina al terminar.
+- `MigrationsTests` usa su propia base (`ModulLifeInfrastructureMigrationsTest`) y comprueba que todas las migraciones se aplican en orden sobre una base vacía, que no quedan migraciones pendientes ni cambios del modelo sin migrar, y que se crean las tablas `Users` y `ExternalAccounts`.
+- El resto de las pruebas comparten una base (`ModulLifeInfrastructureTest`, colección `MigratedDatabase`) con las migraciones ya aplicadas y se ejecutan en serie. Cada prueba crea sus propios datos con correos y cuentas únicos, así no depende del orden.
+- `UserPersistenceTests`, `ExternalAccountPersistenceTests` y `UnitOfWorkTests` cubren lectura, escritura, eliminación lógica, versión de fila y las restricciones de integridad: correo único entre usuarios activos sin distinguir mayúsculas, cuenta externa única por proveedor, clave foránea de la cuenta externa, longitud máxima y reversión de la transacción.
+- Todavía no hay repositorios: las pruebas usan `LifeDbContext` y `UnitOfWork`. Cuando existan, se agregan en `tests/Infrastructure.Tests/Persistence` con las mismas fixtures.
 
 ## Integración continua
 
@@ -530,7 +650,7 @@ dotnet test tests/Domain.Tests/Domain.Tests.csproj
 dotnet test tests/Application.Tests/Application.Tests.csproj
 ```
 
-- Las pruebas de integración (`tests/API.Tests`) usan la base de pruebas y se ejecutan solo en el entorno local (ver "Entorno de pruebas de integración").
+- Las pruebas de integración (`tests/API.Tests` y `tests/Infrastructure.Tests`) usan la base de pruebas y se ejecutan solo en el entorno local (ver "Entorno de pruebas de integración").
 - El formato, la compilación y los analizadores no reportan errores, ni `using` o referencias sin uso.
 - Las pruebas existentes y las de lo modificado pasan.
 - No cambiaron contratos ni comportamientos funcionales, y se revisaron los efectos secundarios en las funcionalidades relacionadas.
