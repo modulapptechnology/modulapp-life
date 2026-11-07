@@ -74,3 +74,6 @@ dotnet_naming_rule.miembros_pascal.severity = warning
 dotnet_naming_rule.parametros_locales_camel.symbols = parameters_locals
 dotnet_naming_rule.parametros_locales_camel.style = camel_case
 dotnet_naming_rule.parametros_locales_camel.severity = warning
+
+[Persistence/Migrations/*.cs]
+generated_code = true

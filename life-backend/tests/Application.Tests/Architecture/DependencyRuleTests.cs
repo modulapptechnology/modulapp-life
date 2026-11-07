@@ -1,4 +1,4 @@
-﻿namespace Application.Tests.Architecture;
+namespace Application.Tests.Architecture;
 
 public class DependencyRuleTests
 {
