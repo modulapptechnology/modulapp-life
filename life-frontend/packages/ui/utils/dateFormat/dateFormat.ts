@@ -7,7 +7,8 @@ export function parseDateInput(text: string) {
 
   const [, day, month, year] = match.map(Number);
   const date = new Date(year, month - 1, day);
-  const valid = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  const valid =
+    date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 
   return valid ? date : null;
 }
@@ -26,7 +27,8 @@ export function parseTimeInput(text: string) {
   return date;
 }
 
-export const formatDate = (date: Date) => `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+export const formatDate = (date: Date) =>
+  `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
 
 export const formatTime = (date: Date) => `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 

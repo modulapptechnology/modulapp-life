@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "tauri": "tauri",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@life/constants": "*"
