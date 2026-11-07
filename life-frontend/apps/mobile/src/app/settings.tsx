@@ -1,18 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
 import { translate } from '@life/core';
+import { ModulText, ModulView } from '@life/ui';
 
 export default function SettingsScreen() {
   return (
-    <View style={styles.container}>
-      <Text>{translate('user.settings')}</Text>
-    </View>
+    <ModulView flex1 bgSurface alignCenter justifyCenter>
+      <ModulText>{translate('user.settings')}</ModulText>
+    </ModulView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
