@@ -16,6 +16,14 @@ describe('ModulIcon', () => {
 
     await renderWithTheme(<ModulIcon name="CloseCircleIcon" size={tamanos[1]} />);
 
-    expect(screen.getByTestId('CloseCircleIcon').props.size).toBe(48);
+    expect(screen.getByTestId('CloseCircleIcon').props.size).toBe(46);
+  });
+
+  it('usa 20 px en el tamaño md por defecto', async () => {
+    const noSize = undefined;
+
+    await renderWithTheme(<ModulIcon name="CloseCircleIcon" size={noSize} />);
+
+    expect(screen.getByTestId('CloseCircleIcon').props.size).toBe(20);
   });
 });

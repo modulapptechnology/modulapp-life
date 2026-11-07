@@ -3,7 +3,7 @@ import * as Icons from '@life/icons';
 import type { ThemeColors } from '@life/theme';
 import { useTheme } from '../../../theme/ThemeProvider';
 
-const ICON_SIZES = { sm: 16, md: 24, lg: 32, xl: 48 } as const;
+const ICON_SIZES = { sm: 12, md: 20, lg: 30, xl: 46 } as const;
 
 export type IconName = Extract<keyof typeof Icons, `${string}Icon`>;
 export type IconSize = keyof typeof ICON_SIZES;

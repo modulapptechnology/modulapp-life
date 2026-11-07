@@ -15,3 +15,9 @@ export type ModuleDefinition = {
   icon: ModuleIconName;
   accent: ModuleAccent;
 };
+
+export type SessionUser = {
+  id: string;
+  name: string;
+  avatarUri?: string;
+};
