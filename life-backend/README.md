@@ -4,7 +4,7 @@ API de ModulApp Life (.NET 10, Clean Architecture, EF Core + SQL Server).
 
 ## Estructura de capas
 
-La solución es `life-backend.slnx` y contiene cinco proyectos:
+La solución es `life-backend.slnx` y contiene cinco proyectos de producción, más `Support` (biblioteca de pruebas) y los proyectos de `tests/`:
 
 | Proyecto | Responsabilidad | Referencia a |
 |---|---|---|
@@ -18,11 +18,11 @@ La solución es `life-backend.slnx` y contiene cinco proyectos:
 
 Las dependencias apuntan hacia adentro: `Domain` no referencia a ningún proyecto y no se permiten referencias distintas a las de la tabla.
 
-### Convenciones
+### Convenciones de la solución
 
 - Cada proyecto vive en su propia carpeta, con el mismo nombre que su `.csproj`.
 - Los nombres de proyecto no llevan prefijo (`API`, no `Life.API`).
-- El código de un módulo de negocio se organiza por funcionalidad dentro de cada capa (por ejemplo `Tareas/`), no por tipo técnico.
+- El código de un módulo de negocio se organiza por funcionalidad dentro de cada capa (por ejemplo `Tasks/`), no por tipo técnico.
 - Los secretos, cadenas de conexión y archivos de entorno no se versionan: se usan `user-secrets` o `appsettings.Development.local.json`.
 
 ## Inyección de dependencias
@@ -31,7 +31,7 @@ Cada capa expone un método de extensión que `API` invoca en `Program.cs`:
 
 | Capa | Método | Qué registra |
 |---|---|---|
-| `Application` | `AddApplication()` | Casos de uso |
+| `Application` | `AddApplication()` | Casos de uso y validadores |
 | `Infrastructure` | `AddInfrastructure()` | Servicios externos |
 | `Persistence` | `AddPersistence(configuration)` | `DbContext` y repositorios |
 
@@ -43,30 +43,6 @@ Tiempos de vida:
 
 Las capas internas dependen de interfaces definidas en `Application`; las implementaciones se registran en `Infrastructure` y `Persistence`.
 
-## Formato y estilo
-
-Las reglas están en `.editorconfig` (indentación de 4 espacios en C# y 2 en JSON, XML y YAML, ancho de línea objetivo de 110 caracteres, finales de línea CRLF, UTF-8, `using` fuera del namespace con `System` primero, namespaces con alcance de archivo, llaves siempre y nombres: PascalCase para tipos y miembros, camelCase para parámetros y variables, `_camelCase` para campos privados e `I` para interfaces). Visual Studio, Rider y VS Code las leen sin configuración adicional, así que el formato no depende de carpetas de IDE: `.idea/`, `.vs/` y `.vscode/` no se versionan y están en el `.gitignore`.
-
-El `.gitattributes` de la raíz del repositorio fuerza CRLF en `life-backend` para que `dotnet format` dé el mismo resultado en Windows y en el CI de Linux. `dotnet format` no parte las líneas largas: el límite de 110 se respeta a mano y el IDE lo muestra con la regla `max_line_length`.
-
-Desde `life-backend`:
-
-```powershell
-# Aplicar el formato
-dotnet format life-backend.slnx
-
-# Comprobar sin modificar archivos
-dotnet format life-backend.slnx --verify-no-changes
-```
-
-### Comentarios
-
-No se agregan comentarios salvo que sean necesarios: solo cuando explican un porqué que el código no deja claro por sí mismo. No se comenta lo que el código ya expresa y no se deja código comentado.
-
-### Idioma del código
-
-Todo el código se escribe en inglés: nombres de clases, métodos, propiedades, variables, carpetas, namespaces, rutas, campos de JSON, nombres de las pruebas (`Metodo_Escenario_Resultado` con las tres partes en inglés) y mensajes de excepción. La documentación (README, `docs/`) y los textos que ve el usuario final siguen en español. El esquema provisional de `Support` (`dbo.Users`, `dbo.Workspaces`) también está en inglés; cuando existan las entidades y migraciones reales, las reemplazan.
-
 ## Versiones requeridas
 
 | Herramienta | Versión | Dónde se fija |
@@ -74,6 +50,7 @@ Todo el código se escribe en inglés: nombres de clases, métodos, propiedades,
 | SDK de .NET | 10.0.100 o superior de la banda 10.0.1xx (`latestFeature`) | `global.json` |
 | Framework destino | `net10.0` | `<TargetFramework>` de cada `.csproj` |
 | Paquetes NuGet | Una versión por paquete para toda la solución | `Directory.Packages.props` |
+| `dotnet-ef` | Igual a la versión de EF Core | `.config/dotnet-tools.json` |
 
 Las versiones de los paquetes NuGet se declaran solo en `Directory.Packages.props`; los `.csproj` referencian el paquete sin `Version`. Para agregar o actualizar un paquete se cambia únicamente ese archivo.
 
@@ -94,126 +71,74 @@ dotnet build life-backend.slnx
 dotnet run --project API
 ```
 
-La API escucha en `http://localhost:5041` y `https://localhost:7183`. Para levantar la base de datos local antes de ejecutarla, ver "Docker para desarrollo local".
+La API escucha en `http://localhost:5041` y, con el perfil `https`, también en `https://localhost:7183`. Para levantar la base de datos local antes de ejecutarla, ver "Docker para desarrollo local".
 
-## Pruebas unitarias
+## Entornos y configuración
 
-Las pruebas unitarias viven en `life-backend/tests/`, separadas del código de producción, con un proyecto xUnit por capa probada. No acceden a base de datos ni a red. Las pruebas de `Infrastructure`, `Persistence` y las de integración no van aquí (las de integración de la API están en `tests/API.Tests`, ver más abajo).
+El backend tiene tres entornos, que se eligen con la variable `ASPNETCORE_ENVIRONMENT`. Cada uno lee `appsettings.json` y encima `appsettings.<Entorno>.json`:
 
-| Proyecto (en `tests/`) | Qué prueba | Referencia a |
-|---|---|---|
-| `tests/Domain.Tests` | Las reglas de `Domain` | `Domain` |
-| `tests/Application.Tests` | Los casos de uso y validaciones de `Application`; usa NSubstitute para simular dependencias | `Application` |
+| Entorno | `ASPNETCORE_ENVIRONMENT` | Archivo | Base de datos (`Database:Name`) | URL local |
+|---|---|---|---|---|
+| Desarrollo | `Development` | `appsettings.Development.json` | `ModulLifeDev` | `http://localhost:5041` |
+| Pruebas | `Testing` | `appsettings.Testing.json` | `ModulLifeApiTest` | `http://localhost:5042` |
+| Producción | `Production` | `appsettings.Production.json` | `ModulLifeProd` | La define el despliegue |
 
-Las aserciones son las de xUnit (`Assert`). Cada proyecto de pruebas respeta la regla de dependencias: solo referencia la capa que prueba. Las dependencias y la configuración de pruebas del backend son propias: no se comparten con las del frontend. Las versiones están centralizadas en `Directory.Packages.props`.
+Cada entorno usa su propia base de datos: los datos de producción no se usan fuera de producción. Los archivos versionados solo llevan el nombre de la base; el servidor, el usuario y la contraseña no se versionan.
+
+### Cambiar de entorno
 
 Desde `life-backend`:
 
 ```powershell
-# Todas las pruebas de una capa
-dotnet test tests/Domain.Tests/Domain.Tests.csproj
-dotnet test tests/Application.Tests/Application.Tests.csproj
+# Desarrollo (por defecto con dotnet run)
+dotnet run --project API
+
+# Pruebas
+dotnet run --project API --launch-profile testing
+
+# Producción (sin perfil de lanzamiento; la variable la define el servidor)
+$env:ASPNETCORE_ENVIRONMENT = "Production"
+dotnet run --project API --no-launch-profile
 ```
 
-### Convención
+Los ajustes propios de un entorno se agregan en su `appsettings.<Entorno>.json`, nunca en el código.
 
-- Las carpetas y archivos de cada proyecto replican la estructura de la capa que prueban (`Application/Tareas/CrearTarea.cs` se prueba en `tests/Application.Tests/Tareas/CrearTareaTests.cs`).
-- Una clase por clase probada, con el sufijo `Tests`, en el namespace `<Proyecto>.<Carpeta>` (por ejemplo `Application.Tests.Tareas`).
-- Nombre del método: `Metodo_Escenario_ResultadoEsperado`, por ejemplo `Crear_ConTituloVacio_LanzaExcepcion`.
-- Cada caso de uso o regla lleva como mínimo una prueba del caso exitoso, una de cada rechazo y una por cada valor límite.
-- Cada prueba tiene tres partes separadas por una línea en blanco: preparación, qué se prueba y la prueba (las aserciones).
+### Variables de entorno y secretos
 
-```csharp
-[Fact]
-public void AddApplication_ConColeccionValida_DevuelveLaMismaColeccion()
-{
-    var services = new ServiceCollection();
+La configuración se lee de las fuentes estándar de ASP.NET Core, de menor a mayor prioridad: `appsettings.json`, `appsettings.<Entorno>.json`, `user-secrets` (solo en desarrollo), `appsettings.Development.local.json` (solo en desarrollo) y variables de entorno. Los archivos versionados no llevan secretos ni cadenas de conexión.
 
-    var resultado = services.AddApplication();
-
-    Assert.Same(services, resultado);
-}
-```
-
-Todo cambio de lógica en `Domain` o `Application` incluye su prueba en el proyecto de su capa, y `dotnet test` debe pasar antes de pedir revisión.
-
-## Entorno de pruebas de integración
-
-Las pruebas de integración y de flujos críticos usan una base SQL Server aislada por proyecto de pruebas, que se crea y se elimina en cada ejecución. El nombre es `ModulLife<Proyecto>Test`: `ModulLifeApiTest` para `API.Tests` y `ModulLifeSupportTest` para `Support.Tests`. Preparar o limpiar una base no afecta a las demás. Los ambientes usan `ModulLifeDev` (desarrollo) y `ModulLifeProd` (producción).
-
-Nunca se usa la base de desarrollo ni la de producción: `TestDatabaseOptions` rechaza cualquier nombre de base que no termine en `Test` (incluidos `ModulLifeDev`, `ModulLifeProd` y `master`) y siempre reemplaza la base indicada en la cadena de conexión.
-
-| Proyecto | Qué contiene |
-|---|---|
-| `Support` | Biblioteca reutilizable desde cualquier proyecto de pruebas: ciclo de vida de la base (`TestDatabase`), fixture de xUnit (`TestDatabaseFixture`), esquema provisional (`Schema.sql`), datos semilla (`SeedData`) y constructores (`TestUserBuilder`, `TestWorkspaceBuilder`) |
-| `tests/Support.Tool` | Comando `prepare` / `clean` para preparar o limpiar el entorno a mano |
-| `tests/Support.Tests` | Pruebas del propio entorno; las que necesitan la base se omiten si no hay cadena de conexión |
-
-Los datos semilla y constructores viven en `life-backend/Support` y son solo del backend: el frontend mantiene su propia configuración y dependencias de pruebas y no los comparte. Los usuarios (`dbo.Users`) y espacios de trabajo (`dbo.Workspaces`) de `Support` son tipos provisionales de pruebas. Cuando existan las entidades y las migraciones, `Schema.sql` y los constructores se reemplazan por ellas.
-
-### Configurar la cadena de conexión
-
-Se apunta al servidor de `docker-compose.yml` (la base de `Database=` se ignora). Desde `life-backend`:
-
-```powershell
-dotnet user-secrets set "ConnectionStrings:Test" "Server=localhost,1433;User Id=sa;Password=<contraseña de .env>;TrustServerCertificate=True" --project Support
-```
-
-También se acepta la variable de entorno `ConnectionStrings__Test`. La cadena no se versiona. El nombre de la base no se configura: sale del proyecto de pruebas que la usa.
-
-### Preparar y limpiar con un único comando
-
-```powershell
-docker compose up -d
-dotnet run --project tests/Support.Tool -- prepare Api
-dotnet run --project tests/Support.Tool -- clean Api
-```
-
-El último argumento es el proyecto de pruebas (`Api` o `Support`) y define la base: `Api` usa `ModulLifeApiTest`. `prepare` crea la base si no existe, recrea el esquema y carga los datos semilla, así que siempre parte del mismo estado. `clean` elimina esa base completa y no deja datos residuales ni afecta a las bases de otros proyectos.
-
-### Datos semilla cargados por `prepare`
-
-| Cuenta | Correo | Rol en la semilla |
+| Clave | Qué es | Dónde se define |
 |---|---|---|
-| Test owner | `owner@life.test` | Propietario de "Main test workspace" |
-| Test member | `member@life.test` | Usuario adicional |
+| `ConnectionStrings:Default` | Cadena de conexión a SQL Server | `user-secrets` o `appsettings.Development.local.json` en desarrollo; variable `ConnectionStrings__Default` en el resto |
+| `ConnectionStrings:Test` | Cadena del servidor para las pruebas de integración | `user-secrets` de `Support` o variable `ConnectionStrings__Test` |
+| `Database:Name` | Nombre de la base de cada entorno | Se versiona en `appsettings.<Entorno>.json` |
+| `Cors:AllowedOrigins` | Orígenes permitidos por CORS | Se versiona en `appsettings.<Entorno>.json`; en producción, variable `Cors__AllowedOrigins__0`, etc. |
 
-Todavía no hay autenticación, por lo que las cuentas no llevan contraseña; se agrega cuando exista ese modelo.
-
-### Usar el entorno desde otro proyecto de pruebas
-
-Se referencia `Support` y se usa el fixture, que prepara la base antes de las pruebas de la clase y la elimina al terminar. Cada proyecto de pruebas declara su fixture con el nombre del proyecto, que define su base (`ModulLife<Proyecto>Test`):
-
-```csharp
-public sealed class DatabaseFixture : TestDatabaseFixture
-{
-    public DatabaseFixture() : base("MyProject")
-    {
-    }
-}
-
-public class MyIntegrationTests : IClassFixture<DatabaseFixture>
-{
-    private readonly DatabaseFixture _database;
-
-    public MyIntegrationTests(DatabaseFixture database) => _database = database;
-}
-```
-
-Para datos adicionales se usan los constructores, por ejemplo `new TestUserBuilder().WithEmail("other@life.test").Build()`, y `TestDatabase.InsertAsync` para guardarlos. Las pruebas que dependen de la base se marcan con `[RequiresTestDatabaseFact]` para omitirlas cuando no hay cadena configurada.
-
-### Pruebas de integración de la API
-
-`tests/API.Tests` levanta la aplicación completa en memoria (`WebApplicationFactory<Program>`, entorno `Testing`) y la prueba por HTTP contra la base `ModulLifeApiTest`. Referencia `API` y `Support`, y se ejecuta por separado de las unitarias:
+Opción A, `user-secrets` (recomendada; el secreto queda fuera del repositorio). Desde `life-backend`:
 
 ```powershell
-dotnet test tests/API.Tests/API.Tests.csproj
+dotnet user-secrets set "ConnectionStrings:Default" "<cadena de conexión local>" --project API
+dotnet user-secrets list --project API
 ```
 
-- `ApiFactory` es una sola instancia compartida (colección `Api`): prepara la base al empezar y la elimina al terminar, y las clases se ejecutan en serie. Sin `ConnectionStrings:Test` las pruebas con base se omiten; las que no la necesitan (por ejemplo, el 401) corren igual.
-- `ApiFactory.CreateApiClient(userId)` devuelve un cliente autenticado con la cabecera `X-Test-User` y el esquema de autenticación de pruebas; sin argumento, el cliente es anónimo.
-- Cada prueba crea sus propios datos con `TemporaryWorkspace.CreateAsync(...)` y los elimina al terminar (`await using`), así no depende del orden ni deja residuos.
-- Hay un `TestWorkspacesController` que solo existe en el servidor de pruebas: representa el patrón de permiso del propietario y aislamiento por espacio de trabajo sobre las tablas provisionales. Cuando existan la autenticación y los espacios de trabajo reales, se sustituye por sus endpoints y se reutilizan las mismas pruebas.
+Opción B, archivo local ignorado por Git. Desde `life-backend/API`:
+
+```powershell
+Copy-Item appsettings.Development.local.example.json appsettings.Development.local.json
+```
+
+Después se reemplaza el valor de `ConnectionStrings:Default` en `appsettings.Development.local.json`. La plantilla `appsettings.Development.local.example.json` sí se versiona y solo contiene un valor de ejemplo.
+
+### Secretos de CI
+
+En GitHub Actions los secretos se definen en el repositorio (Settings > Secrets and variables > Actions) y se pasan al proceso como variable de entorno; nunca se escriben en el flujo de trabajo. Secreto requerido: `DB_CONNECTION_STRING`, usado así:
+
+```yaml
+env:
+  ConnectionStrings__Default: ${{ secrets.DB_CONNECTION_STRING }}
+```
+
+Los secretos de producción se gestionan fuera de este repositorio.
 
 ## Docker para desarrollo local
 
@@ -263,82 +188,6 @@ Se usa `Database=master` porque la base `ModulLifeDev` se crea con las migracion
 
 Cuando el proyecto necesite otro servicio (caché, cola de mensajes, correo de pruebas), se agrega un bloque bajo `services:` en `docker-compose.yml`, con imagen fija, puerto, volumen si guarda datos y sus variables en `.env` y `.env.example`. Después se agrega una fila a la tabla de arriba. Los Dockerfiles de la API y de la app, y los contenedores en CI y producción, no forman parte de esta configuración.
 
-## Integración continua
-
-El flujo `.github/workflows/backend.yml` tiene dos jobs en GitHub Actions: `Compilar backend` (restaura y compila `life-backend.slnx`) y `Validar código del backend` (ejecuta, en pasos separados, `dotnet format --verify-no-changes` y una compilación con las advertencias como errores, para que los analizadores y las reglas de estilo del `.editorconfig` bloqueen el pull request). Las reglas son las versionadas en el repositorio: `.editorconfig` y `Directory.Build.props` (`EnforceCodeStyleInBuild` y `AnalysisLevel`). Se ejecutan en los pull requests hacia `review` y `main`, y en los push a `review`, `main` y `release/**`, cuando cambia algo en `life-backend`. La versión del SDK sale de `global.json` y los paquetes de NuGet se guardan en caché según `Directory.Packages.props` y los `.csproj`. La compilación no necesita secretos.
-
-Para que un error de compilación o de validación bloquee el pull request, en GitHub (Settings > Branches > regla de protección de `review` y `main`) se activa "Require status checks to pass before merging" y se marcan los checks `Compilar backend` y `Validar código del backend`.
-
-Para reproducir los mismos pasos en local: `dotnet restore life-backend.slnx`, `dotnet build life-backend.slnx --configuration Release`, `dotnet format life-backend.slnx --verify-no-changes` y `dotnet build life-backend.slnx --configuration Release -warnaserror`.
-
-## Entornos
-
-El backend tiene tres entornos, que se eligen con la variable `ASPNETCORE_ENVIRONMENT`. Cada uno lee `appsettings.json` y encima `appsettings.<Entorno>.json`:
-
-| Entorno | `ASPNETCORE_ENVIRONMENT` | Archivo | Base de datos (`Database:Name`) | URL local |
-|---|---|---|---|---|
-| Desarrollo | `Development` | `appsettings.Development.json` | `ModulLifeDev` | `http://localhost:5041` |
-| Pruebas | `Testing` | `appsettings.Testing.json` | `ModulLifeApiTest` | `http://localhost:5042` |
-| Producción | `Production` | `appsettings.Production.json` | `ModulLifeProd` | La define el despliegue |
-
-Cada entorno usa su propia base de datos: los datos de producción no se usan fuera de producción. Los archivos versionados solo llevan el nombre de la base; el servidor, el usuario y la contraseña no se versionan (ver Convenciones).
-
-### Cambiar de entorno
-
-Desde `life-backend`:
-
-```powershell
-# Desarrollo (por defecto con dotnet run)
-dotnet run --project API
-
-# Pruebas
-dotnet run --project API --launch-profile testing
-
-# Producción (sin perfil de lanzamiento; la variable la define el servidor)
-$env:ASPNETCORE_ENVIRONMENT = "Production"
-dotnet run --project API --no-launch-profile
-```
-
-Los ajustes propios de un entorno se agregan en su `appsettings.<Entorno>.json`, nunca en el código. Las cadenas de conexión y los secretos se configuran con `user-secrets` o `appsettings.Development.local.json`.
-
-## Variables de entorno y secretos
-
-La configuración se lee de las fuentes estándar de ASP.NET Core, de menor a mayor prioridad: `appsettings.json`, `appsettings.<Entorno>.json`, `user-secrets` (solo en desarrollo), `appsettings.Development.local.json` (solo en desarrollo) y variables de entorno. Los archivos versionados no llevan secretos ni cadenas de conexión.
-
-| Clave | Qué es | Dónde se define |
-|---|---|---|
-| `ConnectionStrings:Default` | Cadena de conexión a SQL Server | `user-secrets` o `appsettings.Development.local.json` en desarrollo; variable `ConnectionStrings__Default` en el resto |
-
-La clave `Database:Name` (nombre de la base de cada entorno) sí se versiona en `appsettings.<Entorno>.json`.
-
-### Configuración local
-
-Opción A, `user-secrets` (recomendada; el secreto queda fuera del repositorio). Desde `life-backend`:
-
-```powershell
-dotnet user-secrets set "ConnectionStrings:Default" "<cadena de conexión local>" --project API
-dotnet user-secrets list --project API
-```
-
-Opción B, archivo local ignorado por Git. Desde `life-backend/API`:
-
-```powershell
-Copy-Item appsettings.Development.local.example.json appsettings.Development.local.json
-```
-
-Después se reemplaza el valor de `ConnectionStrings:Default` en `appsettings.Development.local.json`. La plantilla `appsettings.Development.local.example.json` sí se versiona y solo contiene un valor de ejemplo.
-
-### Secretos de CI
-
-En GitHub Actions los secretos se definen en el repositorio (Settings > Secrets and variables > Actions) y se pasan al proceso como variable de entorno; nunca se escriben en el flujo de trabajo. Secreto requerido: `DB_CONNECTION_STRING`, usado así:
-
-```yaml
-env:
-  ConnectionStrings__Default: ${{ secrets.DB_CONNECTION_STRING }}
-```
-
-Los secretos de producción se gestionan fuera de este repositorio.
-
 ## Acceso a la base de datos
 
 `Persistence` accede a SQL Server con EF Core (`Microsoft.EntityFrameworkCore.SqlServer`). `AddPersistence(configuration)` registra `LifeDbContext` con tiempo de vida Scoped y la cadena `ConnectionStrings:Default` del ambiente (ver "Variables de entorno y secretos"). La cadena nunca se versiona. Si falta, el error se produce al pedir el `DbContext` por primera vez, con un mensaje que indica dónde configurarla; la API no falla al arrancar. El modelo de datos de los módulos se agrega después en `Persistence`.
@@ -367,13 +216,13 @@ El nombre lo define quien genera la migración y describe el cambio en inglés, 
 
 ### Herramienta
 
-`dotnet-ef` se fija en `.config/dotnet-tools.json` (versión igual a la de EF Core en `Directory.Packages.props`), así que todos usan la misma. Una sola vez, desde `life-backend`:
+`dotnet-ef` se fija en `.config/dotnet-tools.json`, así que todos usan la misma versión. Una sola vez, desde `life-backend`:
 
 ```powershell
 dotnet tool restore
 ```
 
-Los comandos usan `Persistence` como proyecto de migraciones y `API` como proyecto de inicio, y leen la cadena `ConnectionStrings:Default` del ambiente (ver "Variables de entorno y secretos"). Generar una migración no se conecta a la base.
+Los comandos usan `Persistence` como proyecto de migraciones y `API` como proyecto de inicio, y leen la cadena `ConnectionStrings:Default` del ambiente. Generar una migración no se conecta a la base.
 
 ### Generar y revisar una migración
 
@@ -411,7 +260,7 @@ La estructura común de la API vive en el proyecto `API`:
 
 - `Extensions/ApiServiceCollectionExtensions.cs` registra controladores, versionado, OpenAPI y CORS.
 - `Extensions/ApiApplicationBuilderExtensions.cs` define el pipeline de middleware; el orden de las llamadas es el orden de ejecución (Swagger en Desarrollo, HTTPS, CORS, autorización, controladores). Los nuevos middleware se agregan ahí, no en `Program.cs`.
-- `Controllers/` contiene los controladores.
+- `Controllers/` contiene los controladores y `Filters/` los filtros globales.
 
 ### Convención de rutas y versionado
 
@@ -434,8 +283,8 @@ Un origen no configurado no recibe la cabecera `Access-Control-Allow-Origin` y e
 
 ### Validación de entradas y contratos (DTOs)
 
-- Los endpoints reciben y devuelven DTOs (por ejemplo `HouseStatusResponse`), nunca entidades de `Domain`. Los DTOs de petición y respuesta viven en `Application`, en la carpeta de su funcionalidad (`Application/<Funcionalidad>/`).
-- Cada DTO de petición tiene su validador: una clase que hereda de `AbstractValidator<TPetición>` (FluentValidation) en `Application`. `AddApplication` registra automáticamente todos los validadores del ensamblado.
+- Los endpoints reciben y devuelven DTOs (por ejemplo `HouseStatusResponse`), nunca entidades de `Domain`. Los DTOs de petición y respuesta viven en `Application`, en la carpeta de su funcionalidad (`Application/<Feature>/`).
+- Cada DTO de petición tiene su validador: una clase que hereda de `AbstractValidator<TRequest>` (FluentValidation) en `Application`. `AddApplication` registra automáticamente todos los validadores del ensamblado.
 - `API/Filters/ValidationFilter.cs` es un filtro global: valida cada argumento de la acción que tenga validador registrado. Un endpoint nuevo solo necesita su DTO y su validador; el controlador no llama a la validación.
 - Si hay errores responde `400` con `application/problem+json` y los campos con sus mensajes:
 
@@ -458,58 +307,209 @@ Un origen no configurado no recibe la cabecera `Access-Control-Allow-Origin` y e
 
 En Desarrollo, `http://localhost:5041/swagger` abre Swagger UI y el documento OpenAPI está en `/openapi/v1.json`. `API/API.http` trae peticiones de ejemplo para la ruta base versionada y para comprobar CORS.
 
+## Pruebas unitarias
+
+Las pruebas unitarias viven en `life-backend/tests/`, separadas del código de producción, con un proyecto xUnit por capa probada. No acceden a base de datos ni a red. Las pruebas de `Infrastructure`, `Persistence` y las de integración no van aquí (las de integración de la API están en `tests/API.Tests`, ver más abajo).
+
+| Proyecto (en `tests/`) | Qué prueba | Referencia a |
+|---|---|---|
+| `Domain.Tests` | Las reglas de `Domain` | `Domain` |
+| `Application.Tests` | Los casos de uso y validaciones de `Application`; usa NSubstitute para simular dependencias | `Application` |
+
+Las aserciones son las de xUnit (`Assert`). Cada proyecto de pruebas respeta la regla de dependencias: solo referencia la capa que prueba. Las dependencias y la configuración de pruebas del backend son propias: no se comparten con las del frontend. Las versiones están centralizadas en `Directory.Packages.props`.
+
+Desde `life-backend`:
+
+```powershell
+dotnet test tests/Domain.Tests/Domain.Tests.csproj
+dotnet test tests/Application.Tests/Application.Tests.csproj
+```
+
+### Convención
+
+- Las carpetas y archivos de cada proyecto replican la estructura de la capa que prueban (`Application/Tasks/CreateTask.cs` se prueba en `tests/Application.Tests/Tasks/CreateTaskTests.cs`).
+- Una clase por clase probada, con el sufijo `Tests`, en el namespace `<Proyecto>.<Carpeta>` (por ejemplo `Application.Tests.Tasks`).
+- Nombre del método: `Metodo_Escenario_ResultadoEsperado` con las tres partes en inglés, por ejemplo `Create_WithEmptyTitle_ThrowsException`.
+- Cada caso de uso o regla lleva como mínimo una prueba del caso exitoso, una de cada rechazo y una por cada valor límite.
+- Cada prueba tiene tres partes separadas por una línea en blanco: preparación, qué se prueba y la prueba (las aserciones).
+
+```csharp
+[Fact]
+public void AddApplication_WithValidCollection_ReturnsSameCollection()
+{
+    var services = new ServiceCollection();
+
+    var result = services.AddApplication();
+
+    Assert.Same(services, result);
+}
+```
+
+### Entorno de pruebas de integración
+
+Las pruebas de integración y de flujos críticos usan una base SQL Server aislada por proyecto de pruebas, que se crea y se elimina en cada ejecución. El nombre es `ModulLife<Proyecto>Test`: `ModulLifeApiTest` para `API.Tests` y `ModulLifeSupportTest` para `Support.Tests`. Preparar o limpiar una base no afecta a las demás.
+
+Nunca se usa la base de desarrollo ni la de producción: `TestDatabaseOptions` rechaza cualquier nombre de base que no termine en `Test` (incluidos `ModulLifeDev`, `ModulLifeProd` y `master`) y siempre reemplaza la base indicada en la cadena de conexión.
+
+| Proyecto | Qué contiene |
+|---|---|
+| `Support` | Biblioteca reutilizable desde cualquier proyecto de pruebas: ciclo de vida de la base (`TestDatabase`), fixture de xUnit (`TestDatabaseFixture`), esquema provisional (`Schema.sql`), datos semilla (`SeedData`) y constructores (`TestUserBuilder`, `TestWorkspaceBuilder`) |
+| `tests/Support.Tool` | Comando `prepare` / `clean` para preparar o limpiar el entorno a mano |
+| `tests/Support.Tests` | Pruebas del propio entorno; las que necesitan la base se omiten si no hay cadena de conexión |
+| `tests/API.Tests` | Pruebas de integración de la API |
+
+Los datos semilla y constructores viven en `life-backend/Support` y son solo del backend: el frontend mantiene su propia configuración y dependencias de pruebas y no los comparte. Los usuarios (`dbo.Users`) y espacios de trabajo (`dbo.Workspaces`) de `Support` son tipos provisionales de pruebas. Cuando existan las entidades y las migraciones, `Schema.sql` y los constructores se reemplazan por ellas.
+
+#### Configurar la cadena de conexión
+
+Se apunta al servidor de `docker-compose.yml` (la base de `Database=` se ignora). Desde `life-backend`:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:Test" "Server=localhost,1433;User Id=sa;Password=<contraseña de .env>;TrustServerCertificate=True" --project Support
+```
+
+También se acepta la variable de entorno `ConnectionStrings__Test`. La cadena no se versiona. El nombre de la base no se configura: sale del proyecto de pruebas que la usa.
+
+#### Preparar y limpiar con un único comando
+
+```powershell
+docker compose up -d
+dotnet run --project tests/Support.Tool -- prepare Api
+dotnet run --project tests/Support.Tool -- clean Api
+```
+
+El último argumento es el proyecto de pruebas (`Api` o `Support`) y define la base: `Api` usa `ModulLifeApiTest`. `prepare` crea la base si no existe, recrea el esquema y carga los datos semilla, así que siempre parte del mismo estado. `clean` elimina esa base completa y no deja datos residuales ni afecta a las bases de otros proyectos.
+
+Datos semilla cargados por `prepare`:
+
+| Cuenta | Correo | Rol en la semilla |
+|---|---|---|
+| Test owner | `owner@life.test` | Propietario de "Main test workspace" |
+| Test member | `member@life.test` | Usuario adicional |
+
+Todavía no hay autenticación, por lo que las cuentas no llevan contraseña; se agrega cuando exista ese modelo.
+
+#### Usar el entorno desde otro proyecto de pruebas
+
+Se referencia `Support` y se usa el fixture, que prepara la base antes de las pruebas de la clase y la elimina al terminar. Cada proyecto de pruebas declara su fixture con el nombre del proyecto, que define su base (`ModulLife<Proyecto>Test`):
+
+```csharp
+public sealed class DatabaseFixture : TestDatabaseFixture
+{
+    public DatabaseFixture() : base("MyProject")
+    {
+    }
+}
+
+public class MyIntegrationTests : IClassFixture<DatabaseFixture>
+{
+    private readonly DatabaseFixture _database;
+
+    public MyIntegrationTests(DatabaseFixture database) => _database = database;
+}
+```
+
+Para datos adicionales se usan los constructores, por ejemplo `new TestUserBuilder().WithEmail("other@life.test").Build()`, y `TestDatabase.InsertAsync` para guardarlos. Las pruebas que dependen de la base se marcan con `[RequiresTestDatabaseFact]` para omitirlas cuando no hay cadena configurada.
+
+#### Pruebas de integración de la API
+
+`tests/API.Tests` levanta la aplicación completa en memoria (`WebApplicationFactory<Program>`, entorno `Testing`) y la prueba por HTTP contra la base `ModulLifeApiTest`. Referencia `API` y `Support`, y se ejecuta por separado de las unitarias:
+
+```powershell
+dotnet test tests/API.Tests/API.Tests.csproj
+```
+
+- `ApiFactory` es una sola instancia compartida (colección `Api`): prepara la base al empezar y la elimina al terminar, y las clases se ejecutan en serie. Sin `ConnectionStrings:Test` las pruebas con base se omiten; las que no la necesitan (por ejemplo, el 401) corren igual.
+- `ApiFactory.CreateApiClient(userId)` devuelve un cliente autenticado con la cabecera `X-Test-User` y el esquema de autenticación de pruebas; sin argumento, el cliente es anónimo.
+- Cada prueba crea sus propios datos con `TemporaryWorkspace.CreateAsync(...)` y los elimina al terminar (`await using`), así no depende del orden ni deja residuos.
+- Hay un `TestWorkspacesController` que solo existe en el servidor de pruebas: representa el patrón de permiso del propietario y aislamiento por espacio de trabajo sobre las tablas provisionales. Cuando existan la autenticación y los espacios de trabajo reales, se sustituye por sus endpoints y se reutilizan las mismas pruebas.
+
+## Integración continua
+
+El flujo `.github/workflows/backend.yml` tiene dos jobs en GitHub Actions: `Compilar backend` (restaura y compila `life-backend.slnx`) y `Validar código del backend` (ejecuta, en pasos separados, `dotnet format --verify-no-changes` y una compilación con las advertencias como errores, para que los analizadores y las reglas de estilo del `.editorconfig` bloqueen el pull request). Las reglas son las versionadas en el repositorio: `.editorconfig` y `Directory.Build.props` (`EnforceCodeStyleInBuild` y `AnalysisLevel`). Se ejecutan en los pull requests hacia `review` y `main`, y en los push a `review`, `main` y `release/**`, cuando cambia algo en `life-backend`. La versión del SDK sale de `global.json` y los paquetes de NuGet se guardan en caché según `Directory.Packages.props` y los `.csproj`. La compilación no necesita secretos. El CI no ejecuta `dotnet test`: las pruebas se corren en local antes de pedir revisión (ver "Validación final").
+
+Para que un error de compilación o de validación bloquee el pull request, en GitHub (Settings > Branches > regla de protección de `review` y `main`) se activa "Require status checks to pass before merging" y se marcan los checks `Compilar backend` y `Validar código del backend`.
+
+Para reproducir los mismos pasos en local, desde `life-backend`:
+
+```powershell
+dotnet restore life-backend.slnx
+dotnet build life-backend.slnx --configuration Release
+dotnet format life-backend.slnx --verify-no-changes
+dotnet build life-backend.slnx --configuration Release -warnaserror
+```
+
 ## Control de versiones
 
 El `.gitignore` excluye `bin/`, `obj/`, los archivos de entorno, los secretos y los archivos de IDE (`.idea/`, `.vs/`, `.vscode/`). Tras compilar, `git status` no debe mostrar archivos de `bin/` ni `obj/`.
 
 ## Reglas y estándares de desarrollo
 
-Referencia para desarrollar, mantener y modificar el backend (.NET 10, C#, SQL Server y Entity Framework Core). Las reglas de formato, idioma y comentarios de las secciones anteriores siguen vigentes; aquí se completan. Las reglas generales (puntos 1 a 4 y 7 a 12) son las mismas que las del README del frontend, y las específicas de cada tecnología están en el punto 5.
+Referencia para desarrollar, mantener y modificar el backend (.NET 10, C#, SQL Server y Entity Framework Core). Las reglas generales (puntos 1 a 5 y 7 a 9) son las mismas que las del README del frontend; las específicas de cada tecnología están en el punto 6.
 
-### 1. Formato y análisis estático
+### 1. Regla del desarrollador
+
+Esta regla tiene prioridad sobre las demás al implementar o modificar algo: reutilizar antes que crear, extender antes que duplicar y modificar solo lo necesario.
+
+- Antes de implementar, se inspecciona el código para identificar clases, interfaces, servicios, métodos, validadores y patrones reutilizables, y se usan de preferencia. No se crea una implementación nueva si ya existe una que cubra la necesidad; si hay que ampliarla, se modifica o se extiende la existente.
+- Se implementa únicamente lo necesario para el objetivo. No se hacen refactorizaciones, mejoras ni cambios de comportamiento, de contratos o de procesos fuera del alcance. Una mejora que lo exceda se indica en el informe final, sin implementarla.
+- Se revisan las referencias de lo modificado para detectar efectos secundarios y se comprueba que no cambie nada fuera del alcance.
+- Las pruebas son obligatorias: todo cambio de lógica en `Domain` o `Application` incluye su prueba en el proyecto de su capa, con la estructura de tres partes de "Pruebas unitarias", y `dotnet test` debe pasar antes de pedir revisión.
+- No se altera la funcionalidad existente por motivos de estilo.
+- No se cambian contratos de la API, estructuras de datos ni reglas de negocio si el objetivo no lo requiere.
+- No se eliminan pruebas existentes.
+- No se modifican las migraciones de EF Core ni otros archivos históricos por motivos de normalización (están marcadas como código generado en `.editorconfig`).
+- No se reorganizan la arquitectura ni las carpetas sin necesidad, y no se agregan funcionalidades ajenas al objetivo.
+- Si una corrección exige tocar funcionalidad o arquitectura fuera del alcance, se documenta el problema en lugar de cambiarlo.
+
+### 2. Formato y estilo
 
 - El código se formatea con las configuraciones versionadas: `.editorconfig`, `Directory.Build.props` (`EnforceCodeStyleInBuild` y `AnalysisLevel`), los analizadores de Roslyn y `dotnet format`.
+- `.editorconfig` define: indentación de 4 espacios en C# y 2 en JSON, XML y YAML, ancho de línea objetivo de 110 caracteres, finales de línea CRLF, UTF-8, `using` fuera del namespace con `System` primero, namespaces con alcance de archivo y llaves siempre. Visual Studio, Rider y VS Code lo leen sin configuración adicional.
+- El formato no depende de carpetas de IDE: `.idea/`, `.vs/` y `.vscode/` no se versionan y están en el `.gitignore`.
+- El `.gitattributes` de la raíz del repositorio fuerza CRLF en `life-backend` para que `dotnet format` dé el mismo resultado en Windows y en el CI de Linux. `dotnet format` no parte las líneas largas: el límite de 110 se respeta a mano y el IDE lo muestra con la regla `max_line_length`.
 - No se introducen configuraciones nuevas ni se modifican las existentes sin una justificación técnica, y ninguna regla nueva contradice las actuales.
 - Las mismas convenciones se aplican a todos los archivos equivalentes: una clase, una prueba o un `.csproj` nuevo se formatea igual que los existentes.
 
-### 2. Idioma y nomenclatura
+Desde `life-backend`:
 
-- Nombres de archivos, carpetas, namespaces, clases, interfaces, métodos, propiedades, variables y constantes, en inglés (ver "Idioma del código").
-- Convenciones oficiales de C#: `PascalCase` para clases, interfaces (con prefijo `I`), métodos, propiedades y constantes; `camelCase` para variables locales y parámetros; `_camelCase` para campos privados.
-- Un identificador existente en español se corrige solo cuando el cambio lo toca o lo requiere, y en el mismo cambio se actualizan todas sus referencias. Los ejemplos de este README que usan nombres en español (`Tareas/`, `CrearTarea`) son ilustrativos y no son un modelo a seguir.
+```powershell
+dotnet format life-backend.slnx                        # aplicar el formato
+dotnet format life-backend.slnx --verify-no-changes    # comprobar sin modificar archivos
+```
+
+### 3. Idioma del código y nomenclatura
+
+- Todo el código se escribe en inglés: nombres de archivos, carpetas, namespaces, clases, interfaces, métodos, propiedades, variables, constantes, rutas, campos de JSON, nombres de las pruebas (`Metodo_Escenario_Resultado` con las tres partes en inglés) y mensajes de excepción. La documentación (README) y los textos que ve el usuario final siguen en español; no se traducen ni el contenido de negocio que debe seguir en español.
+- Convenciones oficiales de C#, definidas en `.editorconfig`: `PascalCase` para tipos, interfaces (con prefijo `I`), métodos, propiedades y constantes; `camelCase` para variables locales y parámetros; `_camelCase` para campos privados.
+- Un identificador existente en español se corrige solo cuando el cambio lo toca o lo requiere, y en el mismo cambio se actualizan todas sus referencias.
 - Los términos son los mismos que en el frontend (por ejemplo `Workspace`, `Task`), para que un concepto tenga un único nombre en todo el proyecto.
-- No se traducen los textos que ve el usuario ni el contenido de negocio que debe seguir en español.
+- El esquema provisional de `Support` (`dbo.Users`, `dbo.Workspaces`) también está en inglés; cuando existan las entidades y migraciones reales, las reemplazan.
 
-### 3. Comentarios y limpieza
+### 4. Comentarios y limpieza
 
-- En los archivos que se crean o modifican se eliminan los comentarios innecesarios, redundantes u obsoletos; no se explica código evidente. Se conservan las directivas para el compilador y los analizadores (`#pragma`, `[SuppressMessage]` justificado, `#nullable`), y la documentación XML (`///`) de los contratos y de la API pública o la que genera documentación. No se elimina documentación externa ni técnica existente.
+- No se agregan comentarios salvo que sean necesarios: solo cuando explican un porqué que el código no deja claro por sí mismo. No se comenta lo que el código ya expresa y no se deja código comentado.
+- En los archivos que se crean o modifican se eliminan los comentarios innecesarios, redundantes u obsoletos. Se conservan las directivas para el compilador y los analizadores (`#pragma`, `[SuppressMessage]` justificado, `#nullable`), la documentación XML (`///`) de los contratos y de la API pública o la que genera documentación, y la documentación externa y técnica existente.
 - Se eliminan los `using`, variables, métodos y código muerto sin uso (el IDE los marca con IDE0005 y similares), y las duplicaciones innecesarias. No se agregan abstracciones ni patrones que no aporten valor.
 - Los archivos y carpetas se organizan por funcionalidad dentro de cada capa, sin dependencias circulares.
 
-### 4. Tipado y seguridad de tipos
+### 5. Tipado y seguridad de tipos
 
 - `Nullable` habilitado en todos los proyectos: los parámetros, propiedades y retornos reflejan si admiten `null`.
 - No se usa `dynamic` ni `object` si existe el tipo concreto o la interfaz; se evitan las conversiones inseguras (`(T)x`) a favor de `is`, `as` con comprobación o genéricos.
 - Los datos se representan con tipos concretos (DTOs, `record`, entidades); `var` solo cuando el tipo es evidente en la misma línea.
 - Los servicios, dependencias, propiedades, parámetros y respuestas están correctamente tipados.
 
-### 5. Reglas específicas del backend
+### 6. Reglas específicas del backend
 
-- Se respeta Clean Architecture y la "Regla de dependencias": `API`, `Application`, `Domain`, `Infrastructure` y `Persistence` mantienen sus responsabilidades, y no se agregan referencias distintas a las de la tabla de capas.
-- Los controladores no llevan lógica de negocio: reciben el DTO, invocan el caso de uso de `Application` y devuelven el resultado.
-- Todo se resuelve con inyección de dependencias, con contratos definidos en `Application` e implementados en `Infrastructure` y `Persistence`.
+- Se respeta Clean Architecture y la "Regla de dependencias": `API`, `Application`, `Domain`, `Infrastructure` y `Persistence` mantienen sus responsabilidades, cada responsabilidad vive en una sola capa y no se agregan referencias distintas a las de la tabla de capas.
+- Los controladores no llevan lógica de negocio: reciben el DTO, invocan el caso de uso de `Application` y devuelven el resultado. La entrada y la salida de la API usan DTOs (ver "Validación de entradas y contratos"); las entidades de `Domain` no se exponen.
+- Todo se resuelve con inyección de dependencias, con contratos definidos en `Application` e implementados en `Infrastructure` y `Persistence`. Los servicios se piden por constructor con su interfaz o tipo concreto. Si hay que resolver uno manualmente, se prefiere `GetRequiredService<T>()` a `GetService(Type)`, y `object` o `dynamic` no se usan para guardarlo. La resolución por `Type` en tiempo de ejecución solo se acepta cuando el tipo no se conoce en compilación, como en el `ValidationFilter`, que busca el validador de cada argumento.
+- No se crean mecanismos alternativos de resolución cuando ya existe uno (los métodos `AddApplication`, `AddInfrastructure` y `AddPersistence`). Los contratos se respetan tal como los define la arquitectura, y se aprovechan el autocompletado, la navegación y el análisis estático del IDE, que dependen de los tipos explícitos.
 - Las operaciones de E/S son asíncronas (`async`/`await`, métodos `Async`) y propagan el `CancellationToken` a las operaciones que lo aceptan (EF Core, `HttpClient`, etc.); no se bloquea con `.Result` ni `.Wait()`.
-- La entrada y la salida de la API usan DTOs (ver "Validación de entradas y contratos"); las entidades de `Domain` no se exponen.
 - En EF Core se evitan las consultas duplicadas y los problemas N+1: se cargan los datos relacionados con `Include` o proyecciones (`Select`) y no se consulta dentro de un bucle; las consultas de solo lectura usan `AsNoTracking()`.
 - Las excepciones y los errores de entrada se gestionan con los mecanismos centralizados (hoy el `ValidationFilter` y `ValidationProblemFactory`); no se atrapan excepciones en cada controlador para devolver respuestas ad hoc, y no se exponen detalles internos al cliente.
-- No se introducen patrones innecesarios (repositorios genéricos, mediadores, etc.) si el proyecto no los usa.
-
-### 6. Servicios, dependencias y autocompletado
-
-- Los servicios se piden por constructor con su interfaz o tipo concreto. Si hay que resolver uno manualmente, se prefiere `GetRequiredService<T>()` a `GetService(Type)`, y `object` o `dynamic` no se usan para guardarlo.
-- La resolución por `Type` en tiempo de ejecución solo se acepta cuando el tipo no se conoce en compilación, como en el `ValidationFilter`, que busca el validador de cada argumento.
-- No se crean mecanismos alternativos de resolución cuando ya existe uno (los métodos `AddApplication`, `AddInfrastructure` y `AddPersistence`).
-- Los contratos se respetan tal como los define la arquitectura; se aprovechan el autocompletado, la navegación y el análisis estático del IDE, que dependen de los tipos explícitos.
+- No se duplican servicios, utilidades, validaciones, consultas ni lógica de negocio, ni se crean sistemas independientes para lo que ya está centralizado. No se introducen patrones innecesarios (repositorios genéricos, mediadores, etc.) si el proyecto no los usa.
 
 ### 7. Seguridad y dependencias
 
@@ -519,31 +519,7 @@ Referencia para desarrollar, mantener y modificar el backend (.NET 10, C#, SQL S
 - No se agregan paquetes innecesarios: se reutilizan los de `Directory.Packages.props`, y las versiones se actualizan según la "Política de actualización", nunca por motivos estéticos.
 - La configuración de entorno solo cambia con una justificación técnica.
 
-### 8. Arquitectura y reutilización
-
-- Se respeta la arquitectura actual y las dependencias entre las capas establecidas.
-- No se duplican servicios, utilidades, validaciones, consultas ni lógica de negocio; no se crean sistemas independientes para lo que ya está centralizado.
-- Cada responsabilidad vive en una sola capa.
-
-### 9. Reutilizar antes de crear y control del alcance
-
-Esta regla tiene prioridad sobre las demás al implementar o modificar algo: reutilizar antes que crear, extender antes que duplicar y modificar solo lo necesario.
-
-- Antes de implementar, se inspecciona el código para identificar clases, interfaces, servicios, métodos, validadores y patrones reutilizables, y se usan de preferencia. No se crea una implementación nueva si ya existe una que cubra la necesidad; si hay que ampliarla, se modifica o se extiende la existente.
-- Se implementa únicamente lo necesario para el objetivo. No se hacen refactorizaciones, mejoras ni cambios de comportamiento, de contratos o de procesos fuera del alcance.
-- Se revisan las referencias de lo modificado para detectar efectos secundarios y se comprueba que no cambie nada fuera del alcance.
-- Una mejora que exceda el alcance se indica en el informe final, sin implementarla.
-
-### 10. Restricciones de modificación
-
-- No se altera la funcionalidad existente por motivos de estilo.
-- No se cambian contratos de la API, estructuras de datos ni reglas de negocio si el objetivo no lo requiere.
-- No se eliminan pruebas existentes.
-- No se modifican las migraciones de EF Core ni otros archivos históricos por motivos de normalización (están marcadas como código generado en `.editorconfig`).
-- No se reorganizan la arquitectura ni las carpetas sin necesidad, y no se agregan funcionalidades ajenas al objetivo.
-- Si una corrección exige tocar funcionalidad o arquitectura fuera del alcance, se documenta el problema en lugar de cambiarlo.
-
-### 11. Validación final
+### 8. Validación final
 
 Cuando se modifica código, antes de pedir revisión se ejecuta, desde `life-backend`:
 
@@ -561,6 +537,6 @@ dotnet test tests/Application.Tests/Application.Tests.csproj
 - Los errores que introdujo el cambio se corrigen; los problemas que ya existían y no se pueden corregir sin ampliar el alcance se identifican y se reportan.
 - No se afirma que una validación fue exitosa si no se ejecutó.
 
-### 12. Informe de resultados
+### 9. Informe de resultados
 
 Al terminar un cambio de código, el resumen incluye: (1) archivos creados, modificados y eliminados; (2) reglas de formato y estilo aplicadas; (3) identificadores corregidos al inglés; (4) comentarios eliminados y anotaciones técnicas conservadas; (5) limpieza realizada; (6) problemas de tipado detectados y corregidos; (7) resultado de la compilación; (8) resultado de las pruebas; (9) problemas preexistentes o pendientes; (10) posibles mejoras fuera del alcance.
