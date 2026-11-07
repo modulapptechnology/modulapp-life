@@ -44,6 +44,12 @@ public sealed class TestDatabase(TestDatabaseOptions options)
         }
     }
 
+    public async Task PrepareEmptyAsync()
+    {
+        await CleanAsync();
+        await ExecuteAsync(options.AdminConnectionString, $"CREATE DATABASE [{options.DatabaseName}];");
+    }
+
     public async Task CleanAsync()
     {
         await ExecuteAsync(

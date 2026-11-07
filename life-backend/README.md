@@ -283,7 +283,7 @@ Sobre una base vacía o inexistente, aplica todas las migraciones en orden y ter
 dotnet ef migrations list --project Persistence --startup-project API
 ```
 
-Las pruebas de `MigrationsTests` (en `API.Tests`) comprueban que la migración inicial existe y que el modelo coincide con el snapshot; si falla la segunda, falta generar una migración.
+Las pruebas de `MigrationsTests` (en `API.Tests`) comprueban que la migración inicial existe y que el modelo coincide con el snapshot; si falla la segunda, falta generar una migración. Las de `MigrationsTests` en `Infrastructure.Tests` aplican todas las migraciones sobre una base vacía de pruebas.
 
 ## Estructura de la API
 
@@ -388,6 +388,7 @@ Nunca se usa la base de desarrollo ni la de producción: `TestDatabaseOptions` r
 | `tests/Support.Tool` | Comando `prepare` / `clean` para preparar o limpiar el entorno a mano |
 | `tests/Support.Tests` | Pruebas del propio entorno; las que necesitan la base se omiten si no hay cadena de conexión |
 | `tests/API.Tests` | Pruebas de integración de la API |
+| `tests/Infrastructure.Tests` | Pruebas de integración de `Persistence` e `Infrastructure` contra SQL Server (ver "Pruebas de integración de Persistence e Infrastructure") |
 
 Los datos semilla y constructores viven en `life-backend/Support` y son solo del backend: el frontend mantiene su propia configuración y dependencias de pruebas y no los comparte. Los usuarios (`dbo.Users`) y espacios de trabajo (`dbo.Workspaces`) de `Support` son tipos provisionales de pruebas. Cuando existan las entidades y las migraciones, `Schema.sql` y los constructores se reemplazan por ellas.
 
@@ -454,6 +455,21 @@ dotnet test tests/API.Tests/API.Tests.csproj
 - `ApiFactory.CreateApiClient(userId)` devuelve un cliente autenticado con la cabecera `X-Test-User` y el esquema de autenticación de pruebas; sin argumento, el cliente es anónimo.
 - Cada prueba crea sus propios datos con `TemporaryWorkspace.CreateAsync(...)` y los elimina al terminar (`await using`), así no depende del orden ni deja residuos.
 - Hay un `TestWorkspacesController` que solo existe en el servidor de pruebas: representa el patrón de permiso del propietario y aislamiento por espacio de trabajo sobre las tablas provisionales. Cuando existan la autenticación y los espacios de trabajo reales, se sustituye por sus endpoints y se reutilizan las mismas pruebas.
+
+#### Pruebas de integración de Persistence e Infrastructure
+
+`tests/Infrastructure.Tests` prueba `Persistence` e `Infrastructure` contra SQL Server real, para detectar errores de mapeo, restricciones y esquema que no aparecen con pruebas en memoria. Está separado de las pruebas unitarias, referencia `Infrastructure`, `Persistence` y `Support` (no referencia `API`) y se ejecuta con un solo comando:
+
+```powershell
+dotnet test tests/Infrastructure.Tests/Infrastructure.Tests.csproj
+```
+
+- Usa la cadena `ConnectionStrings:Test` (ver "Configurar la cadena de conexión"), que no se versiona. Sin ella, las pruebas con base se omiten.
+- Cada ejecución parte de una base vacía: `TestDatabase.PrepareEmptyAsync` elimina y crea la base sin el esquema provisional ni datos semilla. La base se elimina al terminar.
+- `MigrationsTests` usa su propia base (`ModulLifeInfrastructureMigrationsTest`) y comprueba que todas las migraciones se aplican en orden sobre una base vacía, que no quedan migraciones pendientes ni cambios del modelo sin migrar, y que se crean las tablas `Users` y `ExternalAccounts`.
+- El resto de las pruebas comparten una base (`ModulLifeInfrastructureTest`, colección `MigratedDatabase`) con las migraciones ya aplicadas y se ejecutan en serie. Cada prueba crea sus propios datos con correos y cuentas únicos, así no depende del orden.
+- `UserPersistenceTests`, `ExternalAccountPersistenceTests` y `UnitOfWorkTests` cubren lectura, escritura, eliminación lógica, versión de fila y las restricciones de integridad: correo único entre usuarios activos sin distinguir mayúsculas, cuenta externa única por proveedor, clave foránea de la cuenta externa, longitud máxima y reversión de la transacción.
+- Todavía no hay repositorios: las pruebas usan `LifeDbContext` y `UnitOfWork`. Cuando existan, se agregan en `tests/Infrastructure.Tests/Persistence` con las mismas fixtures.
 
 ## Integración continua
 
@@ -561,7 +577,7 @@ dotnet test tests/Domain.Tests/Domain.Tests.csproj
 dotnet test tests/Application.Tests/Application.Tests.csproj
 ```
 
-- Las pruebas de integración (`tests/API.Tests`) usan la base de pruebas y se ejecutan solo en el entorno local (ver "Entorno de pruebas de integración").
+- Las pruebas de integración (`tests/API.Tests` y `tests/Infrastructure.Tests`) usan la base de pruebas y se ejecutan solo en el entorno local (ver "Entorno de pruebas de integración").
 - El formato, la compilación y los analizadores no reportan errores, ni `using` o referencias sin uso.
 - Las pruebas existentes y las de lo modificado pasan.
 - No cambiaron contratos ni comportamientos funcionales, y se revisaron los efectos secundarios en las funcionalidades relacionadas.

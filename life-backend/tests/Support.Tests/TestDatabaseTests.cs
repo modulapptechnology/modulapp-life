@@ -5,13 +5,13 @@ namespace Support.Tests;
 
 public class TestDatabaseTests
 {
-    private const string SupportProject = "Support";
-    private const string SecondProject = "SupportSecond";
+    private const string _supportProject = "Support";
+    private const string _secondProject = "SupportSecond";
 
     [RequiresTestDatabaseFact]
     public async Task PrepareAsync_CalledTwice_LeavesOnlyTheSeedData()
     {
-        var database = CreateDatabase(SupportProject);
+        var database = CreateDatabase(_supportProject);
         await database.PrepareAsync();
         await database.PrepareAsync();
 
@@ -22,9 +22,22 @@ public class TestDatabaseTests
     }
 
     [RequiresTestDatabaseFact]
+    public async Task PrepareEmptyAsync_AfterPrepare_LeavesADatabaseWithoutTablesOrSeedData()
+    {
+        var database = CreateDatabase(_supportProject);
+        await database.PrepareAsync();
+
+        await database.PrepareEmptyAsync();
+
+        var tables = await CountAsync(database.ConnectionString, "INFORMATION_SCHEMA.TABLES");
+        await database.CleanAsync();
+        Assert.Equal(0, tables);
+    }
+
+    [RequiresTestDatabaseFact]
     public async Task CleanAsync_AfterPrepare_DropsTheDatabase()
     {
-        var database = CreateDatabase(SupportProject);
+        var database = CreateDatabase(_supportProject);
         await database.PrepareAsync();
 
         await database.CleanAsync();
@@ -35,8 +48,8 @@ public class TestDatabaseTests
     [RequiresTestDatabaseFact]
     public async Task CleanAsync_OnOneProjectDatabase_LeavesTheOtherProjectDatabaseUntouched()
     {
-        var first = CreateDatabase(SupportProject);
-        var second = CreateDatabase(SecondProject);
+        var first = CreateDatabase(_supportProject);
+        var second = CreateDatabase(_secondProject);
         await first.PrepareAsync();
         await second.PrepareAsync();
 

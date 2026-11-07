@@ -4,14 +4,14 @@ namespace Support.Tests;
 
 public class TestDatabaseOptionsTests
 {
-    private const string Server = "Server=localhost,1433;User Id=sa;Password=x;TrustServerCertificate=True";
+    private const string _server = "Server=localhost,1433;User Id=sa;Password=x;TrustServerCertificate=True";
 
     [Theory]
     [InlineData("ModulLifeApiTest")]
     [InlineData("ModulLifeSupportTest")]
     public void Constructor_WithValidName_PointsTheConnectionToTheTestDatabase(string name)
     {
-        var options = new TestDatabaseOptions(Server, name);
+        var options = new TestDatabaseOptions(_server, name);
 
         Assert.Equal(name, new SqlConnectionStringBuilder(options.ConnectionString).InitialCatalog);
     }
@@ -19,7 +19,7 @@ public class TestDatabaseOptionsTests
     [Fact]
     public void Constructor_WithValidName_UsesMasterForTheAdminConnection()
     {
-        var options = new TestDatabaseOptions(Server, "ModulLifeApiTest");
+        var options = new TestDatabaseOptions(_server, "ModulLifeApiTest");
 
         Assert.Equal("master", new SqlConnectionStringBuilder(options.AdminConnectionString).InitialCatalog);
     }
@@ -33,7 +33,7 @@ public class TestDatabaseOptionsTests
     [InlineData("ModulLifeApiTest; DROP DATABASE x")]
     public void Constructor_WithNameNotEndingInTest_ThrowsException(string name)
     {
-        var create = () => new TestDatabaseOptions(Server, name);
+        var create = () => new TestDatabaseOptions(_server, name);
 
         Assert.Throws<InvalidOperationException>(create);
     }
@@ -49,7 +49,7 @@ public class TestDatabaseOptionsTests
     [Fact]
     public void Constructor_WithConnectionStringPointingToAnotherDatabase_StillUsesTheTestDatabase()
     {
-        var developmentConnection = Server + ";Database=ModulLifeDev";
+        var developmentConnection = _server + ";Database=ModulLifeDev";
 
         var options = new TestDatabaseOptions(developmentConnection, "ModulLifeApiTest");
 
@@ -71,8 +71,8 @@ public class TestDatabaseOptionsTests
     [Fact]
     public void ForProject_WithDifferentProjects_UsesDifferentDatabases()
     {
-        var api = TestDatabaseOptions.ForProject(Server, "Api");
-        var support = TestDatabaseOptions.ForProject(Server, "Support");
+        var api = TestDatabaseOptions.ForProject(_server, "Api");
+        var support = TestDatabaseOptions.ForProject(_server, "Support");
 
         Assert.NotEqual(api.DatabaseName, support.DatabaseName);
     }
@@ -90,7 +90,7 @@ public class TestDatabaseOptionsTests
     [Fact]
     public void ForProject_WithInvalidProjectName_ThrowsException()
     {
-        var create = () => TestDatabaseOptions.ForProject(Server, "Api; DROP DATABASE x");
+        var create = () => TestDatabaseOptions.ForProject(_server, "Api; DROP DATABASE x");
 
         Assert.Throws<InvalidOperationException>(create);
     }

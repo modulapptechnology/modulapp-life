@@ -8,7 +8,7 @@ public static class ValidationProblemFactory
 {
     public const string InvalidValueMessage = "El valor no es válido.";
 
-    private const string JsonPathPrefix = "$";
+    private const string _jsonPathPrefix = "$";
 
     public static BadRequestObjectResult Create(ActionContext context, ModelStateDictionary modelState)
     {
@@ -16,7 +16,7 @@ public static class ValidationProblemFactory
 
         foreach (var (key, entry) in modelState)
         {
-            var isJsonError = key.StartsWith(JsonPathPrefix, StringComparison.Ordinal);
+            var isJsonError = key.StartsWith(_jsonPathPrefix, StringComparison.Ordinal);
             var publicKey = isJsonError ? key.TrimStart('$', '.') : key;
 
             foreach (var error in entry.Errors)
