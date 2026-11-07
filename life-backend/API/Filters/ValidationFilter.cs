@@ -4,11 +4,6 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace API.Filters;
 
-/// <summary>
-/// Valida con FluentValidation cada argumento de la acción que tenga un
-/// <see cref="IValidator{T}"/> registrado.
-/// Si hay errores responde 400 con los campos y mensajes; si no hay validador, el argumento pasa sin cambios.
-/// </summary>
 public sealed class ValidationFilter(IServiceProvider services) : IAsyncActionFilter
 {
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)

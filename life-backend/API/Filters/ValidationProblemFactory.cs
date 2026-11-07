@@ -16,8 +16,6 @@ public static class ValidationProblemFactory
 
         foreach (var (key, entry) in modelState)
         {
-            // Los errores del cuerpo JSON (clave "$.campo") traen detalles internos como tipos, rutas y
-            // posiciones.
             var isJsonError = key.StartsWith(JsonPathPrefix, StringComparison.Ordinal);
             var publicKey = isJsonError ? key.TrimStart('$', '.') : key;
 

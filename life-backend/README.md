@@ -209,6 +209,20 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 
 **Historial de versiones.** Una entidad con contenido de texto que conserva su historial declara `IHasVersionHistory` (`Domain/Common`), un marcador sin miembros. El periodo de retención se configura en `VersionHistory:RetentionDays` (90 por defecto, en `appsettings.json`) y se lee con `VersionHistoryOptions`; un valor no numérico o menor que 1 hace fallar `AddPersistence`. El almacenamiento y la consulta del historial no forman parte de esta base.
 
+### Modelo de usuarios
+
+`User` y `ExternalAccount` (`Domain/Users`) heredan de `BaseEntity`, así que tienen GUID, auditoría, eliminación lógica y versión de fila. Se guardan en las tablas `Users` y `ExternalAccounts`, configuradas en `Persistence/Configuration` y expuestas en `LifeDbContext` (`Users`, `ExternalAccounts`).
+
+| Campo de `User` | Detalle |
+|---|---|
+| `Email` | Obligatorio, hasta 320 caracteres. Se compara sin distinguir mayúsculas (columna con collation `SQL_Latin1_General_CP1_CI_AS`, fija y no depende de la base). Índice único filtrado `[IsDeleted] = 0`: la base rechaza dos usuarios activos con el mismo correo; el de un usuario eliminado lógicamente se puede volver a registrar. |
+| `PasswordHash` | Solo el hash de la contraseña; el modelo no tiene ningún campo con la contraseña en texto plano. Es opcional para las cuentas que solo ingresan con una cuenta externa. La lógica de registro e inicio de sesión no forma parte de este modelo. |
+| `Name` | Obligatorio, hasta 200 caracteres. |
+| `Status` | `Pending` (valor inicial), `Active` o `Blocked`; se guarda como número. |
+| `AvatarUrl`, `Locale`, `TimeZone` | Datos de perfil opcionales. |
+
+`ExternalAccount` vincula un usuario con una cuenta de un proveedor externo: `UserId` (obligatorio, sin borrado en cascada), `Provider` (hasta 50) y `ProviderUserId` (hasta 256). El par proveedor + identificador es único entre las cuentas no eliminadas, por lo que la misma cuenta externa no se vincula a dos usuarios.
+
 ### Resiliencia ante fallos transitorios
 
 El `DbContext` usa `EnableRetryOnFailure`: ante un error transitorio de conexión reintenta hasta **6 veces**, con una espera máxima de **30 segundos** entre intentos (`DependencyInjection.MaxRetryCount` y `MaxRetryDelay` en `Persistence`). Un error que no es transitorio (credenciales inválidas, base inexistente) falla de inmediato sin reintentar. Para cambiar la política se modifican esas dos constantes.
@@ -225,7 +239,7 @@ Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Passwor
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate`: aún no hay modelo de datos de módulos, así que solo crea la tabla de historial `__EFMigrationsHistory`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 
