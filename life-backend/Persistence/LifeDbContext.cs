@@ -16,6 +16,8 @@ public class LifeDbContext(
 
     public DbSet<ExternalAccount> ExternalAccounts => Set<ExternalAccount>();
 
+    public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         EntityAuditing.Apply(ChangeTracker, _timeProvider.GetUtcNow().UtcDateTime);
