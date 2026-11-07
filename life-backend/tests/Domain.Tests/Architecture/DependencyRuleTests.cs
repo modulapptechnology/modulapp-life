@@ -4,7 +4,7 @@ namespace Domain.Tests.Architecture;
 
 public class DependencyRuleTests
 {
-    private static readonly string[] OtrosProyectos = ["Application", "Infrastructure", "Persistence", "API"];
+    private static readonly string[] _otherProjects = ["Application", "Infrastructure", "Persistence", "API"];
 
     [Fact]
     public void Domain_NoReferenciaAOtrosProyectos()
@@ -14,7 +14,7 @@ public class DependencyRuleTests
         var referencias = ensamblado
             .GetReferencedAssemblies()
             .Select(referencia => referencia.Name ?? string.Empty)
-            .Where(nombre => OtrosProyectos.Contains(nombre))
+            .Where(nombre => _otherProjects.Contains(nombre))
             .ToArray();
 
         Assert.Empty(referencias);
