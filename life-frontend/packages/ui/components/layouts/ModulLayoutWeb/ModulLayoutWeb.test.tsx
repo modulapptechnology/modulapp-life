@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithTheme } from '../../../testing/renderWithTheme/renderWithTheme';
 import { ModulLayoutWeb, type NavSection } from './ModulLayoutWeb';
 
@@ -27,13 +27,13 @@ describe('ModulLayoutWeb', () => {
     expect(screen.getByTestId('web-main')).toBeOnTheScreen();
   });
 
-  it('oculta la barra lateral con el botón del encabezado', async () => {
+  it('oculta la barra lateral con el botón del encabezado cuando termina la animación', async () => {
     const botonCerrar = 'Cerrar barra lateral';
 
     await renderLayout();
     await fireEvent.press(screen.getByRole('button', { name: botonCerrar }));
 
-    expect(screen.queryByTestId('web-sidebar')).toBeNull();
+    await waitFor(() => expect(screen.queryByTestId('web-sidebar')).toBeNull());
   });
 
   it('vuelve a mostrar la barra lateral al tocar el botón por segunda vez', async () => {

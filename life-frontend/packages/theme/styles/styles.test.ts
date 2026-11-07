@@ -1,4 +1,5 @@
 import { darkColors, lightColors } from '../colors/colors';
+import { layout } from '../dimension/dimension';
 import { createTextStyles, createViewStyles } from './styles';
 
 describe('estilos de los átomos', () => {
@@ -53,5 +54,33 @@ describe('estilos de capas y listas', () => {
     const color = estilos.divider.backgroundColor;
 
     expect(color).toBe(lightColors.border);
+  });
+});
+
+describe('estilos de la barra lateral y el panel deslizable', () => {
+  it('da a la barra lateral el ancho del layout', () => {
+    const estilos = createViewStyles(lightColors);
+
+    const ancho = estilos.sidebar.width;
+
+    expect(ancho).toBe(layout.sidebarWidth);
+  });
+
+  it('da al panel deslizable el ancho del layout y toda la altura', () => {
+    const estilos = createViewStyles(lightColors);
+
+    const panel = estilos.drawer;
+
+    expect(panel).toEqual({ width: layout.drawerWidth, height: '100%' });
+  });
+});
+
+describe('estilos de posición', () => {
+  it('llena todo el contenedor con la posición absoluta pegada a los cuatro bordes', () => {
+    const estilos = createViewStyles(lightColors);
+
+    const relleno = estilos.absoluteFill;
+
+    expect(relleno).toEqual({ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 });
   });
 });
