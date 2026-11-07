@@ -1,18 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
 import { APP_NAME } from '@life/constants';
+import { ModulText, ModulView } from '@life/ui';
 
 export default function HomeScreen() {
   return (
-    <View style={styles.container}>
-      <Text>{APP_NAME}</Text>
-    </View>
+    <ModulView flex1 bgSurface alignCenter justifyCenter>
+      <ModulText>{APP_NAME}</ModulText>
+    </ModulView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

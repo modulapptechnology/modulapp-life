@@ -17,30 +17,32 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <ModulMessagesProvider confirmLabel="Confirmar" cancelLabel="Cancelar" closeLabel="Cerrar">
-        <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
-          {user ? (
-            <ModulHeader
-              sidebarOpen={sidebarOpen}
-              onToggleSidebar={() => setSidebarOpen((open) => !open)}
-            />
-          ) : null}
-          <ModulView flex1>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Protected guard={!user}>
-                <Stack.Screen name="login" />
-              </Stack.Protected>
-              <Stack.Protected guard={!!user}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="profile" />
-                <Stack.Screen name="settings" />
-                <Stack.Screen name="[module]" />
-              </Stack.Protected>
-            </Stack>
+        <ModulView flex1 bgSurface>
+          <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
             {user ? (
-              <MobileSidebar visible={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+              <ModulHeader
+                sidebarOpen={sidebarOpen}
+                onToggleSidebar={() => setSidebarOpen((open) => !open)}
+              />
             ) : null}
-          </ModulView>
-        </SafeAreaView>
+            <ModulView flex1>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Protected guard={!user}>
+                  <Stack.Screen name="login" />
+                </Stack.Protected>
+                <Stack.Protected guard={!!user}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="profile" />
+                  <Stack.Screen name="settings" />
+                  <Stack.Screen name="[module]" />
+                </Stack.Protected>
+              </Stack>
+              {user ? (
+                <MobileSidebar visible={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+              ) : null}
+            </ModulView>
+          </SafeAreaView>
+        </ModulView>
       </ModulMessagesProvider>
     </ThemeProvider>
   );
