@@ -1,4 +1,5 @@
 import type { ThemeColors } from '../colors/colors';
+import { layout } from '../dimension/dimension';
 
 export const createViewStyles = (colors: ThemeColors) =>
   ({
@@ -12,6 +13,8 @@ export const createViewStyles = (colors: ThemeColors) =>
     maxW480: { maxWidth: 480 },
     maxH70: { maxHeight: '70%' },
     divider: { height: 1, backgroundColor: colors.border },
+    sidebar: { width: layout.sidebarWidth },
+    drawer: { width: layout.drawerWidth, height: '100%' },
 
     // Espaciado (escala: 4, 8, 12, 16, 24, 32)
     p4: { padding: 4 },
@@ -40,6 +43,7 @@ export const createViewStyles = (colors: ThemeColors) =>
     justifyBetween: { justifyContent: 'space-between' },
     justifyEnd: { justifyContent: 'flex-end' },
     absolute: { position: 'absolute' },
+    absoluteFill: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
     overlay: {
       position: 'absolute',
       top: 0,

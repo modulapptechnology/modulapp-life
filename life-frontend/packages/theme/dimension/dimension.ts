@@ -2,6 +2,9 @@ export const layout = {
   maxContentWidth: 720,
   screenMargin: 16,
   screenPaddingY: 16,
+  sidebarWidth: 220,
+  drawerWidth: 280,
+  slideDuration: 200,
 } as const;
 
 // Escalas responsivas: el espaciado crece según el ancho de pantalla

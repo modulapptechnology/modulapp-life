@@ -1,11 +1,12 @@
-import { useState, type ReactNode } from 'react';
-import { Pressable } from 'react-native';
-import { ModulIcon, type IconName } from '../../atoms/ModulIcon/ModulIcon';
-import { ModulText } from '../../atoms/ModulText/ModulText';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Animated, Easing } from 'react-native';
+import { layout } from '@life/theme';
+import { useStyles } from '../../../utils/useStyles/useStyles';
 import { ModulView } from '../../atoms/ModulView/ModulView';
 import { ModulHeader } from '../../molecules/ModulHeader/ModulHeader';
+import { ModulSidebar, type ModulSidebarSection } from '../../molecules/ModulSidebar/ModulSidebar';
 
-export type NavSection = { path: string; label: string; icon: IconName };
+export type NavSection = ModulSidebarSection;
 
 export type ModulLayoutWebProps = {
   sections: NavSection[];
@@ -17,11 +18,6 @@ export type ModulLayoutWebProps = {
   children: ReactNode;
 };
 
-function isActive(sectionPath: string, activePath: string) {
-  if (sectionPath === '/') return activePath === '/';
-  return activePath === sectionPath || activePath.startsWith(`${sectionPath}/`);
-}
-
 // Layout de la web (y del escritorio, que muestra la web): encabezado, barra lateral y contenido.
 export function ModulLayoutWeb({
   sections,
@@ -31,7 +27,26 @@ export function ModulLayoutWeb({
   headerEnd,
   children,
 }: ModulLayoutWebProps) {
+  const { view } = useStyles();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mounted, setMounted] = useState(true);
+  const [width] = useState(() => new Animated.Value(layout.sidebarWidth));
+
+  if (sidebarOpen && !mounted) setMounted(true);
+
+  // El ancho se anima de 0 al ancho completo; el contenido sigue montado hasta que termina de cerrarse.
+  useEffect(() => {
+    Animated.timing(width, {
+      toValue: sidebarOpen ? layout.sidebarWidth : 0,
+      duration: layout.slideDuration,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (!sidebarOpen && finished) setMounted(false);
+    });
+
+    return () => width.stopAnimation();
+  }, [sidebarOpen, width]);
 
   return (
     <ModulView flex1 bg>
@@ -43,37 +58,13 @@ export function ModulLayoutWeb({
         {headerContent}
       </ModulHeader>
       <ModulView flex1 row>
-        {sidebarOpen && (
-          <ModulView
-            testID="web-sidebar"
-            accessibilityRole="tablist"
-            bgSurface
-            p8
-            gap4
-            style={{ width: 220 }}
-          >
-            {sections.map((section) => {
-              const active = isActive(section.path, activePath);
-
-              return (
-                <Pressable
-                  key={section.path}
-                  accessibilityRole="tab"
-                  accessibilityLabel={section.label}
-                  accessibilityState={{ selected: active }}
-                  onPress={() => onNavigate(section.path)}
-                >
-                  <ModulView row alignCenter gap8 p8 rounded bg={active}>
-                    <ModulIcon name={section.icon} color={active ? 'primary' : 'textSecondary'} />
-                    <ModulText variant="label" textBrand={active} textSecondary={!active}>
-                      {section.label}
-                    </ModulText>
-                  </ModulView>
-                </Pressable>
-              );
-            })}
-          </ModulView>
-        )}
+        <Animated.View style={[view.bgSurface, view.overflowHidden, { width }]}>
+          {mounted && (
+            <ModulView testID="web-sidebar" style={view.sidebar}>
+              <ModulSidebar sections={sections} activePath={activePath} onNavigate={onNavigate} />
+            </ModulView>
+          )}
+        </Animated.View>
         <ModulView testID="web-main" flex1>
           {children}
         </ModulView>
