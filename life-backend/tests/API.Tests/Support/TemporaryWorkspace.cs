@@ -1,6 +1,6 @@
 using Microsoft.Data.SqlClient;
-using TestSupport;
-using TestSupport.Builders;
+using Support;
+using Support.Builders;
 
 namespace API.Tests.Support;
 

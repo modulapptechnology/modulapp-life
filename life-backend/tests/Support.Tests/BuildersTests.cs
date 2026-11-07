@@ -1,7 +1,7 @@
-using TestSupport.Builders;
-using TestSupport.Seed;
+using Support.Builders;
+using Support.Seed;
 
-namespace TestSupport.Tests;
+namespace Support.Tests;
 
 public class BuildersTests
 {

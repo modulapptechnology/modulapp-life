@@ -5,13 +5,13 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
-using TestSupport;
+using Support;
 
 namespace API.Tests.Support;
 
 public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly TestDatabaseFixture? _database = TestConfiguration.IsConfigured() ? new TestDatabaseFixture() : null;
+    private readonly TestDatabaseFixture? _database = TestConfiguration.IsConfigured() ? new TestDatabaseFixture("Api") : null;
 
     public string ConnectionString => _database?.ConnectionString ?? string.Empty;
 
