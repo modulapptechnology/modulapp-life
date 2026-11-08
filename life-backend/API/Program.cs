@@ -17,7 +17,8 @@ builder.Services
     .AddApiStructure(builder.Configuration)
     .AddApplication()
     .AddInfrastructure(builder.Configuration)
-    .AddPersistence(builder.Configuration);
+    .AddPersistence(builder.Configuration)
+    .AddAccessTokenAuthentication();
 
 var app = builder.Build();
 

@@ -26,6 +26,14 @@ Content-Type: application/json
   "password": "Abcdefgh12"
 }
 
+### Renew the session (refreshToken from the login or the previous renewal)
+POST {{API_HostAddress}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "<refresh-token>"
+}
+
 ### Confirm the email (token from the verification link)
 GET {{API_HostAddress}}/api/v1/auth/verify-email?token=<token>
 

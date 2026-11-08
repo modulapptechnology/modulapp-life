@@ -161,6 +161,7 @@ public class DependencyInjectionTests
     [InlineData("Authentication:Login:MaxFailedAttempts", "0")]
     [InlineData("Authentication:Login:LockoutMinutes", "-1")]
     [InlineData("Authentication:AccessToken:LifetimeMinutes", "soon")]
+    [InlineData("Authentication:RefreshToken:LifetimeDays", "0")]
     public void AddInfrastructure_WithInvalidAuthenticationNumber_ThrowsInvalidOperationException(
         string key,
         string value)
@@ -170,6 +171,26 @@ public class DependencyInjectionTests
         var action = () => new ServiceCollection().AddInfrastructure(configuration);
 
         Assert.Throws<InvalidOperationException>(action);
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithoutRefreshTokenSettings_UsesSixtyDays()
+    {
+        using var provider = BuildProvider(BuildConfiguration());
+
+        var options = provider.GetRequiredService<RefreshTokenOptions>();
+
+        Assert.Equal(TimeSpan.FromDays(60), options.Lifetime);
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithRefreshTokenLifetime_UsesTheConfiguredDays()
+    {
+        using var provider = BuildProvider(BuildConfiguration(("Authentication:RefreshToken:LifetimeDays", "7")));
+
+        var options = provider.GetRequiredService<RefreshTokenOptions>();
+
+        Assert.Equal(TimeSpan.FromDays(7), options.Lifetime);
     }
 
     [Theory]

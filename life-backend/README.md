@@ -261,7 +261,7 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 - **Quién puede entrar**: solo los usuarios `Active` (correo verificado). Un usuario `Pending` o `Blocked` recibe `401` aunque la contraseña sea correcta.
 - **Bloqueo temporal**: cada contraseña incorrecta de un usuario existente suma a `Users.FailedLoginAttempts`. Al llegar al máximo, `Users.LockedUntil` queda en el momento actual más la duración del bloqueo y, mientras dure, se rechaza el inicio de sesión aunque la contraseña sea correcta, sin sumar intentos ni extender el bloqueo. Al vencer, el conteo empieza de nuevo. Un inicio de sesión correcto lo reinicia. Un bloqueo es por cuenta y no afecta a otras. La respuesta `429` con el tiempo restante, la espera creciente y el registro de los bloqueos son del límite de intentos fallidos de la funcionalidad siguiente y no están en este cambio.
 - **Auditoría**: cada intento, exitoso o fallido, guarda una fila en `LoginAttempts` con el usuario (vacío si el correo no existe), el correo indicado, la IP de origen, el resultado (`LoginOutcome`: `Succeeded`, `InvalidCredentials`, `AccountLocked`, `AccountInactive`) y el momento en UTC. Nunca se guarda la contraseña. Se escribe en la misma transacción que el contador, por lo que el intento fallido no se pierde.
-- **Sesión**: un token de acceso JWT firmado con HMAC-SHA256 (`JwtAccessTokenIssuer`) con `sub`, `email`, `jti`, `iss`, `aud`, `iat` y `exp`. La emisión es lo único que cubre este cambio: la validación del token en cada petición, el token de renovación y la revocación de sesiones son de la gestión de sesiones.
+- **Sesión**: un token de acceso JWT firmado con HMAC-SHA256 (`JwtAccessTokenIssuer`) con `sub`, `email`, `jti`, `iss`, `aud`, `iat` y `exp`. El login también devuelve un token de renovación (ver "Gestión de sesiones y tokens"). La revocación manual de sesiones queda fuera.
 - **Límite de frecuencia**: política `Login` de ASP.NET Core, ventana fija por IP, que se suma al bloqueo por cuenta. Detrás de un proxy hay que configurar los encabezados reenviados para que la IP sea la del cliente.
 
 | Configuración | Detalle |
@@ -280,6 +280,23 @@ dotnet user-secrets set "Authentication:AccessToken:SigningKey" "<valor aleatori
 ```
 
 `tests/API.Tests/Login` prueba el endpoint sin base de datos, con un repositorio en memoria; `Infrastructure.Tests` prueba el hash, el emisor del token y `UserRepository`.
+
+### Gestión de sesiones y tokens
+
+Cada sesión es un par: un token de acceso JWT de corta duración y un token de renovación opaco.
+
+- **Validación**: `AddAccessTokenAuthentication` (`API/Extensions`) registra JwtBearer con la misma clave, emisor y audiencia con que se emite, algoritmo HS256 y sin tolerancia de reloj. `UseAuthentication` va antes de `UseAuthorization`. Un token expirado, alterado o ausente en un endpoint protegido devuelve `401`. Proteger los endpoints es de la tarea de autorización.
+- **Renovación**: `POST /api/v1/auth/refresh` con `{ "refreshToken" }` devuelve `200` con la misma forma que el login (`accessToken`, `tokenType`, `expiresAt`, `refreshToken`, `refreshTokenExpiresAt`). No exige un token de acceso vigente, así que funciona tras un periodo sin conexión mientras el token de renovación no haya vencido. `401` si es desconocido, vencido, revocado o el usuario no está `Active`; `400` si falta; `429` por el límite de frecuencia de la política `Login`.
+- **Rotación**: cada renovación marca el token usado (`UsedAt`) y emite uno nuevo con vigencia completa, de la misma familia (`FamilyId`) y dispositivo (`DeviceId`). El login acepta un `deviceId` opcional (máx. 100 caracteres); si no llega, el servidor genera uno.
+- **Reutilización**: presentar un token ya rotado devuelve `401` y revoca (`RevokedAt`) todos los tokens de su familia, de modo que el token nuevo del atacante o del dueño legítimo deja de servir y hay que iniciar sesión de nuevo.
+- **Almacenamiento**: la tabla `RefreshTokens` guarda solo el hash SHA-256 (`TokenHash`, único entre activos); el valor en claro solo viaja en la respuesta.
+
+| Configuración | Detalle |
+|---|---|
+| `Authentication:RefreshToken:LifetimeDays` | Vigencia del token de renovación; 60 por defecto, para cubrir el uso sin conexión. |
+| `Authentication:AccessToken:*` | Vigencia (`LifetimeMinutes`), emisor, audiencia y `SigningKey` (secreto, nunca versionado), ya descritos arriba. |
+
+`tests/API.Tests/Login/RefreshTests` y `tests/API.Tests/Security/AccessTokenValidationTests` prueban los endpoints sin base de datos; `Application.Tests/Users/RefreshSessionTests`, la rotación y la reutilización; `Infrastructure.Tests/Persistence/RefreshTokenRepositoryTests`, el repositorio contra la base de pruebas. La migración es `AddRefreshTokens`.
 
 ### Restricciones de integridad
 
