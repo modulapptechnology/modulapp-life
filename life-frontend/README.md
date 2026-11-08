@@ -154,6 +154,23 @@ Los métodos `get`, `post`, `put`, `patch` y `delete` nunca lanzan excepciones: 
 | `cancelled` | quien llama canceló la petición |
 
 `problem` sigue el formato de error estandarizado de la API (`title`, `detail`, `errors`). Ante un `401`, si el cliente recibe `refreshSession`, la ejecuta (una sola vez aunque haya varias peticiones a la vez) y repite la petición una vez; si no hay renovación o el `401` persiste, llama a `onSessionExpired`. Mostrar los errores en pantalla corresponde a cada vista.
+## Almacenamiento seguro de la sesión
+
+Los tokens de la sesión (acceso y renovación) se guardan con la interfaz común `SessionTokenStorage` de `@life/core` (`load`, `save`, `clear`), con una implementación por plataforma. `createSessionServices` conecta el almacenamiento, el gestor de sesión (`createSessionManager`) y el cliente de la API; cada app lo crea en `services/session/`.
+
+| Plataforma | Dónde se guardan | Entrega del token de renovación |
+|---|---|---|
+| Mobile | `expo-secure-store` (Keychain en iOS, Keystore en Android), con `WHEN_UNLOCKED_THIS_DEVICE_ONLY` | En el cuerpo de la respuesta; se guarda en el dispositivo |
+| Escritorio (Tauri) | Almacén de credenciales del sistema, con el crate `keyring` y los comandos `secure_get`, `secure_set` y `secure_delete` (`apps/desktop/src-tauri/src/lib.rs`) | En el cuerpo de la respuesta; se guarda en el sistema |
+| Web | El token de acceso solo en memoria; el de renovación en la cookie `HttpOnly` que pone el servidor (cabecera `X-Token-Delivery: cookie`, peticiones con `credentials: 'include'`) | Cookie; el código de la página nunca lo ve |
+
+- **Al iniciar la app** se llama a `sessionManager.restore()`: reabre la sesión con el token de acceso vigente o, si venció, lo renueva con `POST /api/v1/auth/refresh`. En web no hay tokens en memoria tras recargar, así que renueva con la cookie.
+- **Al autenticarse**, `sessionManager.signIn(credenciales)` llama a `POST /api/v1/auth/login` y guarda los tokens. Las vistas de inicio de sesión usan este método y muestran el resultado.
+- **Al cerrar sesión**, `sessionManager.signOut()` borra los tokens del dispositivo, cierra la sesión y llama a `POST /api/v1/auth/logout` para revocarlos y borrar la cookie.
+- **Si el servidor rechaza la sesión** (renovación con `401` o `400`), se borran los tokens y `session.expireSession()` pide iniciar sesión de nuevo sin poner a cero `pendingOperations`: los cambios pendientes de sincronizar se conservan. Un fallo de red al renovar no borra los tokens.
+- Los tokens no se escriben en logs ni en `localStorage`. El nombre del usuario sale del claim `email` del token mientras no exista un perfil. Un valor guardado ilegible se descarta.
+- En escritorio, la URL del origen de la app (`tauri://localhost` o `http://tauri.localhost`) debe estar en `Cors:AllowedOrigins` de la API. En Windows el Credential Manager limita cada credencial a unos 1280 caracteres: los tokens actuales caben con margen.
+
 
 ## Sistema de diseño
 

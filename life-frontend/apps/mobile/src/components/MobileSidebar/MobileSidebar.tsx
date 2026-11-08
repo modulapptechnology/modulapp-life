@@ -1,6 +1,7 @@
 import { moduleRegistry, session, translate, useEnabledModules, useSession } from '@life/core';
 import { ModulDrawer, ModulSidebar, toSidebarSections, type ModulSidebarSection } from '@life/ui';
 import { usePathname, useRouter, type Href } from 'expo-router';
+import { sessionManager } from '../../services/session/session';
 
 type MobileSidebarProps = { visible: boolean; onClose: () => void };
 
@@ -29,7 +30,7 @@ export function MobileSidebar({ visible, onClose }: MobileSidebarProps) {
           label: translate('user.signOut'),
           onSignOut: () => {
             onClose();
-            session.signOut();
+            void sessionManager.signOut();
           },
           pendingOperations,
           confirmTitle: translate('user.signOutTitle'),
