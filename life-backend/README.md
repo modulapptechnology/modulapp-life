@@ -290,13 +290,15 @@ Cada sesión es un par: un token de acceso JWT de corta duración y un token de 
 - **Rotación**: cada renovación marca el token usado (`UsedAt`) y emite uno nuevo con vigencia completa, de la misma familia (`FamilyId`) y dispositivo (`DeviceId`). El login acepta un `deviceId` opcional (máx. 100 caracteres); si no llega, el servidor genera uno.
 - **Reutilización**: presentar un token ya rotado devuelve `401` y revoca (`RevokedAt`) todos los tokens de su familia, de modo que el token nuevo del atacante o del dueño legítimo deja de servir y hay que iniciar sesión de nuevo.
 - **Almacenamiento**: la tabla `RefreshTokens` guarda solo el hash SHA-256 (`TokenHash`, único entre activos); el valor en claro solo viaja en la respuesta.
+- **Entrega por cookie (clientes web)**: si la petición de `login` o `refresh` lleva la cabecera `X-Token-Delivery: cookie`, el token de renovación viaja en la cookie `life_refresh` (`HttpOnly`, `Secure`, `Path=/api/v1/auth`, vencimiento igual al del token) y el cuerpo devuelve `refreshToken` vacío, para que ningún script de la página lo lea. `SameSite` es `Strict` por defecto y se cambia con `Authentication:RefreshToken:CookieSameSite` (`Lax` o `None` si la web y la API no son del mismo sitio). El cliente web envía las peticiones con credenciales y la política CORS las permite (`AllowCredentials`, con orígenes explícitos en `Cors:AllowedOrigins`). `refresh` lee el token del cuerpo o, si no viene, de la cookie; ante un `401` elimina la cookie.
+- **Cierre de sesión**: `POST /api/v1/auth/logout` (cuerpo `{ "refreshToken" }` opcional o cookie) revoca toda la cadena del token, elimina la cookie y responde siempre `204`; con un token desconocido o sin token no hace nada más.
 
 | Configuración | Detalle |
 |---|---|
 | `Authentication:RefreshToken:LifetimeDays` | Vigencia del token de renovación; 60 por defecto, para cubrir el uso sin conexión. |
 | `Authentication:AccessToken:*` | Vigencia (`LifetimeMinutes`), emisor, audiencia y `SigningKey` (secreto, nunca versionado), ya descritos arriba. |
 
-`tests/API.Tests/Login/RefreshTests` y `tests/API.Tests/Security/AccessTokenValidationTests` prueban los endpoints sin base de datos; `Application.Tests/Users/RefreshSessionTests`, la rotación y la reutilización; `Infrastructure.Tests/Persistence/RefreshTokenRepositoryTests`, el repositorio contra la base de pruebas. La migración es `AddRefreshTokens`.
+`tests/API.Tests/Login/RefreshTests` y `tests/API.Tests/Security/AccessTokenValidationTests` prueban los endpoints sin base de datos; `Application.Tests/Users/RefreshSessionTests`, la rotación y la reutilización; `Application.Tests/Users/EndSessionTests`, el cierre de sesión; `Infrastructure.Tests/Persistence/RefreshTokenRepositoryTests`, el repositorio contra la base de pruebas. La migración es `AddRefreshTokens`.
 
 ### Restricciones de integridad
 
