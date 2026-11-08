@@ -76,4 +76,20 @@ describe('ModulInput', () => {
 
     expect(onChangeText).toHaveBeenCalledWith('baja');
   });
+
+  it('se anuncia como ocupado mientras carga', async () => {
+    const etiqueta = 'Correo';
+
+    await renderWithTheme(<ModulInput label={etiqueta} loading />);
+
+    expect(screen.getByLabelText('Correo')).toBeBusy();
+  });
+
+  it('muestra el error aunque también llegue el éxito', async () => {
+    const estados = { success: true, error: 'Correo inválido' };
+
+    await renderWithTheme(<ModulInput label="Correo" {...estados} />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Correo inválido');
+  });
 });

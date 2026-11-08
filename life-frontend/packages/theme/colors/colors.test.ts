@@ -13,4 +13,13 @@ describe('createThemeColors', () => {
     expect(colors.primary).not.toBe(darkColors.primary);
     expect(colors.background).toBe(darkColors.background);
   });
+
+  it('define los tokens de estado en el tema claro y en el oscuro', () => {
+    const temas = [lightColors, darkColors];
+
+    const tokens = temas.flatMap(({ hover, pressed, skeleton }) => [hover, pressed, skeleton]);
+
+    expect(tokens.every(Boolean)).toBe(true);
+    expect(lightColors.hover).not.toBe(darkColors.hover);
+  });
 });
