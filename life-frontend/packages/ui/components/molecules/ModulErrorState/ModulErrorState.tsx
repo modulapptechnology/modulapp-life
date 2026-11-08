@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import { useStyles } from '../../../utils/useStyles/useStyles';
 import { ModulButton } from '../../atoms/ModulButton/ModulButton';
+import { ModulIcon } from '../../atoms/ModulIcon/ModulIcon';
 import { ModulText } from '../../atoms/ModulText/ModulText';
 
 export type ModulErrorStateProps = {
@@ -18,6 +19,7 @@ export function ModulErrorState({ title, description, retryLabel, onRetry }: Mod
       accessibilityRole="alert"
       style={[view.flex1, view.alignCenter, view.justifyCenter, view.gap16, view.p16]}
     >
+      <ModulIcon name="DangerCircleIcon" size="lg" color="danger" />
       <ModulText variant="sectionTitle" textDanger textCenter>
         {title}
       </ModulText>

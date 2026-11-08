@@ -30,6 +30,8 @@ import {
   ModulMenu,
   ModulModal,
   ModulOptionGroup,
+  ModulSkeleton,
+  ModulStateContainer,
   ModulProgress,
   ModulSidebar,
   ModulSwitch,
@@ -124,6 +126,9 @@ function Atoms() {
           <ModulButton label="Con ícono" icon="CalendarIcon" />
           <ModulButton compact label="Compacto" />
           <ModulButton label="Deshabilitado" disabled />
+          <ModulButton label="Cargando" loading />
+          <ModulButton label="Éxito" success />
+          <ModulButton label="Error" error />
         </Row>
       </Sample>
       <Sample name="ModulFloatingButton y ModulCloseButton">
@@ -244,6 +249,8 @@ function Molecules() {
         <ModulInput label="Texto" value={text} onChangeText={setText} help="Texto de ayuda" />
         <ModulInput label="Con error" value="" onChangeText={NOOP} error="Campo obligatorio" />
         <ModulInput label="Deshabilitado" value="Valor" onChangeText={NOOP} disabled />
+        <ModulInput label="Cargando" value="Valor" onChangeText={NOOP} loading />
+        <ModulInput label="Correcto" value="Valor" onChangeText={NOOP} success />
         <ModulInput
           label="Contraseña"
           type="password"
@@ -350,6 +357,33 @@ function Molecules() {
         </ModulView>
         <ModulView borderSubtle roundedLg>
           <ModulLoadingState message="Cargando…" />
+        </ModulView>
+      </Sample>
+      <Sample name="ModulSkeleton y ModulStateContainer">
+        <ModulView gap8>
+          <ModulSkeleton width="60%" height={20} />
+          <ModulSkeleton height={14} />
+          <ModulSkeleton circle height={40} />
+        </ModulView>
+        <ModulView borderSubtle roundedLg style={{ height: 130 }}>
+          <ModulStateContainer
+            loading
+            loadingMessage="Cargando…"
+            loadingSkeleton={<ModulSkeleton height={20} />}
+            emptyTitle="Sin elementos"
+          >
+            <ModulView />
+          </ModulStateContainer>
+        </ModulView>
+        <ModulView borderSubtle roundedLg style={{ height: 160 }}>
+          <ModulStateContainer
+            error="No se pudo cargar"
+            retryLabel="Reintentar"
+            onRetry={NOOP}
+            emptyTitle="Sin elementos"
+          >
+            <ModulView />
+          </ModulStateContainer>
         </ModulView>
       </Sample>
       <Sample name="ModulToast">

@@ -10,6 +10,11 @@ export const lightColors = {
   border: '#E2E8F0',
   borderStrong: '#64748B',
 
+  // Estados de interacción: capas translúcidas sobre el fondo del control y relleno del esqueleto de carga.
+  hover: 'rgba(15, 23, 42, 0.08)',
+  pressed: 'rgba(15, 23, 42, 0.16)',
+  skeleton: '#E2E8F0',
+
   success: '#157A3A',
   warning: '#A04A08',
   danger: '#B91C1C',
@@ -32,6 +37,10 @@ export const darkColors: ThemeColors = {
   textSecondary: '#94A3B8',
   border: '#2E2E2E',
   borderStrong: '#64748B',
+
+  hover: 'rgba(255, 255, 255, 0.10)',
+  pressed: 'rgba(255, 255, 255, 0.20)',
+  skeleton: '#2E2E2E',
 
   success: '#4ADE80',
   warning: '#FBBF24',

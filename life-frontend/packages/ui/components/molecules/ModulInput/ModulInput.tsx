@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, TextInput, type TextInputProps, type TextStyle } from 'react-native';
+import { ActivityIndicator, Pressable, TextInput, type TextInputProps, type TextStyle } from 'react-native';
 import { typography } from '@life/theme';
 import { formatDateInput, formatTimeInput } from '../../../utils/maskInput/maskInput';
 import { useStyles } from '../../../utils/useStyles/useStyles';
@@ -27,6 +27,10 @@ export type ModulInputProps = Omit<
   help?: string;
   error?: string;
   disabled?: boolean;
+  // Muestra un indicador al final del campo, por ejemplo mientras se valida contra el servidor.
+  loading?: boolean;
+  // Valor validado: borde de éxito e icono de verificación al final del campo.
+  success?: boolean;
   // Alto de 32 en lugar del área táctil de 44: para la web, donde se usa el puntero.
   compact?: boolean;
   // Solo type="select": opciones del desplegable; `value` y `onChangeText` trabajan con el `value` de la opción.
@@ -45,6 +49,8 @@ export function ModulInput({
   help,
   error,
   disabled = false,
+  loading = false,
+  success = false,
   compact = false,
   options = [],
   actionLabel,
@@ -58,7 +64,10 @@ export function ModulInput({
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
+  // El error pesa más que el foco, y el foco más que el éxito.
+  const showSuccess = success && !error;
   const leadingIcon = LEADING_ICONS[type];
   const selectedOption = options.find((option) => option.value === value);
   // outlineStyle none: en web el navegador dibuja su propio contorno; el foco ya lo marca el borde del campo.
@@ -95,9 +104,13 @@ export function ModulInput({
         px16
         rounded
         bgSurface
-        border={!error && !focused}
+        bgHover={hovered && !disabled}
+        border={!error && !focused && !showSuccess}
         borderFocus={!error && focused}
+        borderSuccess={showSuccess && !focused}
         borderError={!!error}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
         style={disabled ? view.opacityDisabled : undefined}
       >
         {leadingIcon ? <ModulIcon name={leadingIcon} color="textSecondary" /> : null}
@@ -120,6 +133,7 @@ export function ModulInput({
             value={value}
             onChangeText={changeText}
             accessibilityLabel={label}
+            accessibilityState={{ disabled, busy: loading }}
             editable={!disabled}
             secureTextEntry={type === 'password' && hidden}
             keyboardType={
@@ -166,6 +180,8 @@ export function ModulInput({
           />
         ) : null}
         {type === 'select' ? <ModulIcon name="AltArrowDownIcon" color="textSecondary" /> : null}
+        {loading ? <ActivityIndicator color={colors.primary} size="small" /> : null}
+        {showSuccess && !loading ? <ModulIcon name="CheckCircleIcon" color="success" /> : null}
       </ModulView>
       <ModulFieldMessage help={help} error={error} />
       {type === 'select' ? (

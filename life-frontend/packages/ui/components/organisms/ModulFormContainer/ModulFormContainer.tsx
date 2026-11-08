@@ -52,6 +52,7 @@ export function ModulFormContainer({
         <ModulButton
           label={submitLabel}
           onPress={onSubmit}
+          loading={submitting}
           disabled={submitting}
           compact={compact}
         />
