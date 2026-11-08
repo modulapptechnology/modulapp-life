@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { moduleRegistry, session, translate, useEnabledModules, useSession } from '@life/core';
 import { ModulLayoutWeb, ModulText, toSidebarSections, type NavSection } from '@life/ui';
@@ -5,6 +6,8 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ModulePage from './pages/ModulePage';
 import SettingsPage from './pages/SettingsPage';
+
+const Catalog = lazy(() => import('@life/ui/catalog/Catalog'));
 
 export default function App() {
   const modules = useEnabledModules(moduleRegistry);
@@ -56,6 +59,17 @@ export default function App() {
 
   return (
     <Routes>
+      {/* Catálogo del sistema de diseño: solo en desarrollo, sin sesión ni enlace en el menú. */}
+      {import.meta.env.DEV && (
+        <Route
+          path="/Catalog"
+          element={
+            <Suspense fallback={null}>
+              <Catalog />
+            </Suspense>
+          }
+        />
+      )}
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route element={user ? layout : <Navigate to="/login" replace />}>
         <Route path="/" element={<HomePage />} />
