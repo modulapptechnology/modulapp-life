@@ -55,3 +55,23 @@ export type NotificationPreference = {
 };
 
 export type { ThemeAccent, ThemePreference } from '@life/theme';
+
+export type SessionTokens = {
+  accessToken: string;
+  accessTokenExpiresAt: string;
+  refreshToken: string | null;
+  refreshTokenExpiresAt: string;
+};
+
+export type LoginCredentials = {
+  email: string;
+  password: string;
+};
+
+export type AuthResponse = {
+  accessToken: string;
+  tokenType: string;
+  expiresAt: string;
+  refreshToken: string;
+  refreshTokenExpiresAt: string;
+};
