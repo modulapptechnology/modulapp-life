@@ -40,3 +40,16 @@ describe('sessionStore', () => {
     expect(store.getState().pendingOperations).toBe(0);
   });
 });
+
+describe('sessionStore expireSession', () => {
+  it('cierra la sesión sin perder los cambios pendientes de sincronizar', () => {
+    const store = createSessionStore({
+      user: { id: '1', name: 'Ana Pérez' },
+      pendingOperations: 3,
+    });
+
+    store.expireSession();
+
+    expect(store.getState()).toEqual({ user: null, pendingOperations: 3 });
+  });
+});

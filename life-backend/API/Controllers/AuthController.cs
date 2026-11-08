@@ -1,11 +1,12 @@
 using API.Extensions;
 using Application.Users;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace API.Controllers;
 
-public class AuthController : ApiControllerBase
+public class AuthController(IConfiguration configuration) : ApiControllerBase
 {
     [HttpPost("register")]
     [EnableRateLimiting(ApiServiceCollectionExtensions.RegistrationRateLimitPolicy)]
@@ -49,7 +50,69 @@ public class AuthController : ApiControllerBase
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
-        return Ok(response);
+        return Ok(DeliverRefreshToken(response));
+    }
+
+    [HttpPost("refresh")]
+    [EnableRateLimiting(ApiServiceCollectionExtensions.LoginRateLimitPolicy)]
+    [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<LoginResponse>> Refresh(
+        [FromBody] RefreshBody? body,
+        [FromServices] RefreshSession refreshSession,
+        [FromServices] IValidator<RefreshSessionRequest> validator,
+        CancellationToken cancellationToken)
+    {
+        var request = new RefreshSessionRequest(body?.RefreshToken ?? RefreshTokenCookie.Read(Request) ?? string.Empty);
+        var validation = await validator.ValidateAsync(request, cancellationToken);
+
+        if (!validation.IsValid)
+        {
+            foreach (var failure in validation.Errors)
+            {
+                ModelState.AddModelError(failure.PropertyName, failure.ErrorMessage);
+            }
+
+            return ValidationProblem(ModelState);
+        }
+
+        var response = await refreshSession.ExecuteAsync(request, cancellationToken);
+
+        if (response is null)
+        {
+            if (RefreshTokenCookie.IsRequested(Request))
+            {
+                RefreshTokenCookie.Delete(HttpContext, configuration);
+            }
+
+            return Problem(
+                title: "El token de renovación no es válido o ya venció.",
+                statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        return Ok(DeliverRefreshToken(response));
+    }
+
+    [HttpPost("logout")]
+    [EnableRateLimiting(ApiServiceCollectionExtensions.LoginRateLimitPolicy)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Logout(
+        [FromBody] RefreshBody? body,
+        [FromServices] EndSession endSession,
+        CancellationToken cancellationToken)
+    {
+        await endSession.ExecuteAsync(body?.RefreshToken ?? RefreshTokenCookie.Read(Request), cancellationToken);
+        RefreshTokenCookie.Delete(HttpContext, configuration);
+
+        return NoContent();
+    }
+
+    private LoginResponse DeliverRefreshToken(LoginResponse response)
+    {
+        return RefreshTokenCookie.IsRequested(Request)
+            ? RefreshTokenCookie.Write(HttpContext, response, configuration)
+            : response;
     }
 
     [HttpGet("verify-email")]
@@ -73,3 +136,5 @@ public class AuthController : ApiControllerBase
         return NoContent();
     }
 }
+
+public sealed record RefreshBody(string? RefreshToken);

@@ -1,10 +1,11 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { moduleRegistry, session, translate, useEnabledModules, useSession } from '@life/core';
 import { ModulLayoutWeb, ModulText, toSidebarSections, type NavSection } from '@life/ui';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ModulePage from './pages/ModulePage';
+import { sessionManager } from './services/session/session';
 import SettingsPage from './pages/SettingsPage';
 
 const Catalog = lazy(() => import('@life/ui/catalog/Catalog'));
@@ -14,6 +15,10 @@ export default function App() {
   const { user, pendingOperations } = useSession(session);
   const navigate = useNavigate();
   const { pathname } = useLocation();
+
+  useEffect(() => {
+    void sessionManager.restore();
+  }, []);
 
   // El sidebar sale del registro de módulos habilitados, así que no cambia al agregar uno.
   const sections: NavSection[] = [
@@ -41,7 +46,7 @@ export default function App() {
       ]}
       signOut={{
         label: translate('user.signOut'),
-        onSignOut: () => session.signOut(),
+        onSignOut: () => void sessionManager.signOut(),
         pendingOperations,
         confirmTitle: translate('user.signOutTitle'),
         confirmMessage: translate('user.signOutPending'),

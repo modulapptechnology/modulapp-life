@@ -4,6 +4,8 @@ namespace Application.Users;
 
 public sealed class LoginRequestValidator : AbstractValidator<LoginRequest>
 {
+    public const int DeviceIdMaxLength = 100;
+
     public LoginRequestValidator()
     {
         RuleFor(request => request.Email)
@@ -20,5 +22,9 @@ public sealed class LoginRequestValidator : AbstractValidator<LoginRequest>
             .MaximumLength(RegisterUserRequestValidator.PasswordMaxLength)
             .WithMessage(
                 $"La contraseña no puede superar {RegisterUserRequestValidator.PasswordMaxLength} caracteres.");
+
+        RuleFor(request => request.DeviceId)
+            .MaximumLength(DeviceIdMaxLength)
+            .WithMessage($"El identificador del dispositivo no puede superar {DeviceIdMaxLength} caracteres.");
     }
 }

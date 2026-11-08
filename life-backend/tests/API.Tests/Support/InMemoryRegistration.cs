@@ -63,6 +63,40 @@ public sealed class InMemoryUserRepository : IUserRepository
     }
 }
 
+public sealed class InMemoryRefreshTokenRepository(InMemoryUserRepository users) : IRefreshTokenRepository
+{
+    private readonly ConcurrentQueue<RefreshToken> _tokens = new();
+
+    public IReadOnlyCollection<RefreshToken> Tokens => _tokens.ToList();
+
+    public void Add(RefreshToken token)
+    {
+        token.Id = Guid.NewGuid();
+        _tokens.Enqueue(token);
+    }
+
+    public Task<RefreshToken?> FindByHashAsync(string tokenHash, CancellationToken cancellationToken = default)
+    {
+        var token = _tokens.FirstOrDefault(candidate => candidate.TokenHash == tokenHash);
+
+        if (token is not null)
+        {
+            token.User = users.Users.FirstOrDefault(user => user.Id == token.UserId);
+        }
+
+        return Task.FromResult(token);
+    }
+
+    public Task<IReadOnlyList<RefreshToken>> ListFamilyAsync(
+        Guid familyId,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<RefreshToken> family = _tokens.Where(token => token.FamilyId == familyId).ToList();
+
+        return Task.FromResult(family);
+    }
+}
+
 public sealed class CapturingEmailSender : IVerificationEmailSender
 {
     private readonly ConcurrentQueue<(string Email, string Token)> _sent = new();

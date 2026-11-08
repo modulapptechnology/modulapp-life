@@ -20,6 +20,8 @@ public class LifeDbContext(
 
     public DbSet<LoginAttempt> LoginAttempts => Set<LoginAttempt>();
 
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         EntityAuditing.Apply(ChangeTracker, _timeProvider.GetUtcNow().UtcDateTime);

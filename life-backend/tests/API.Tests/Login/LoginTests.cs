@@ -42,6 +42,7 @@ public class LoginTests(ApiFactory api)
             builder.ConfigureTestServices(services =>
             {
                 services.AddSingleton<IUserRepository>(users);
+                services.AddSingleton<IRefreshTokenRepository>(new InMemoryRefreshTokenRepository(users));
                 services.AddSingleton<IUnitOfWork, PassThroughUnitOfWork>();
             });
         });
@@ -66,6 +67,18 @@ public class LoginTests(ApiFactory api)
                 response.StatusCode,
                 body.RootElement.GetProperty("tokenType").GetString(),
                 body.RootElement.GetProperty("accessToken").GetString()!.Split('.').Length));
+    }
+
+    [Fact]
+    public async Task Login_WithValidCredentials_ReturnsARefreshToken()
+    {
+        var (client, _) = CreateClient();
+
+        var response = await LoginAsync(client, _email, _password);
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var refreshToken = body.RootElement.GetProperty("refreshToken").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(refreshToken));
     }
 
     [Fact]

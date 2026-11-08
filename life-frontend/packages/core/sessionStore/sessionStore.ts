@@ -9,6 +9,7 @@ export type SessionStore = {
   getState: () => SessionState;
   signIn: (user: SessionUser) => void;
   signOut: () => void;
+  expireSession: () => void;
   setPendingOperations: (count: number) => void;
   subscribe: (listener: () => void) => () => void;
 };
@@ -26,6 +27,7 @@ export function createSessionStore(initial: Partial<SessionState> = {}): Session
     getState: () => state,
     signIn: (user) => update({ user }),
     signOut: () => update({ user: null, pendingOperations: 0 }),
+    expireSession: () => update({ user: null }),
     setPendingOperations: (count) => update({ pendingOperations: Math.max(0, count) }),
     subscribe(listener) {
       listeners.add(listener);
