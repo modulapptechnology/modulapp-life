@@ -49,7 +49,7 @@ public static class ApiServiceCollectionExtensions
 
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
         services.AddCors(options => options.AddPolicy(CorsPolicyName, policy =>
-            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
         return services;
     }
