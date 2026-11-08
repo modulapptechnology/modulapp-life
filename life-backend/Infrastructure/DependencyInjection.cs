@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.AddSingleton(BuildSmtpOptions(configuration));
         services.AddSingleton(BuildLoginOptions(configuration));
         services.AddSingleton(BuildAccessTokenOptions(configuration));
+        services.AddSingleton(BuildRefreshTokenOptions(configuration));
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
         services.AddSingleton<IVerificationTokenService, VerificationTokenService>();
@@ -122,6 +123,17 @@ public static class DependencyInjection
             section[AccessTokenOptions.IssuerKey] ?? AccessTokenOptions.DefaultIssuer,
             section[AccessTokenOptions.AudienceKey] ?? AccessTokenOptions.DefaultAudience,
             TimeSpan.FromMinutes(minutes));
+    }
+
+    private static RefreshTokenOptions BuildRefreshTokenOptions(IConfiguration configuration)
+    {
+        var section = configuration.GetSection(RefreshTokenOptions.SectionName);
+        var days = ReadPositiveNumber(
+            section,
+            RefreshTokenOptions.LifetimeDaysKey,
+            RefreshTokenOptions.DefaultLifetimeDays);
+
+        return new RefreshTokenOptions(TimeSpan.FromDays(days));
     }
 
     private static int ReadPositiveNumber(IConfigurationSection section, string key, int defaultValue)

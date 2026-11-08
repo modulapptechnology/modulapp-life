@@ -6,7 +6,7 @@ namespace Application.Users;
 public sealed class LoginUser(
     IUserRepository users,
     IPasswordHasher passwordHasher,
-    IAccessTokenIssuer accessTokenIssuer,
+    SessionIssuer sessionIssuer,
     IUnitOfWork unitOfWork,
     LoginOptions options,
     TimeProvider timeProvider)
@@ -42,9 +42,11 @@ public sealed class LoginUser(
                     return null;
                 }
 
-                var token = accessTokenIssuer.Issue(user!, now);
+                var deviceId = string.IsNullOrWhiteSpace(request.DeviceId)
+                    ? Guid.NewGuid().ToString("N")
+                    : request.DeviceId.Trim();
 
-                return new LoginResponse(token.Value, LoginResponse.BearerTokenType, token.ExpiresAt);
+                return sessionIssuer.Issue(user!, Guid.NewGuid(), deviceId, now);
             },
             cancellationToken);
     }

@@ -15,7 +15,15 @@ public class LoginUserTests
 
     private readonly IPasswordHasher _hasher = Substitute.For<IPasswordHasher>();
 
+    private static readonly RefreshTokenOptions _refreshOptions = new(TimeSpan.FromDays(60));
+
     private readonly IAccessTokenIssuer _issuer = Substitute.For<IAccessTokenIssuer>();
+
+    private readonly IVerificationTokenService _tokenService = Substitute.For<IVerificationTokenService>();
+
+    private readonly IRefreshTokenRepository _refreshTokens = Substitute.For<IRefreshTokenRepository>();
+
+    private readonly List<RefreshToken> _storedRefreshTokens = [];
 
     private readonly List<LoginAttempt> _attempts = [];
 
@@ -25,6 +33,9 @@ public class LoginUserTests
             .Do(call => _attempts.Add(call.Arg<LoginAttempt>()));
         _issuer.Issue(Arg.Any<User>(), Arg.Any<DateTime>())
             .Returns(new AccessToken("signed-token", _now.UtcDateTime.AddMinutes(15)));
+        _tokenService.Create().Returns(new VerificationToken("plain-refresh", "hashed-refresh"));
+        _refreshTokens.When(tokens => tokens.Add(Arg.Any<RefreshToken>()))
+            .Do(call => _storedRefreshTokens.Add(call.Arg<RefreshToken>()));
     }
 
     private LoginUser CreateSut()
@@ -32,7 +43,7 @@ public class LoginUserTests
         return new LoginUser(
             _users,
             _hasher,
-            _issuer,
+            new SessionIssuer(_issuer, _tokenService, _refreshTokens, _refreshOptions),
             new PassThroughUnitOfWork(),
             _options,
             new FixedTimeProvider(_now));
@@ -62,7 +73,12 @@ public class LoginUserTests
         var response = await sut.ExecuteAsync(new LoginRequest(" person@life.test ", "Abcdefgh12"), "10.0.0.1");
 
         Assert.Equal(
-            new LoginResponse("signed-token", "Bearer", _now.UtcDateTime.AddMinutes(15)),
+            new LoginResponse(
+                "signed-token",
+                "Bearer",
+                _now.UtcDateTime.AddMinutes(15),
+                "plain-refresh",
+                _now.UtcDateTime.AddDays(60)),
             response);
     }
 
@@ -204,5 +220,42 @@ public class LoginUserTests
         await sut.ExecuteAsync(new LoginRequest("person@life.test", "Abcdefgh12"), null);
 
         _issuer.DidNotReceiveWithAnyArgs().Issue(default!, default);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithValidCredentials_StoresOnlyTheHashOfTheRefreshToken()
+    {
+        var user = StoreUser();
+        var sut = CreateSut();
+
+        await sut.ExecuteAsync(new LoginRequest("person@life.test", "Abcdefgh12", "phone-1"), null);
+
+        var stored = Assert.Single(_storedRefreshTokens);
+        Assert.Equal(
+            (user.Id, "hashed-refresh", "phone-1", _now.UtcDateTime.AddDays(60)),
+            (stored.UserId, stored.TokenHash, stored.DeviceId, stored.ExpiresAt));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithoutDeviceId_GeneratesOneForTheSession()
+    {
+        StoreUser();
+        var sut = CreateSut();
+
+        await sut.ExecuteAsync(new LoginRequest("person@life.test", "Abcdefgh12"), null);
+
+        var stored = Assert.Single(_storedRefreshTokens);
+        Assert.False(string.IsNullOrWhiteSpace(stored.DeviceId));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithFailedLogin_DoesNotStoreARefreshToken()
+    {
+        StoreUser(passwordMatches: false);
+        var sut = CreateSut();
+
+        await sut.ExecuteAsync(new LoginRequest("person@life.test", "Abcdefgh12"), null);
+
+        Assert.Empty(_storedRefreshTokens);
     }
 }

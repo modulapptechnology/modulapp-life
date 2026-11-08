@@ -52,6 +52,28 @@ public class AuthController : ApiControllerBase
         return Ok(response);
     }
 
+    [HttpPost("refresh")]
+    [EnableRateLimiting(ApiServiceCollectionExtensions.LoginRateLimitPolicy)]
+    [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<LoginResponse>> Refresh(
+        [FromBody] RefreshSessionRequest request,
+        [FromServices] RefreshSession refreshSession,
+        CancellationToken cancellationToken)
+    {
+        var response = await refreshSession.ExecuteAsync(request, cancellationToken);
+
+        if (response is null)
+        {
+            return Problem(
+                title: "El token de renovación no es válido o ya venció.",
+                statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        return Ok(response);
+    }
+
     [HttpGet("verify-email")]
     [EnableRateLimiting(ApiServiceCollectionExtensions.RegistrationRateLimitPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
