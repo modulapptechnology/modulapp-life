@@ -15,7 +15,8 @@ public class VerifyEmailTests
 
     public VerifyEmailTests()
     {
-        _tokens.Hash("plain-token").Returns("hashed-token");
+        _tokens.Hash("123456").Returns("hashed-code");
+        _tokens.Hash("000000").Returns("other-hash");
     }
 
     private VerifyEmail CreateSut()
@@ -25,17 +26,31 @@ public class VerifyEmailTests
 
     private void StoreToken(EmailVerificationToken? token)
     {
-        _users.FindVerificationTokenAsync("hashed-token", Arg.Any<CancellationToken>()).Returns(token);
+        _users.FindLatestVerificationTokenAsync("person@life.test", Arg.Any<CancellationToken>())
+            .Returns(token);
+    }
+
+    private EmailVerificationToken NewToken(User user, Action<EmailVerificationToken>? configure = null)
+    {
+        var token = new EmailVerificationToken
+        {
+            User = user,
+            TokenHash = "hashed-code",
+            ExpiresAt = _now.UtcDateTime.AddMinutes(15),
+        };
+        configure?.Invoke(token);
+
+        return token;
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithValidToken_ConfirmsTheEmailAndMarksTheTokenAsUsed()
+    public async Task ExecuteAsync_WithTheRightCode_ConfirmsTheEmailAndActivatesTheUser()
     {
         var user = new User();
-        StoreToken(new EmailVerificationToken { User = user, ExpiresAt = _now.UtcDateTime.AddHours(1) });
+        StoreToken(NewToken(user));
         var sut = CreateSut();
 
-        var verified = await sut.ExecuteAsync(new VerifyEmailRequest("plain-token"));
+        var verified = await sut.ExecuteAsync(new VerifyEmailRequest(" person@life.test ", "123456"));
 
         Assert.Equal(
             (true, _now.UtcDateTime, UserStatus.Active),
@@ -43,54 +58,79 @@ public class VerifyEmailTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithValidToken_StoresTheUsageInstantInTheToken()
+    public async Task ExecuteAsync_WithTheRightCode_MarksTheCodeAsUsed()
     {
-        var token = new EmailVerificationToken { User = new User(), ExpiresAt = _now.UtcDateTime.AddHours(1) };
+        var token = NewToken(new User());
         StoreToken(token);
         var sut = CreateSut();
 
-        await sut.ExecuteAsync(new VerifyEmailRequest("plain-token"));
+        await sut.ExecuteAsync(new VerifyEmailRequest("person@life.test", "123456"));
 
         Assert.Equal(_now.UtcDateTime, token.UsedAt);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithUnknownToken_ReturnsFalse()
+    public async Task ExecuteAsync_WithAWrongCode_ReturnsFalseAndCountsTheFailedAttempt()
+    {
+        var user = new User();
+        var token = NewToken(user);
+        StoreToken(token);
+        var sut = CreateSut();
+
+        var verified = await sut.ExecuteAsync(new VerifyEmailRequest("person@life.test", "000000"));
+
+        Assert.Equal(
+            (false, 1, null, UserStatus.Pending),
+            (verified, token.FailedAttempts, user.EmailVerifiedAt, user.Status));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenTheLastAttemptIsWrong_BlocksTheCodeEvenForTheRightValue()
+    {
+        var token = NewToken(
+            new User(),
+            candidate => candidate.FailedAttempts = EmailVerificationToken.MaxFailedAttempts - 1);
+        StoreToken(token);
+        var sut = CreateSut();
+        await sut.ExecuteAsync(new VerifyEmailRequest("person@life.test", "000000"));
+
+        var verified = await sut.ExecuteAsync(new VerifyEmailRequest("person@life.test", "123456"));
+
+        Assert.Equal((false, EmailVerificationToken.MaxFailedAttempts), (verified, token.FailedAttempts));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithUnknownEmail_ReturnsFalse()
     {
         StoreToken(null);
         var sut = CreateSut();
 
-        var verified = await sut.ExecuteAsync(new VerifyEmailRequest("plain-token"));
+        var verified = await sut.ExecuteAsync(new VerifyEmailRequest("person@life.test", "123456"));
 
         Assert.False(verified);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithExpiredToken_ReturnsFalseAndKeepsTheUserUnverified()
+    public async Task ExecuteAsync_WithExpiredCode_ReturnsFalseAndKeepsTheUserUnverified()
     {
         var user = new User();
-        StoreToken(new EmailVerificationToken { User = user, ExpiresAt = _now.UtcDateTime.AddSeconds(-1) });
+        StoreToken(NewToken(user, token => token.ExpiresAt = _now.UtcDateTime.AddSeconds(-1)));
         var sut = CreateSut();
 
-        var verified = await sut.ExecuteAsync(new VerifyEmailRequest("plain-token"));
+        var verified = await sut.ExecuteAsync(new VerifyEmailRequest("person@life.test", "123456"));
 
         Assert.Equal((false, null, UserStatus.Pending), (verified, user.EmailVerifiedAt, user.Status));
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithAlreadyUsedToken_ReturnsFalseAndKeepsTheFirstUsageInstant()
+    public async Task ExecuteAsync_WithAlreadyUsedCode_ReturnsFalseAndKeepsTheFirstUsageInstant()
     {
         var firstUse = _now.UtcDateTime.AddMinutes(-5);
-        var token = new EmailVerificationToken
-        {
-            User = new User(),
-            ExpiresAt = _now.UtcDateTime.AddHours(1),
-            UsedAt = firstUse,
-        };
+        var token = NewToken(new User(), candidate => candidate.UsedAt = firstUse);
         StoreToken(token);
         var sut = CreateSut();
 
-        var verified = await sut.ExecuteAsync(new VerifyEmailRequest("plain-token"));
+        var verified = await sut.ExecuteAsync(new VerifyEmailRequest("person@life.test", "123456"));
 
         Assert.Equal((false, firstUse), (verified, token.UsedAt));
     }

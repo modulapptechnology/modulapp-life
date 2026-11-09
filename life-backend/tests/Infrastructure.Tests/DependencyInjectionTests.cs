@@ -9,15 +9,12 @@ namespace Infrastructure.Tests;
 
 public class DependencyInjectionTests
 {
-    private const string _verificationUrl = "https://life.test/api/v1/auth/verify-email";
-
     private const string _signingKey = "test-only-signing-key-not-a-secret-0123456789";
 
     private static IConfiguration BuildConfiguration(params (string Key, string Value)[] values)
     {
         var settings = new Dictionary<string, string?>
         {
-            ["EmailVerification:VerificationUrl"] = _verificationUrl,
             ["Authentication:AccessToken:SigningKey"] = _signingKey,
         };
 
@@ -87,15 +84,13 @@ public class DependencyInjectionTests
     }
 
     [Fact]
-    public void AddInfrastructure_WithoutLifetime_UsesTwentyFourHours()
+    public void AddInfrastructure_WithoutLifetime_UsesFifteenMinutes()
     {
         using var provider = BuildProvider(BuildConfiguration());
 
         var options = provider.GetRequiredService<EmailVerificationOptions>();
 
-        Assert.Equal(
-            (TimeSpan.FromHours(24), _verificationUrl),
-            (options.TokenLifetime, options.VerificationUrl));
+        Assert.Equal(TimeSpan.FromMinutes(15), options.TokenLifetime);
     }
 
     [Fact]
@@ -116,18 +111,6 @@ public class DependencyInjectionTests
     public void AddInfrastructure_WithInvalidLifetime_ThrowsInvalidOperationException(string minutes)
     {
         var configuration = BuildConfiguration(("EmailVerification:TokenLifetimeMinutes", minutes));
-
-        var action = () => new ServiceCollection().AddInfrastructure(configuration);
-
-        Assert.Throws<InvalidOperationException>(action);
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("/relative/path")]
-    public void AddInfrastructure_WithoutAnAbsoluteVerificationUrl_ThrowsInvalidOperationException(string url)
-    {
-        var configuration = BuildConfiguration(("EmailVerification:VerificationUrl", url));
 
         var action = () => new ServiceCollection().AddInfrastructure(configuration);
 
@@ -228,9 +211,8 @@ public class DependencyInjectionTests
     [Fact]
     public async Task LoggingSender_WhenSending_CompletesWithoutThrowing()
     {
-        var options = new EmailVerificationOptions(TimeSpan.FromHours(1), _verificationUrl);
         var logger = NullLogger<LoggingVerificationEmailSender>.Instance;
-        var sender = new LoggingVerificationEmailSender(options, logger);
+        var sender = new LoggingVerificationEmailSender(logger);
 
         var task = sender.SendAsync("person@life.test", "token");
 

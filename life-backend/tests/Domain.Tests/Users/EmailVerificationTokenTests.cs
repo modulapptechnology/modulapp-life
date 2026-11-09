@@ -75,4 +75,56 @@ public class EmailVerificationTokenTests
 
         Assert.Throws<InvalidOperationException>(action);
     }
+
+    [Fact]
+    public void CanBeUsed_WithTheMaximumFailedAttempts_ReturnsFalse()
+    {
+        var token = new EmailVerificationToken
+        {
+            ExpiresAt = _now.AddMinutes(1),
+            FailedAttempts = EmailVerificationToken.MaxFailedAttempts,
+        };
+
+        var result = token.CanBeUsed(_now);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void CanBeUsed_WithOneAttemptLeft_ReturnsTrue()
+    {
+        var token = new EmailVerificationToken
+        {
+            ExpiresAt = _now.AddMinutes(1),
+            FailedAttempts = EmailVerificationToken.MaxFailedAttempts - 1,
+        };
+
+        var result = token.CanBeUsed(_now);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void RegisterFailedAttempt_WhenCalled_AddsOneToTheCounter()
+    {
+        var token = new EmailVerificationToken { FailedAttempts = 2 };
+
+        token.RegisterFailedAttempt();
+
+        Assert.Equal(3, token.FailedAttempts);
+    }
+
+    [Fact]
+    public void MarkUsed_WhenOutOfAttempts_ThrowsInvalidOperationException()
+    {
+        var token = new EmailVerificationToken
+        {
+            ExpiresAt = _now.AddMinutes(1),
+            FailedAttempts = EmailVerificationToken.MaxFailedAttempts,
+        };
+
+        var action = () => token.MarkUsed(_now);
+
+        Assert.Throws<InvalidOperationException>(action);
+    }
 }

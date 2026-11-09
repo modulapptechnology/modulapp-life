@@ -23,7 +23,7 @@ public class RegisterUserTests
     public RegisterUserTests()
     {
         _hasher.Hash(Arg.Any<string>()).Returns("hashed-password");
-        _tokens.Create().Returns(new VerificationToken("plain-token", "hashed-token"));
+        _tokens.CreateCode().Returns(new VerificationToken("plain-token", "hashed-token"));
     }
 
     private RegisterUser CreateSut()
@@ -34,7 +34,7 @@ public class RegisterUserTests
             _tokens,
             _sender,
             new PassThroughUnitOfWork(),
-            new EmailVerificationOptions(_lifetime, "https://life.test/verify"),
+            new EmailVerificationOptions(_lifetime),
             new FixedTimeProvider(_now),
             NullLogger<RegisterUser>.Instance);
     }

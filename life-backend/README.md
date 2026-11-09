@@ -232,20 +232,31 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 | Endpoint | Resultado |
 |---|---|
 | `POST /api/v1/auth/register` con `{ "email", "password" }` | `201` con `{ id, email }` y envía el correo de verificación. `409` si el correo ya está registrado (sin distinguir mayúsculas, sin datos adicionales). `400` con el detalle por campo si el correo o la contraseña no son válidos. `429` al superar el límite de intentos. |
-| `GET /api/v1/auth/verify-email?token=<token>` | `204` y el usuario pasa a `Active` con `EmailVerifiedAt`. `400` si el enlace no existe, ya se usó o venció (mismo mensaje para los tres casos). `429` al superar el límite. |
+| `POST /api/v1/auth/verify-email` con `{ "email", "code" }` | `204` y el usuario pasa a `Active` con `EmailVerifiedAt`. `400` si el código es incorrecto, ya se usó, venció, agotó los intentos o el correo no existe (mismo mensaje para todos los casos). `429` al superar el límite. |
 
 - **Política de contraseña** (`RegisterUserRequestValidator`): de 10 a 128 caracteres, con al menos una mayúscula, una minúscula y un número. La contraseña nunca se guarda ni se devuelve: se almacena solo el hash PBKDF2-SHA256 con sal aleatoria y 600 000 iteraciones (`Pbkdf2PasswordHasher`, formato `PBKDF2-SHA256$<iteraciones>$<sal>$<hash>`).
-- **Enlace de verificación**: token aleatorio de 32 bytes, de un solo uso. En `EmailVerificationTokens` solo se guarda su hash SHA-256 (`TokenHash`, único entre los no eliminados), con `ExpiresAt` y `UsedAt`. El usuario queda `Pending` hasta confirmar; un usuario `Blocked` conserva su estado y solo registra `EmailVerifiedAt`.
-- **Correo**: se envía después de confirmar la transacción. Si el envío falla se registra el error (sin el correo ni el token en el mensaje) y el registro igual responde `201`; reenviar el enlace no forma parte de este cambio.
+- **Código de verificación**: código numérico de 6 dígitos generado con un generador criptográfico, de un solo uso. En `EmailVerificationTokens` solo se guarda su hash SHA-256 (`TokenHash`), con `ExpiresAt`, `UsedAt` y `FailedAttempts`. Como un código de 6 dígitos tiene pocas combinaciones, el código vence a los 15 minutos y se invalida tras 5 intentos fallidos (`EmailVerificationToken.MaxFailedAttempts`); el hash no protege el código si se filtra la base, lo protegen la vigencia corta y el tope de intentos. El usuario queda `Pending` hasta confirmar; un usuario `Blocked` conserva su estado y solo registra `EmailVerifiedAt`.
+- **Correo**: se envía después de confirmar la transacción. Si el envío falla se registra el error (sin el correo ni el código en el mensaje) y el registro igual responde `201`; reenviar el código no forma parte de este cambio y, si el código vence o agota los intentos, hay que registrar otro correo.
 - **Límite de frecuencia**: política `Registration` de ASP.NET Core, ventana fija por IP, que aplican los dos endpoints. Detrás de un proxy hay que configurar los encabezados reenviados para que la IP sea la del cliente.
 
 | Configuración | Detalle |
 |---|---|
-| `EmailVerification:VerificationUrl` | **Obligatoria.** URL absoluta del endpoint de confirmación; el enlace del correo es esa URL con `?token=`. En Desarrollo y Pruebas está en `appsettings.<Entorno>.json`; en Producción se define por variable de entorno (`EmailVerification__VerificationUrl`). Sin ella la API no inicia. |
-| `EmailVerification:TokenLifetimeMinutes` | Vigencia del enlace; 1440 (24 horas) por defecto. |
-| `Email:Provider` | `Smtp` (por defecto) o `Log`. `Log` solo escribe el enlace en el log y se usa en Desarrollo y Pruebas; no se usa en Producción. |
-| `Email:Smtp:Host`, `Port` (587), `EnableSsl` (`true`), `UserName`, `Password`, `FromAddress` | Servidor SMTP. El usuario y la contraseña van en `user-secrets` o variables de entorno (`Email__Smtp__Password`), nunca en archivos versionados. |
+| `EmailVerification:TokenLifetimeMinutes` | Vigencia del código; 15 minutos por defecto. |
+| `Email:Provider` | `Smtp` (por defecto, y el valor en Desarrollo) o `Log`. `Log` solo escribe el código en el log y se usa en Pruebas; no se usa en Desarrollo ni en Producción. |
+| `Email:Smtp:Host`, `Port` (587), `EnableSsl` (`true`), `UserName`, `Password`, `FromAddress` | Servidor SMTP. En Desarrollo `Host`, `Port` y `EnableSsl` ya apuntan a Gmail en `appsettings.Development.json`. `UserName`, `Password` y `FromAddress` van en `user-secrets` o variables de entorno (`Email__Smtp__Password`), nunca en archivos versionados. |
 | `RateLimiting:Registration:PermitLimit` / `WindowSeconds` | Intentos permitidos por IP y duración de la ventana; 5 por 600 segundos por defecto (1000 en Pruebas). |
+
+#### Correo en Desarrollo
+
+En Desarrollo el correo sale por la cuenta de Gmail general de la empresa. Cada desarrollador guarda las credenciales en sus propios `user-secrets` (una sola vez). La contraseña de aplicación de Gmail la entrega el equipo por un medio seguro (gestor de contraseñas), no por el repositorio ni por el chat. Desde `life-backend`:
+
+```powershell
+dotnet user-secrets set "Email:Smtp:UserName" "<correo Gmail de la empresa>" --project API
+dotnet user-secrets set "Email:Smtp:Password" "<contraseña de aplicación de Gmail>" --project API
+dotnet user-secrets set "Email:Smtp:FromAddress" "<correo Gmail de la empresa>" --project API
+```
+
+Gmail exige una contraseña de aplicación (con la verificación en dos pasos activada en la cuenta), no la contraseña normal. Sin esos valores el registro responde `201` igual, pero el envío falla y el error queda en la consola de la API (`The verification email for user ... could not be sent`). Para no enviar correos reales basta con `dotnet user-secrets set "Email:Provider" "Log" --project API`: el código se escribe en la consola (`Verification code for <correo>: <código>`).
 
 `tests/API.Tests/Registration` prueba los endpoints sin base de datos, con un repositorio en memoria; `Infrastructure.Tests` prueba `UserRepository` contra la base de pruebas.
 
@@ -331,7 +342,7 @@ Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Passwor
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, y `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, `AddEmailVerificationAttempts` agrega `FailedAttempts` a esa tabla y quita la unicidad de `TokenHash` (los códigos de 6 dígitos se repiten entre usuarios), y `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 

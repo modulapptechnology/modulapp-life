@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Application.Common;
 
 namespace Application.Users;
@@ -14,16 +16,24 @@ public sealed class VerifyEmail(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var tokenHash = tokenService.Hash(request.Token);
+        var email = request.Email.Trim();
+        var codeHash = tokenService.Hash(request.Code);
 
         return await unitOfWork.ExecuteInTransactionAsync(
             async innerToken =>
             {
-                var token = await users.FindVerificationTokenAsync(tokenHash, innerToken);
+                var token = await users.FindLatestVerificationTokenAsync(email, innerToken);
                 var now = timeProvider.GetUtcNow().UtcDateTime;
 
                 if (token?.User is null || !token.CanBeUsed(now))
                 {
+                    return false;
+                }
+
+                if (!HashesMatch(token.TokenHash, codeHash))
+                {
+                    token.RegisterFailedAttempt();
+
                     return false;
                 }
 
@@ -33,5 +43,12 @@ public sealed class VerifyEmail(
                 return true;
             },
             cancellationToken);
+    }
+
+    private static bool HashesMatch(string storedHash, string candidateHash)
+    {
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(storedHash),
+            Encoding.UTF8.GetBytes(candidateHash));
     }
 }
