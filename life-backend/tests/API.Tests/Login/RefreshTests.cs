@@ -5,6 +5,7 @@ using API.Tests.Support;
 using Application.Common;
 using Application.Users;
 using Domain.Users;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
