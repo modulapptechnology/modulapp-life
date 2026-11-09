@@ -26,7 +26,10 @@ public class RegistrationTests(ApiFactory api)
         return client.PostAsJsonAsync(_registerRoute, body);
     }
 
-    private static string VerifyUrl(string token) => $"{_verifyRoute}?token={Uri.EscapeDataString(token)}";
+    private static Task<HttpResponseMessage> VerifyAsync(HttpClient client, string email, string code)
+    {
+        return client.PostAsJsonAsync(_verifyRoute, new { email, code });
+    }
 
     private static async Task<IReadOnlyDictionary<string, string[]>> ReadErrorsAsync(
         HttpResponseMessage response)
@@ -175,13 +178,12 @@ public class RegistrationTests(ApiFactory api)
     }
 
     [Fact]
-    public async Task VerifyEmail_WithTheEmailedToken_Returns204AndActivatesTheUser()
+    public async Task VerifyEmail_WithTheEmailedCode_Returns204AndActivatesTheUser()
     {
         var (client, users, sender) = CreateClient();
         await RegisterAsync(client);
-        var token = sender.Sent.Single().Token;
 
-        var response = await client.GetAsync($"{_verifyRoute}?token={Uri.EscapeDataString(token)}");
+        var response = await VerifyAsync(client, "person@life.test", sender.Sent.Single().Token);
 
         var user = users.Users.Single();
         Assert.Equal(
@@ -190,26 +192,26 @@ public class RegistrationTests(ApiFactory api)
     }
 
     [Fact]
-    public async Task VerifyEmail_WhenTheTokenIsUsedTwice_Returns400TheSecondTime()
+    public async Task VerifyEmail_WhenTheCodeIsUsedTwice_Returns400TheSecondTime()
     {
         var (client, _, sender) = CreateClient();
         await RegisterAsync(client);
-        var url = $"{_verifyRoute}?token={Uri.EscapeDataString(sender.Sent.Single().Token)}";
-        await client.GetAsync(url);
+        var code = sender.Sent.Single().Token;
+        await VerifyAsync(client, "person@life.test", code);
 
-        var response = await client.GetAsync(url);
+        var response = await VerifyAsync(client, "person@life.test", code);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task VerifyEmail_WithExpiredToken_Returns400AndKeepsTheUserPending()
+    public async Task VerifyEmail_WithExpiredCode_Returns400AndKeepsTheUserPending()
     {
         var (client, users, sender) = CreateClient();
         await RegisterAsync(client);
         users.Tokens.Single().ExpiresAt = DateTime.UtcNow.AddMinutes(-1);
 
-        var response = await client.GetAsync(VerifyUrl(sender.Sent.Single().Token));
+        var response = await VerifyAsync(client, "person@life.test", sender.Sent.Single().Token);
 
         Assert.Equal(
             (HttpStatusCode.BadRequest, UserStatus.Pending),
@@ -217,22 +219,57 @@ public class RegistrationTests(ApiFactory api)
     }
 
     [Fact]
-    public async Task VerifyEmail_WithUnknownToken_Returns400()
+    public async Task VerifyEmail_WithAWrongCode_Returns400AndCountsTheAttempt()
+    {
+        var (client, users, sender) = CreateClient();
+        await RegisterAsync(client);
+        var wrongCode = sender.Sent.Single().Token == "000000" ? "111111" : "000000";
+
+        var response = await VerifyAsync(client, "person@life.test", wrongCode);
+
+        Assert.Equal(
+            (HttpStatusCode.BadRequest, 1),
+            (response.StatusCode, users.Tokens.Single().FailedAttempts));
+    }
+
+    [Fact]
+    public async Task VerifyEmail_AfterTooManyWrongCodes_Returns400EvenWithTheRightCode()
+    {
+        var (client, users, sender) = CreateClient();
+        await RegisterAsync(client);
+        var code = sender.Sent.Single().Token;
+        var wrongCode = code == "000000" ? "111111" : "000000";
+
+        for (var attempt = 0; attempt < EmailVerificationToken.MaxFailedAttempts; attempt++)
+        {
+            await VerifyAsync(client, "person@life.test", wrongCode);
+        }
+
+        var response = await VerifyAsync(client, "person@life.test", code);
+
+        Assert.Equal(
+            (HttpStatusCode.BadRequest, UserStatus.Pending),
+            (response.StatusCode, users.Users.Single().Status));
+    }
+
+    [Fact]
+    public async Task VerifyEmail_WithUnknownEmail_Returns400()
     {
         var (client, _, _) = CreateClient();
 
-        var response = await client.GetAsync($"{_verifyRoute}?token=unknown");
+        var response = await VerifyAsync(client, "nobody@life.test", "123456");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task VerifyEmail_WithoutToken_Returns400()
+    public async Task VerifyEmail_WithACodeThatIsNotSixDigits_Returns400WithTheCodeField()
     {
         var (client, _, _) = CreateClient();
 
-        var response = await client.GetAsync(_verifyRoute);
+        var response = await VerifyAsync(client, "person@life.test", "12ab");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var errors = await ReadErrorsAsync(response);
+        Assert.Equal((HttpStatusCode.BadRequest, true), (response.StatusCode, errors.ContainsKey("Code")));
     }
 }

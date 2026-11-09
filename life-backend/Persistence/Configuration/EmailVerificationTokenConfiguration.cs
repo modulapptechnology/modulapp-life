@@ -18,9 +18,7 @@ public class EmailVerificationTokenConfiguration : IEntityTypeConfiguration<Emai
             .HasForeignKey(token => token.UserId)
             .IsRequired()
             .OnDelete(DeleteBehavior.Restrict);
-        builder.HasIndex(token => token.TokenHash)
-            .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+        builder.Property(token => token.FailedAttempts).IsRequired();
         builder.HasIndex(token => token.UserId);
     }
 }

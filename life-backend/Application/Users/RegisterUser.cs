@@ -20,7 +20,7 @@ public sealed class RegisterUser(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var token = tokenService.Create();
+        var token = tokenService.CreateCode();
         var user = new User
         {
             Email = request.Email.Trim(),

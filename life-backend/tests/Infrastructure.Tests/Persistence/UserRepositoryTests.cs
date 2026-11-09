@@ -58,7 +58,7 @@ public class UserRepositoryTests(MigratedDatabaseFixture database)
     }
 
     [RequiresTestDatabaseFact]
-    public async Task FindVerificationTokenAsync_WithKnownHash_ReturnsTheTokenWithItsUser()
+    public async Task FindLatestVerificationTokenAsync_WithKnownEmail_ReturnsTheTokenWithItsUser()
     {
         var user = NewUser();
         var token = NewToken(user);
@@ -67,18 +67,18 @@ public class UserRepositoryTests(MigratedDatabaseFixture database)
         await using var context = database.CreateContext();
         var repository = new UserRepository(context);
 
-        var found = await repository.FindVerificationTokenAsync(token.TokenHash);
+        var found = await repository.FindLatestVerificationTokenAsync(user.Email.ToUpperInvariant());
 
         Assert.Equal(user.Email, found?.User?.Email);
     }
 
     [RequiresTestDatabaseFact]
-    public async Task FindVerificationTokenAsync_WithUnknownHash_ReturnsNull()
+    public async Task FindLatestVerificationTokenAsync_WithUnknownEmail_ReturnsNull()
     {
         await using var context = database.CreateContext();
         var repository = new UserRepository(context);
 
-        var found = await repository.FindVerificationTokenAsync("unknown-hash");
+        var found = await repository.FindLatestVerificationTokenAsync("unknown@life.test");
 
         Assert.Null(found);
     }

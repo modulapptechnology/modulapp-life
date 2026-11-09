@@ -34,8 +34,14 @@ Content-Type: application/json
   "refreshToken": "<refresh-token>"
 }
 
-### Confirm the email (token from the verification link)
-GET {{API_HostAddress}}/api/v1/auth/verify-email?token=<token>
+### Confirm the email (6-digit code from the verification email)
+POST {{API_HostAddress}}/api/v1/auth/verify-email
+Content-Type: application/json
+
+{
+  "email": "person@example.com",
+  "code": "123456"
+}
 
 ### CORS disallowed origin
 GET {{API_HostAddress}}/api/v1/house

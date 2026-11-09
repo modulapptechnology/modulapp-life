@@ -6,8 +6,8 @@ public interface IUserRepository
 {
     Task AddAsync(User user, EmailVerificationToken token, CancellationToken cancellationToken = default);
 
-    Task<EmailVerificationToken?> FindVerificationTokenAsync(
-        string tokenHash,
+    Task<EmailVerificationToken?> FindLatestVerificationTokenAsync(
+        string email,
         CancellationToken cancellationToken = default);
 
     Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default);
