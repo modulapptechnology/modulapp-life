@@ -58,7 +58,6 @@ public static class DependencyInjection
     {
         const string section = EmailVerificationOptions.SectionName;
         var lifetimeKey = $"{section}:{EmailVerificationOptions.TokenLifetimeMinutesKey}";
-        var urlKey = $"{section}:{EmailVerificationOptions.VerificationUrlKey}";
         var lifetime = EmailVerificationOptions.DefaultTokenLifetime;
         var lifetimeValue = configuration[lifetimeKey];
 
@@ -74,15 +73,7 @@ public static class DependencyInjection
             lifetime = TimeSpan.FromMinutes(minutes);
         }
 
-        var url = configuration[urlKey];
-
-        if (!Uri.TryCreate(url, UriKind.Absolute, out _))
-        {
-            throw new InvalidOperationException(
-                $"The setting '{urlKey}' must be an absolute URL, but was '{url}'.");
-        }
-
-        return new EmailVerificationOptions(lifetime, url);
+        return new EmailVerificationOptions(lifetime);
     }
 
     private static LoginOptions BuildLoginOptions(IConfiguration configuration)

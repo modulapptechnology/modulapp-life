@@ -2,5 +2,5 @@ namespace Application.Users;
 
 public interface IVerificationEmailSender
 {
-    Task SendAsync(string email, string token, CancellationToken cancellationToken = default);
+    Task SendAsync(string email, string code, CancellationToken cancellationToken = default);
 }

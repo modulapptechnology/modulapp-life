@@ -6,7 +6,7 @@ namespace Infrastructure.Tests.Email;
 public class SmtpVerificationEmailSenderTests
 {
     private static readonly EmailVerificationOptions _verification =
-        new(TimeSpan.FromHours(1), "https://life.test/verify");
+        new(TimeSpan.FromMinutes(15));
 
     [Fact]
     public async Task SendAsync_WithoutHost_ThrowsInvalidOperationException()

@@ -115,12 +115,12 @@ public class AuthController(IConfiguration configuration) : ApiControllerBase
             : response;
     }
 
-    [HttpGet("verify-email")]
+    [HttpPost("verify-email")]
     [EnableRateLimiting(ApiServiceCollectionExtensions.RegistrationRateLimitPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VerifyEmail(
-        [FromQuery] VerifyEmailRequest request,
+        [FromBody] VerifyEmailRequest request,
         [FromServices] VerifyEmail verifyEmail,
         CancellationToken cancellationToken)
     {
@@ -129,7 +129,7 @@ public class AuthController(IConfiguration configuration) : ApiControllerBase
         if (!verified)
         {
             return Problem(
-                title: "El enlace de verificación no es válido o ya venció.",
+                title: "El código no es válido o ya venció.",
                 statusCode: StatusCodes.Status400BadRequest);
         }
 

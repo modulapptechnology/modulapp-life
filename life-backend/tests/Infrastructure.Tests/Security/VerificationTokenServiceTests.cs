@@ -1,3 +1,4 @@
+using Application.Users;
 using Infrastructure.Security;
 using Persistence.Configuration;
 
@@ -8,19 +9,13 @@ public class VerificationTokenServiceTests
     private readonly VerificationTokenService _service = new();
 
     [Fact]
-    public void Create_WhenCalled_ReturnsAUrlSafeTokenWithoutPadding()
+    public void Create_WhenCalled_ReturnsALongUrlSafeTokenWithoutPadding()
     {
         var token = _service.Create();
 
-        Assert.DoesNotContain(token.Value, character => character is '+' or '/' or '=');
-    }
-
-    [Fact]
-    public void Create_WhenCalled_ReturnsTheHashOfTheTokenAndNotTheTokenItself()
-    {
-        var token = _service.Create();
-
-        Assert.Equal((_service.Hash(token.Value), true), (token.Hash, token.Hash != token.Value));
+        Assert.Equal(
+            (43, 0),
+            (token.Value.Length, token.Value.Count(character => character is '+' or '/' or '=')));
     }
 
     [Fact]
@@ -33,11 +28,53 @@ public class VerificationTokenServiceTests
     }
 
     [Fact]
-    public void Create_WhenCalled_ReturnsAHashThatFitsInTheTokenHashColumn()
+    public void Create_WhenCalled_ReturnsTheHashOfTheTokenAndNotTheTokenItself()
     {
         var token = _service.Create();
 
-        Assert.Equal(EmailVerificationTokenConfiguration.TokenHashMaxLength, token.Hash.Length);
+        Assert.Equal((_service.Hash(token.Value), true), (token.Hash, token.Hash != token.Value));
+    }
+
+    [Fact]
+    public void CreateCode_WhenCalled_ReturnsACodeOfOnlyDigitsWithTheConfiguredLength()
+    {
+        var token = _service.CreateCode();
+
+        Assert.Equal(
+            (VerificationToken.CodeLength, true),
+            (token.Value.Length, token.Value.All(char.IsAsciiDigit)));
+    }
+
+    [Fact]
+    public void CreateCode_WhenCalledManyTimes_KeepsTheLeadingZeros()
+    {
+        var codes = Enumerable.Range(0, 2000).Select(_ => _service.CreateCode().Value);
+
+        Assert.All(codes, code => Assert.Equal(VerificationToken.CodeLength, code.Length));
+    }
+
+    [Fact]
+    public void CreateCode_WhenCalledManyTimes_ReturnsDifferentCodes()
+    {
+        var codes = Enumerable.Range(0, 20).Select(_ => _service.CreateCode().Value).Distinct();
+
+        Assert.True(codes.Count() > 1);
+    }
+
+    [Fact]
+    public void CreateCode_WhenCalled_ReturnsTheHashOfTheCodeAndNotTheCodeItself()
+    {
+        var token = _service.CreateCode();
+
+        Assert.Equal((_service.Hash(token.Value), true), (token.Hash, token.Hash != token.Value));
+    }
+
+    [Fact]
+    public void Hash_WhenCalled_ReturnsAHashThatFitsInTheTokenHashColumn()
+    {
+        var hash = _service.Hash("123456");
+
+        Assert.Equal(EmailVerificationTokenConfiguration.TokenHashMaxLength, hash.Length);
     }
 
     [Fact]

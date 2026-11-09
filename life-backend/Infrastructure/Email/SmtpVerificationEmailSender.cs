@@ -8,7 +8,7 @@ public sealed class SmtpVerificationEmailSender(
     SmtpOptions smtp,
     EmailVerificationOptions verification) : IVerificationEmailSender
 {
-    public async Task SendAsync(string email, string token, CancellationToken cancellationToken = default)
+    public async Task SendAsync(string email, string code, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(smtp.Host) || string.IsNullOrWhiteSpace(smtp.FromAddress))
         {
@@ -17,12 +17,10 @@ public sealed class SmtpVerificationEmailSender(
                     + "are required to send emails.");
         }
 
-        var link = VerificationEmailContent.BuildLink(verification.VerificationUrl, token);
-
         using var message = new MailMessage(smtp.FromAddress, email)
         {
             Subject = VerificationEmailContent.Subject,
-            Body = VerificationEmailContent.BuildBody(link),
+            Body = VerificationEmailContent.BuildBody(code, verification.TokenLifetime),
         };
         using var client = new SmtpClient(smtp.Host, smtp.Port) { EnableSsl = smtp.EnableSsl };
 

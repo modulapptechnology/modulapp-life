@@ -4,6 +4,8 @@ namespace Domain.Users;
 
 public class EmailVerificationToken : BaseEntity
 {
+    public const int MaxFailedAttempts = 5;
+
     public Guid UserId { get; set; }
 
     public User? User { get; set; }
@@ -14,13 +16,24 @@ public class EmailVerificationToken : BaseEntity
 
     public DateTime? UsedAt { get; set; }
 
-    public bool CanBeUsed(DateTime now) => UsedAt is null && now < ExpiresAt;
+    public int FailedAttempts { get; set; }
+
+    public bool CanBeUsed(DateTime now)
+    {
+        return UsedAt is null && now < ExpiresAt && FailedAttempts < MaxFailedAttempts;
+    }
+
+    public void RegisterFailedAttempt()
+    {
+        FailedAttempts++;
+    }
 
     public void MarkUsed(DateTime usedAt)
     {
         if (!CanBeUsed(usedAt))
         {
-            throw new InvalidOperationException("The verification token is expired or already used.");
+            throw new InvalidOperationException(
+                "The verification code is expired, already used or out of attempts.");
         }
 
         UsedAt = usedAt;

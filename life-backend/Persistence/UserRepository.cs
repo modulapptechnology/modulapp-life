@@ -32,13 +32,17 @@ public sealed class UserRepository(LifeDbContext context) : IUserRepository
         }
     }
 
-    public Task<EmailVerificationToken?> FindVerificationTokenAsync(
-        string tokenHash,
+    public Task<EmailVerificationToken?> FindLatestVerificationTokenAsync(
+        string email,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(email);
+
         return context.EmailVerificationTokens
             .Include(token => token.User)
-            .FirstOrDefaultAsync(token => token.TokenHash == tokenHash, cancellationToken);
+            .Where(token => token.User!.Email == email)
+            .OrderByDescending(token => token.CreatedAt)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public Task<User?> FindByEmailAsync(string email, CancellationToken cancellationToken = default)

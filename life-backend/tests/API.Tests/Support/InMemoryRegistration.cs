@@ -9,13 +9,13 @@ public sealed class InMemoryUserRepository : IUserRepository
 {
     private readonly ConcurrentDictionary<string, User> _usersByEmail = new(StringComparer.OrdinalIgnoreCase);
 
-    private readonly ConcurrentDictionary<string, EmailVerificationToken> _tokensByHash = new();
+    private readonly ConcurrentQueue<EmailVerificationToken> _tokens = new();
 
     private readonly ConcurrentQueue<LoginAttempt> _loginAttempts = new();
 
     public IReadOnlyCollection<User> Users => _usersByEmail.Values.ToList();
 
-    public IReadOnlyCollection<EmailVerificationToken> Tokens => _tokensByHash.Values.ToList();
+    public IReadOnlyCollection<EmailVerificationToken> Tokens => _tokens.ToList();
 
     public Task AddAsync(
         User user,
@@ -28,16 +28,17 @@ public sealed class InMemoryUserRepository : IUserRepository
         }
 
         user.Id = Guid.NewGuid();
-        _tokensByHash[token.TokenHash] = token;
+        _tokens.Enqueue(token);
 
         return Task.CompletedTask;
     }
 
-    public Task<EmailVerificationToken?> FindVerificationTokenAsync(
-        string tokenHash,
+    public Task<EmailVerificationToken?> FindLatestVerificationTokenAsync(
+        string email,
         CancellationToken cancellationToken = default)
     {
-        _tokensByHash.TryGetValue(tokenHash, out var token);
+        var token = _tokens.LastOrDefault(candidate =>
+            string.Equals(candidate.User?.Email, email, StringComparison.OrdinalIgnoreCase));
 
         return Task.FromResult(token);
     }

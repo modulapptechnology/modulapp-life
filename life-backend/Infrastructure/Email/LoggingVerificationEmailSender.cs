@@ -4,14 +4,11 @@ using Microsoft.Extensions.Logging;
 namespace Infrastructure.Email;
 
 public sealed class LoggingVerificationEmailSender(
-    EmailVerificationOptions verification,
     ILogger<LoggingVerificationEmailSender> logger) : IVerificationEmailSender
 {
-    public Task SendAsync(string email, string token, CancellationToken cancellationToken = default)
+    public Task SendAsync(string email, string code, CancellationToken cancellationToken = default)
     {
-        var link = VerificationEmailContent.BuildLink(verification.VerificationUrl, token);
-
-        logger.LogInformation("Verification email for {Email}: {Link}", email, link);
+        logger.LogInformation("Verification code for {Email}: {Code}", email, code);
 
         return Task.CompletedTask;
     }

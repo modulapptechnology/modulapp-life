@@ -2,21 +2,15 @@ namespace Infrastructure.Email;
 
 internal static class VerificationEmailContent
 {
-    public const string Subject = "Confirma tu correo electrónico";
+    public const string Subject = "Tu código de verificación";
 
-    public static string BuildLink(string verificationUrl, string token)
-    {
-        var separator = verificationUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
-
-        return $"{verificationUrl}{separator}token={Uri.EscapeDataString(token)}";
-    }
-
-    public static string BuildBody(string link)
+    public static string BuildBody(string code, TimeSpan lifetime)
     {
         var newLine = Environment.NewLine;
+        var minutes = (int)Math.Ceiling(lifetime.TotalMinutes);
 
-        return $"Para confirmar tu correo electrónico abre este enlace:{newLine}{newLine}"
-            + $"{link}{Environment.NewLine}{Environment.NewLine}"
-            + "El enlace se puede usar una sola vez y tiene una vigencia limitada.";
+        return $"Tu código para confirmar tu correo electrónico es:{newLine}{newLine}"
+            + $"{code}{newLine}{newLine}"
+            + $"El código se puede usar una sola vez y vence en {minutes} minutos.";
     }
 }
