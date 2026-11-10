@@ -1,6 +1,13 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { moduleRegistry, session, translate, useEnabledModules, useSession } from '@life/core';
+import {
+  CAPTURE_SECTION,
+  moduleRegistry,
+  session,
+  translate,
+  useEnabledModules,
+  useSession,
+} from '@life/core';
 import { ModulLayoutWeb, ModulText, toSidebarSections, type NavSection } from '@life/ui';
 import HomePage from './pages/HomePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -9,6 +16,7 @@ import ModulePage from './pages/ModulePage';
 import RegisterPage from './pages/RegisterPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import { useDesktopWindow } from './desktop/useDesktopWindow';
 import { sessionManager } from './services/session/session';
 import SettingsPage from './pages/SettingsPage';
 
@@ -19,6 +27,8 @@ export default function App() {
   const { user, pendingOperations } = useSession(session);
   const navigate = useNavigate();
   const { pathname } = useLocation();
+
+  useDesktopWindow(pathname, modules, navigate);
 
   useEffect(() => {
     void sessionManager.restore();
@@ -91,6 +101,10 @@ export default function App() {
       <Route element={user ? layout : <Navigate to="/login" replace />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/profile" element={<ModulePage nameKey="user.profile" />} />
+        <Route
+          path={CAPTURE_SECTION.path}
+          element={<ModulePage nameKey={CAPTURE_SECTION.nameKey} />}
+        />
         <Route path="/settings" element={<SettingsPage />} />
         {modules.map((module) => (
           <Route

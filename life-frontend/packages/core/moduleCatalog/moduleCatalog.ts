@@ -20,4 +20,7 @@ export const DEFAULT_MODULES: ModuleDefinition[] = [
   },
 ];
 
+// Captura es parte del núcleo: no es un módulo habilitable ni aparece en el menú lateral. Solo expone su ruta.
+export const CAPTURE_SECTION = { path: '/captura', nameKey: 'module.capture' } as const;
+
 export const moduleRegistry = createModuleRegistry(DEFAULT_MODULES);

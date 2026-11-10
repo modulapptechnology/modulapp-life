@@ -46,7 +46,14 @@ apps/mobile/src/
 
 ### Escritorio
 
-`apps/desktop/src-tauri/` contiene la configuración de Tauri (`tauri.conf.json`) y el código de Rust. La ventana carga la app web: en desarrollo desde `http://localhost:5173` y en producción desde `apps/web/dist`. Los permisos están limitados a `core:default` (`capabilities/default.json`).
+`apps/desktop/src-tauri/` contiene la configuración de Tauri (`tauri.conf.json`) y el código de Rust. La ventana carga la app web: en desarrollo desde `http://localhost:5173` y en producción desde `apps/web/dist`. Los permisos están limitados a `core:default`, `core:window:allow-set-title` y `core:window:allow-close` (`capabilities/default.json`).
+
+**Ventana nativa.** La ventana usa la barra de título del sistema operativo, abre en 1100×720 y no baja de 800×600 (`tauri.conf.json`). El plugin `tauri-plugin-window-state` (`src-tauri/src/lib.rs`) recuerda su tamaño y posición entre sesiones.
+
+- **Título:** `ModulApp Life — <sección actual>`, calculado en `buildWindowTitle` (`packages/core/desktopMenu`) y aplicado por el hook `useDesktopWindow` (`apps/web/src/desktop`), que solo actúa dentro de Tauri (`isTauri()`).
+- **Menú nativo:** `buildDesktopMenu` define su estructura y los textos salen de `translate`; el hook lo instala con `@tauri-apps/api/menu`. En Windows y Linux, Archivo incluye nueva captura, ajustes, recargar y salir; en macOS, ajustes y salir pasan al menú de la aplicación. «Ir a» lista Inicio y los módulos habilitados. Las acciones de navegación usan las mismas rutas que la interfaz. En Windows la barra del menú queda oculta (comando `hide_menu` de `src-tauri/src/lib.rs`, que el hook invoca tras instalarlo); el menú sigue definido.
+- **Atajos:** `Ctrl/Cmd+N` nueva captura, `Ctrl/Cmd+,` ajustes, `Ctrl/Cmd+R` recargar, `Ctrl/Cmd+Q` salir y `Ctrl/Cmd+1…9` para Inicio y los módulos.
+- **Captura:** la ruta `/captura` (`CAPTURE_SECTION`) es un marcador de posición; su contenido llega con el módulo Captura. No es un módulo habilitable ni aparece en el menú lateral.
 
 ### Control de versiones
 
