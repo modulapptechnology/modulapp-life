@@ -39,6 +39,25 @@ describe('estilos de los átomos', () => {
   });
 });
 
+describe('estilos de marca de las pantallas de acceso', () => {
+  it('toma el fondo y el borde de marca del color brand del tema claro y oscuro', () => {
+    const claro = createViewStyles(lightColors);
+    const oscuro = createViewStyles(darkColors);
+
+    const colores = [claro.bgBrand.backgroundColor, oscuro.borderBrand.borderColor];
+
+    expect(colores).toEqual([lightColors.brand, darkColors.brand]);
+  });
+
+  it('toma el texto de acento y el atenuado de los colores del tema', () => {
+    const estilos = createTextStyles(lightColors);
+
+    const colores = [estilos.textAccent.color, estilos.textMuted.color];
+
+    expect(colores).toEqual([lightColors.brand, lightColors.muted]);
+  });
+});
+
 describe('estilos de capas y listas', () => {
   it('pinta la capa oscura con el negro del tema', () => {
     const estilos = createViewStyles(lightColors);

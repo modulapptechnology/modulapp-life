@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Platform } from 'react-native';
 import { createTextStyles, createViewStyles } from '@life/theme';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useBreakpoint } from '../useBreakpoint/useBreakpoint';
@@ -15,7 +16,7 @@ export function useStyles() {
       range,
       scale,
       view: scaleSpacing(createViewStyles(colors), scale),
-      text: createTextStyles(colors),
+      text: createTextStyles(colors, Platform.OS === 'web' ? 'web' : 'native'),
     }),
     [colors, scheme, range, scale],
   );

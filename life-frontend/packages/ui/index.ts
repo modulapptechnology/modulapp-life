@@ -44,6 +44,7 @@ export * from './components/organisms/ModulDialog/ModulDialog';
 export * from './components/organisms/ModulBottomSheet/ModulBottomSheet';
 export * from './components/organisms/ModulListPattern/ModulListPattern';
 export * from './components/organisms/ModulFormContainer/ModulFormContainer';
+export * from './components/organisms/ModulAuthForm/ModulAuthForm';
 export * from './components/templates/mobile/ModulListView/ModulListView';
 export * from './components/templates/mobile/ModulFormView/ModulFormView';
 export * from './components/templates/mobile/ModulDetailView/ModulDetailView';

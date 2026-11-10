@@ -10,6 +10,11 @@ export const lightColors = {
   border: '#E2E8F0',
   borderStrong: '#64748B',
 
+  // Identidad de las pantallas de acceso: morado de marca, texto atenuado y marca de agua LIFE.
+  brand: '#9B59B6',
+  muted: '#A5AFD3',
+  watermark: '#EEF2F8',
+
   // Estados de interacción: capas translúcidas sobre el fondo del control y relleno del esqueleto de carga.
   hover: 'rgba(15, 23, 42, 0.08)',
   pressed: 'rgba(15, 23, 42, 0.16)',
@@ -37,6 +42,10 @@ export const darkColors: ThemeColors = {
   textSecondary: '#94A3B8',
   border: '#2E2E2E',
   borderStrong: '#64748B',
+
+  brand: '#B26FD0',
+  muted: '#64748B',
+  watermark: '#1F1F1F',
 
   hover: 'rgba(255, 255, 255, 0.10)',
   pressed: 'rgba(255, 255, 255, 0.20)',

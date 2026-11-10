@@ -7,6 +7,9 @@ import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MobileSidebar } from '../components/MobileSidebar/MobileSidebar';
 import { sessionManager } from '../services/session/session';
+export const unstable_settings = {
+  anchor: 'welcome',
+};
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Audiowide_400Regular, Comfortaa_400Regular, Comfortaa_700Bold });
@@ -34,14 +37,19 @@ export default function RootLayout() {
             <ModulView flex1>
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Protected guard={!user}>
+                  <Stack.Screen name="welcome" />
                   <Stack.Screen name="login" />
+                  <Stack.Screen name="register" />
+                  <Stack.Screen name="forgot-password" />
                 </Stack.Protected>
                 <Stack.Protected guard={!!user}>
-                  <Stack.Screen name="index" />
                   <Stack.Screen name="profile" />
                   <Stack.Screen name="settings" />
                   <Stack.Screen name="[module]" />
                 </Stack.Protected>
+                {/* Se abren desde el enlace del correo, con o sin sesión iniciada. */}
+                <Stack.Screen name="reset-password" />
+                <Stack.Screen name="verify-email" />
               </Stack>
               {user ? (
                 <MobileSidebar visible={sidebarOpen} onClose={() => setSidebarOpen(false)} />

@@ -1,6 +1,14 @@
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, TextInput, type TextInputProps, type TextStyle } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Pressable,
+  TextInput,
+  type TextInputProps,
+  type TextStyle,
+} from 'react-native';
 import { typography } from '@life/theme';
+import { animateTo } from '../../../utils/animations/animations';
 import { formatDateInput, formatTimeInput } from '../../../utils/maskInput/maskInput';
 import { useStyles } from '../../../utils/useStyles/useStyles';
 import { ModulDatePicker } from '../../atoms/ModulDatePicker/ModulDatePicker';
@@ -23,6 +31,8 @@ export type ModulInputProps = Omit<
   'style' | 'editable' | 'secureTextEntry' | 'keyboardType' | 'multiline' | 'accessibilityLabel'
 > & {
   type?: ModulInputType;
+  // 'floating': borde redondeado con la etiqueta dentro del campo, que sube al borde al enfocar o escribir.
+  variant?: 'default' | 'floating';
   label: string;
   help?: string;
   error?: string;
@@ -45,6 +55,7 @@ const LEADING_ICONS: Partial<Record<ModulInputType, IconName>> = {
 
 export function ModulInput({
   type = 'text',
+  variant = 'default',
   label,
   help,
   error,
@@ -68,6 +79,16 @@ export function ModulInput({
 
   // El error pesa más que el foco, y el foco más que el éxito.
   const showSuccess = success && !error;
+  const floating = variant === 'floating';
+  const raised = floating && (focused || !!value);
+  // Etiqueta flotante: 0 = dentro del campo como texto guía, 1 = sobre el borde. Sube y baja con animación.
+  const [labelProgress] = useState(() => new Animated.Value(raised ? 1 : 0));
+  const [fieldHeight, setFieldHeight] = useState(0);
+
+  useEffect(() => {
+    if (!floating) return;
+    animateTo(labelProgress, raised ? 1 : 0);
+  }, [floating, raised, labelProgress]);
   const leadingIcon = LEADING_ICONS[type];
   const selectedOption = options.find((option) => option.value === value);
   // outlineStyle none: en web el navegador dibuja su propio contorno; el foco ya lo marca el borde del campo.
@@ -96,23 +117,65 @@ export function ModulInput({
 
   return (
     <ModulView gap4>
-      <ModulText variant="label">{label}</ModulText>
+      {floating ? null : <ModulText variant="label">{label}</ModulText>}
       <ModulView
+        onLayout={floating ? (event) => setFieldHeight(event.nativeEvent.layout.height) : undefined}
         row
         alignCenter
         gap8
         px16
-        rounded
-        bgSurface
+        rounded={!floating}
+        roundedLg={floating}
+        minH52={floating}
+        bgSurface={!floating}
+        bg={floating}
         bgHover={hovered && !disabled}
-        border={!error && !focused && !showSuccess}
-        borderFocus={!error && focused}
+        border={!floating && !error && !focused && !showSuccess}
+        borderSubtle={floating && !error && !raised && !showSuccess}
+        borderBrand={floating && !error && raised}
+        borderFocus={!floating && !error && focused}
         borderSuccess={showSuccess && !focused}
         borderError={!!error}
         onPointerEnter={() => setHovered(true)}
         onPointerLeave={() => setHovered(false)}
         style={disabled ? view.opacityDisabled : undefined}
       >
+        {floating ? (
+          <Animated.View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: view.px16.paddingHorizontal - view.px4.paddingHorizontal,
+              justifyContent: 'center',
+              zIndex: 1,
+              transformOrigin: 'left center',
+              transform: [
+                {
+                  translateY: labelProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -fieldHeight / 2],
+                  }),
+                },
+                {
+                  scale: labelProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.875] }),
+                },
+              ],
+            }}
+          >
+            <ModulView bg px4>
+              <ModulText
+                variant="body"
+                textSecondary={!raised && !error}
+                textAccent={raised && !error}
+                textDanger={!!error}
+              >
+                {label}
+              </ModulText>
+            </ModulView>
+          </Animated.View>
+        ) : null}
         {leadingIcon ? <ModulIcon name={leadingIcon} color="textSecondary" /> : null}
         {type === 'select' ? (
           <Pressable
@@ -134,6 +197,7 @@ export function ModulInput({
             onChangeText={changeText}
             accessibilityLabel={label}
             accessibilityState={{ disabled, busy: loading }}
+            placeholder={floating ? undefined : props.placeholder}
             editable={!disabled}
             secureTextEntry={type === 'password' && hidden}
             keyboardType={

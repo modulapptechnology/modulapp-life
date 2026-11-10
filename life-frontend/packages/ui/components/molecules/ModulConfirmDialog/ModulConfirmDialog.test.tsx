@@ -58,4 +58,23 @@ describe('ModulConfirmDialog', () => {
 
     expect(screen.queryByText('Eliminar tarea')).toBeNull();
   });
+
+  it('en apariencia de marca muestra el icono y ambos botones', async () => {
+    const onConfirm = jest.fn();
+    await renderWithTheme(
+      <ModulConfirmDialog
+        visible
+        {...textos}
+        appearance="brand"
+        icon="CheckCircleIcon"
+        onConfirm={onConfirm}
+        onCancel={jest.fn()}
+      />,
+    );
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Eliminar' }));
+
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeOnTheScreen();
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
 });

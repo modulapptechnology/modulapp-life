@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, type PressableProps } from 'react-native';
-import { resolveButtonKind } from '../../../utils/resolveButtonKind/resolveButtonKind';
+import {
+  resolveButtonKind,
+  type ButtonKind,
+} from '../../../utils/resolveButtonKind/resolveButtonKind';
 import { useStyles } from '../../../utils/useStyles/useStyles';
 import { ModulIcon, type IconName } from '../ModulIcon/ModulIcon';
 import { ModulText } from '../ModulText/ModulText';
 import { ModulView } from '../ModulView/ModulView';
 
-export type ModulButtonVariant = 'primary' | 'secondary' | 'danger';
+export type ModulButtonVariant = ButtonKind;
 
 export type ModulButtonProps = Omit<PressableProps, 'style' | 'children'> & {
   label?: string;
@@ -15,6 +18,8 @@ export type ModulButtonProps = Omit<PressableProps, 'style' | 'children'> & {
   danger?: boolean;
   // Alto de 32 en lugar del área táctil de 44: para la web, donde se usa el puntero.
   compact?: boolean;
+  // Alto de 52: botones principales de las pantallas de acceso en web.
+  large?: boolean;
   // Muestra un indicador en lugar del icono y bloquea el botón mientras dura la operación.
   loading?: boolean;
   // Resultado correcto: fondo de éxito e icono de verificación.
@@ -29,6 +34,7 @@ export function ModulButton({
   variant = 'primary',
   danger = false,
   compact = false,
+  large = false,
   loading = false,
   success = false,
   error = false,
@@ -48,7 +54,9 @@ export function ModulButton({
   const [pressed, setPressed] = useState(false);
 
   const kind = resolveButtonKind(variant, danger);
-  const filled = success || kind !== 'secondary';
+  const outlined = kind === 'secondary' || kind === 'outline' || kind === 'brandOutline';
+  const largeRadius = kind === 'brand' || kind === 'outline' || kind === 'brandOutline';
+  const filled = success || !outlined;
   const blocked = !!disabled || loading;
   const iconOnly = !label && !!icon;
   const stateIcon: IconName | undefined = success
@@ -89,7 +97,7 @@ export function ModulButton({
       }}
       {...props}
       style={[
-        compact ? view.minH32 : view.minH44,
+        compact ? view.minH32 : large ? view.minH52 : view.minH44,
         compact ? view.minW32 : view.minW44,
         compact ? view.py4 : view.py8,
         iconOnly ? view.p8 : view.px16,
@@ -97,12 +105,15 @@ export function ModulButton({
         view.gap8,
         view.alignCenter,
         view.justifyCenter,
-        view.rounded,
+        largeRadius ? view.roundedLg : view.rounded,
         view.overflowHidden,
         success && view.bgSuccess,
         !success && kind === 'danger' && view.bgDanger,
         !success && kind === 'primary' && view.bgPrimary,
+        !success && kind === 'brand' && view.bgBrand,
         !success && kind === 'secondary' && view.borderPrimary,
+        !success && kind === 'outline' && view.borderText,
+        !success && kind === 'brandOutline' && view.borderBrand,
         focused && view.border,
         error && view.borderError,
         disabled && view.opacityDisabled,
@@ -115,10 +126,27 @@ export function ModulButton({
       {loading ? (
         <ActivityIndicator color={filled ? colors.onAccent : colors.primary} size="small" />
       ) : stateIcon ? (
-        <ModulIcon name={stateIcon} color={filled ? 'onAccent' : 'primary'} />
+        <ModulIcon
+          name={stateIcon}
+          color={
+            filled
+              ? 'onAccent'
+              : kind === 'outline'
+                ? 'text'
+                : kind === 'brandOutline'
+                  ? 'brand'
+                  : 'primary'
+          }
+        />
       ) : null}
       {label ? (
-        <ModulText variant="button" textOnPrimary={filled} textBrand={!filled}>
+        <ModulText
+          variant="button"
+          textOnPrimary={filled && (kind !== 'brand' || success)}
+          textOnBrand={kind === 'brand' && !success}
+          textBrand={kind === 'secondary' && !filled}
+          textAccent={kind === 'brandOutline' && !filled}
+        >
           {label}
         </ModulText>
       ) : null}

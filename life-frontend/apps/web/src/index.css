@@ -16,6 +16,17 @@ body {
   font-family: system-ui, sans-serif;
 }
 
+/* El autocompletado del navegador pinta el campo de azul claro y pisa el fondo del tema.
+   Se retrasa ese cambio de color para que el campo conserve el fondo y el texto del tema claro u oscuro. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition:
+    background-color 600000s 0s,
+    color 600000s 0s;
+}
+
 .home {
   display: flex;
   flex: 1;

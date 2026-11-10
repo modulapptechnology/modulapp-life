@@ -9,10 +9,12 @@ export const createViewStyles = (colors: ThemeColors) =>
     w25: { width: '25%' },
     h100: { height: '100%' },
     minH44: { minHeight: 44 },
+    minH52: { minHeight: 52 },
     minW44: { minWidth: 44 },
     minH32: { minHeight: 32 },
     minW32: { minWidth: 32 },
     maxW480: { maxWidth: 480 },
+    maxW400: { maxWidth: 400 },
     maxH70: { maxHeight: '70%' },
     w10: { width: 10 },
     w22: { width: 22 },
@@ -42,7 +44,12 @@ export const createViewStyles = (colors: ThemeColors) =>
     p10: { padding: 10 },
     p8: { padding: 8 },
     p16: { padding: 16 },
+    p40: { padding: 40 },
     px16: { paddingHorizontal: 16 },
+    px24: { paddingHorizontal: 24 },
+    pt24: { paddingTop: 24 },
+    pb24: { paddingBottom: 24 },
+    px4: { paddingHorizontal: 4 },
     pl16: { paddingLeft: 16 },
     py8: { paddingVertical: 8 },
     mt8: { marginTop: 8 },
@@ -56,6 +63,7 @@ export const createViewStyles = (colors: ThemeColors) =>
     gap6: { gap: 6 },
     gap8: { gap: 8 },
     gap16: { gap: 16 },
+    gap24: { gap: 24 },
 
     // Layout
     flex1: { flex: 1 },
@@ -66,6 +74,9 @@ export const createViewStyles = (colors: ThemeColors) =>
     justifyBetween: { justifyContent: 'space-between' },
     justifyAround: { justifyContent: 'space-around' },
     justifyEnd: { justifyContent: 'flex-end' },
+    alignEnd: { alignItems: 'flex-end' },
+    alignSelfCenter: { alignSelf: 'center' },
+    flexGrow: { flexGrow: 1 },
     absoluteRight: { position: 'absolute', top: 0, right: 0, bottom: 0 },
     absoluteTopRight: { position: 'absolute', top: 0, right: 0 },
     absolute: { position: 'absolute' },
@@ -87,6 +98,7 @@ export const createViewStyles = (colors: ThemeColors) =>
     bg: { backgroundColor: colors.background },
     bgSurface: { backgroundColor: colors.surface },
     bgPrimary: { backgroundColor: colors.primary },
+    bgBrand: { backgroundColor: colors.brand },
     bgDanger: { backgroundColor: colors.danger },
     bgSecondary: { backgroundColor: colors.secondary },
     bgSuccess: { backgroundColor: colors.success },
@@ -105,6 +117,9 @@ export const createViewStyles = (colors: ThemeColors) =>
     borderError: { borderWidth: 2, borderColor: colors.danger },
     borderSuccess: { borderWidth: 2, borderColor: colors.success },
     borderPrimary: { borderWidth: 1, borderColor: colors.primary },
+    borderBrand: { borderWidth: 2, borderColor: colors.brand },
+    borderText: { borderWidth: 1, borderColor: colors.text },
+    borderLeftSubtle: { borderLeftWidth: 1, borderLeftColor: colors.border },
     borderSubtle: { borderWidth: 1, borderColor: colors.border },
     rounded: { borderRadius: 8 },
     roundedLg: { borderRadius: 12 },
@@ -121,19 +136,51 @@ export const createViewStyles = (colors: ThemeColors) =>
     opacityDisabled: { opacity: 0.4 },
   }) as const;
 
-export const createTextStyles = (colors: ThemeColors) =>
+export type StylePlatform = 'native' | 'web';
+
+// Nombres de familia de las fuentes de marca según la plataforma.
+const brandFonts = {
+  native: {
+    comfortaa: 'Comfortaa_400Regular',
+    comfortaaBold: 'Comfortaa_700Bold',
+    audiowide: 'Audiowide_400Regular',
+    brand: 'Audiowide_400Regular',
+  },
+  web: {
+    comfortaa: 'Comfortaa',
+    comfortaaBold: 'Comfortaa',
+    brand: 'Audiowide',
+    audiowide: 'Audiowide',
+  },
+} as const;
+
+export const createTextStyles = (colors: ThemeColors, platform: StylePlatform = 'native') =>
   ({
     textPrimary: { color: colors.text },
     textSecondary: { color: colors.textSecondary },
     textOnPrimary: { color: colors.onAccent },
     textBrand: { color: colors.primary },
     textDanger: { color: colors.danger },
+    textAccent: { color: colors.brand },
+    textOnBrand: { color: colors.white },
+    textMuted: { color: colors.muted },
+    textWatermark: { color: colors.watermark },
+
+    // Fuentes de marca: en mobile las carga expo-font; en web, @fontsource con otros nombres de familia.
+    fontAudiowide: { fontFamily: brandFonts[platform].audiowide },
+    fontComfortaa: { fontFamily: brandFonts[platform].comfortaa },
+    fontComfortaaBold:
+      platform === 'web'
+        ? { fontFamily: brandFonts.web.comfortaa, fontWeight: '700' as const }
+        : { fontFamily: brandFonts.native.comfortaaBold },
+    fontBrand: { fontFamily: brandFonts[platform].brand },
 
     fwMedium: { fontWeight: '500' },
     fwSemibold: { fontWeight: '600' },
     fwBold: { fontWeight: '700' },
 
     textCenter: { textAlign: 'center' },
+    trackingWide: { letterSpacing: 4 },
     textRight: { textAlign: 'right' },
     underline: { textDecorationLine: 'underline' },
   }) as const;

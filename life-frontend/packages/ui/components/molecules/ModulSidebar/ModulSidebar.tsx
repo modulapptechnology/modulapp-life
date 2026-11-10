@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Animated, Easing, Platform, Pressable, ScrollView } from 'react-native';
+import { Animated, Pressable, ScrollView } from 'react-native';
+import { animateTo, animationDurations } from '../../../utils/animations/animations';
 import { useStyles } from '../../../utils/useStyles/useStyles';
 import type { ThemeColors } from '@life/theme';
 import { useTheme } from '../../../theme/ThemeProvider';
@@ -69,12 +70,7 @@ function SidebarItem({
   const [hover] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
-    Animated.timing(hover, {
-      toValue: hovered ? 1 : 0,
-      duration: 150,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: Platform.OS !== 'web',
-    }).start();
+    animateTo(hover, hovered ? 1 : 0, { duration: animationDurations.fast });
 
     return () => hover.stopAnimation();
   }, [hovered, hover]);
