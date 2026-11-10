@@ -1,4 +1,5 @@
 import { ModulButton } from '../../atoms/ModulButton/ModulButton';
+import { ModulIcon, type IconName } from '../../atoms/ModulIcon/ModulIcon';
 import { ModulModal } from '../../atoms/ModulModal/ModulModal';
 import { ModulText } from '../../atoms/ModulText/ModulText';
 import { ModulView } from '../../atoms/ModulView/ModulView';
@@ -10,6 +11,9 @@ export type ModulConfirmDialogProps = {
   confirmLabel: string;
   cancelLabel: string;
   destructive?: boolean;
+  // 'brand': icono arriba, texto centrado y los dos botones del mismo ancho, con los colores de marca.
+  appearance?: 'default' | 'brand';
+  icon?: IconName;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -22,24 +26,43 @@ export function ModulConfirmDialog({
   confirmLabel,
   cancelLabel,
   destructive = false,
+  appearance = 'default',
+  icon,
   onConfirm,
   onCancel,
 }: ModulConfirmDialogProps) {
+  const brand = appearance === 'brand';
+
   return (
     <ModulModal visible={visible} onClose={onCancel} closeLabel={cancelLabel}>
-      <ModulText variant="sectionTitle">{title}</ModulText>
+      {brand && icon ? (
+        <ModulView alignSelfCenter>
+          <ModulIcon name={icon} size="lg" color="brand" />
+        </ModulView>
+      ) : null}
+      <ModulText variant="sectionTitle" textCenter={brand}>
+        {title}
+      </ModulText>
       {message ? (
-        <ModulText variant="body" textSecondary>
+        <ModulText variant="body" textSecondary textCenter={brand}>
           {message}
         </ModulText>
       ) : null}
-      <ModulView row justifyEnd gap8>
-        <ModulButton variant="secondary" label={cancelLabel} onPress={onCancel} />
-        <ModulButton
-          variant={destructive ? 'danger' : 'primary'}
-          label={confirmLabel}
-          onPress={onConfirm}
-        />
+      <ModulView row justifyEnd={!brand} gap8={!brand} gap16={brand}>
+        <ModulView flex1={brand}>
+          <ModulButton
+            variant={brand ? 'brandOutline' : 'secondary'}
+            label={cancelLabel}
+            onPress={onCancel}
+          />
+        </ModulView>
+        <ModulView flex1={brand}>
+          <ModulButton
+            variant={brand ? 'brand' : destructive ? 'danger' : 'primary'}
+            label={confirmLabel}
+            onPress={onConfirm}
+          />
+        </ModulView>
       </ModulView>
     </ModulModal>
   );

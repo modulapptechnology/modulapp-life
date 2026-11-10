@@ -92,4 +92,22 @@ describe('ModulInput', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Correo inválido');
   });
+
+  it('en variante flotante muestra la etiqueta como texto guía, sin placeholder', async () => {
+    const props = { label: 'Usuario', value: '', variant: 'floating' } as const;
+
+    await renderWithTheme(<ModulInput {...props} />);
+
+    expect(screen.getByText('Usuario')).toBeOnTheScreen();
+    expect(screen.queryByPlaceholderText('Usuario')).toBeNull();
+  });
+
+  it('en variante flotante mantiene la etiqueta al enfocar y al tener texto', async () => {
+    const props = { label: 'Usuario', value: 'Ana', variant: 'floating' } as const;
+    await renderWithTheme(<ModulInput {...props} />);
+
+    await fireEvent(screen.getByLabelText('Usuario'), 'focus');
+
+    expect(screen.getByText('Usuario')).toBeOnTheScreen();
+  });
 });

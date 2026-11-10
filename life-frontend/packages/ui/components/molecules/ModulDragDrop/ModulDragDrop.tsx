@@ -10,6 +10,7 @@ import {
   type RefObject,
 } from 'react';
 import { Animated, PanResponder, Pressable, type View } from 'react-native';
+import { springTo } from '../../../utils/animations/animations';
 import { useStyles } from '../../../utils/useStyles/useStyles';
 import { ModulView } from '../../atoms/ModulView/ModulView';
 
@@ -111,7 +112,7 @@ export function ModulDraggable({
   const panResponder = useMemo(() => {
     const reset = () => {
       dragRef.current.setDragging(null);
-      Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
+      springTo(pan, { x: 0, y: 0 });
     };
 
     return PanResponder.create({

@@ -4,7 +4,16 @@ export const MAX_FONT_SIZE_MULTIPLIER = 1.5;
 export type FontWeight = '400' | '500' | '600' | '700';
 
 export type TextVariant =
-  'screenTitle' | 'sectionTitle' | 'headerTitle' | 'body' | 'bodySecondary' | 'label' | 'button';
+  | 'display'
+  | 'watermark'
+  | 'heading'
+  | 'screenTitle'
+  | 'sectionTitle'
+  | 'headerTitle'
+  | 'body'
+  | 'bodySecondary'
+  | 'label'
+  | 'button';
 
 type VariantStyle = {
   fontSize: number;
@@ -13,6 +22,10 @@ type VariantStyle = {
 };
 
 export const typography: Record<TextVariant, VariantStyle> = {
+  // Tamaños grandes de las pantallas de acceso: logotipo LIFE de la web, marca de agua y mensaje de marca.
+  display: { fontSize: 160, lineHeight: 176, fontWeight: '400' },
+  watermark: { fontSize: 64, lineHeight: 72, fontWeight: '400' },
+  heading: { fontSize: 32, lineHeight: 44, fontWeight: '400' },
   screenTitle: { fontSize: 24, lineHeight: 32, fontWeight: '700' },
   sectionTitle: { fontSize: 18, lineHeight: 27, fontWeight: '600' },
   headerTitle: { fontSize: 22, lineHeight: 32, fontWeight: '700' },

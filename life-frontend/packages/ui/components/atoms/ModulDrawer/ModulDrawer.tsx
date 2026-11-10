@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Animated, BackHandler, Easing, Platform, Pressable } from 'react-native';
+import { Animated, BackHandler, Pressable } from 'react-native';
 import { layout } from '@life/theme';
+import { animateTo } from '../../../utils/animations/animations';
 import { useStyles } from '../../../utils/useStyles/useStyles';
 import { ModulView } from '../ModulView/ModulView';
 
@@ -27,13 +28,10 @@ export function ModulDrawer({ visible, onClose, closeLabel, children }: ModulDra
   if (visible && !mounted) setMounted(true);
 
   useEffect(() => {
-    Animated.timing(offset, {
-      toValue: visible ? 0 : -layout.drawerWidth,
-      duration: layout.slideDuration,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: Platform.OS !== 'web',
-    }).start(({ finished }) => {
-      if (!visible && finished) setMounted(false);
+    animateTo(offset, visible ? 0 : -layout.drawerWidth, {
+      onEnd: ({ finished }) => {
+        if (!visible && finished) setMounted(false);
+      },
     });
 
     return () => offset.stopAnimation();

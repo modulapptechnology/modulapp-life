@@ -171,6 +171,31 @@ Los tokens de la sesión (acceso y renovación) se guardan con la interfaz comú
 - Los tokens no se escriben en logs ni en `localStorage`. El nombre del usuario sale del claim `email` del token mientras no exista un perfil. Un valor guardado ilegible se descarta.
 - En escritorio, la URL del origen de la app (`tauri://localhost` o `http://tauri.localhost`) debe estar en `Cors:AllowedOrigins` de la API. En Windows el Credential Manager limita cada credencial a unos 1280 caracteres: los tokens actuales caben con margen.
 
+## Pantallas de acceso
+
+Registro, inicio de sesión, recuperación de acceso, nueva contraseña y confirmación del correo, en mobile (`apps/mobile/src/app/`) y web y escritorio (`apps/web/src/pages/`). Todas se arman con `ModulAuthForm` y la lógica común vive en `@life/core`:
+
+- `authValidation`: reglas de correo y contraseña iguales a las del backend (contraseña de 10 a 128 caracteres con mayúscula, minúscula y número; código de 6 dígitos).
+- `authErrors`: convierte el resultado de la API en un mensaje genérico, para no revelar si un correo existe.
+- `authService`: `register`, `verifyEmail`, `forgotPassword` y `resetPassword` sobre el cliente de la API.
+- `useAuthForm`: errores por campo y del servidor, y bloqueo de envíos duplicados mientras se procesa (`createAuthSubmitter`).
+
+Rutas:
+
+| Pantalla | Mobile | Web y escritorio |
+|---|---|---|
+| Bienvenida | `/welcome` (primera sin sesión) | |
+| Iniciar sesión | `/login` | `/login` |
+| Registro | `/register` | `/register` |
+| Recuperar acceso | `/forgot-password` | `/forgot-password` |
+| Nueva contraseña | `/reset-password?token=` | `/reset-password?token=` |
+| Confirmar correo | `/verify-email?email=` | `/verify-email?email=` |
+
+- El registro termina con un diálogo y lleva a la confirmación, que pide el código de 6 dígitos enviado al correo (`POST /api/v1/auth/verify-email`). Sin `email` en la ruta, la confirmación redirige al inicio de sesión.
+- La recuperación y la nueva contraseña usan `/api/v1/auth/forgot-password` y `/api/v1/auth/reset-password`, que todavía no existen en el backend: las pantallas están listas y responden con un error genérico hasta que se implementen.
+- Los accesos con Google y Apple no tienen lógica: el botón de Google muestra "Próximamente".
+- En mobile, `index` redirige a `/welcome` cuando no hay sesión.
+- Para probar en un celular, `EXPO_PUBLIC_API_URL` en `apps/mobile/.env.local` debe apuntar a la IP de la PC y la API debe escuchar en toda la red (perfil `mobile` de `launchSettings.json`).
 
 ## Sistema de diseño
 
@@ -215,10 +240,10 @@ import { ModulButton, ModulText, ModulView } from '@life/ui';
 #### Átomos y moléculas
 
 - `ModulText`: `variant` define el tamaño; los títulos (`screenTitle`, `sectionTitle`, `headerTitle`) llevan rol de encabezado. Con `link` se muestra como enlace (color de marca, subrayado y rol de enlace) y se usa con `onPress`.
-- `ModulButton`: `variant` es `primary`, `secondary` o `danger` (`danger` queda por compatibilidad). Con `icon` y sin `label` es un botón de solo icono y exige `accessibilityLabel`.
-- Estados de los componentes: `ModulStateContainer` decide qué mostrar según el resultado de una consulta (carga, error, vacío o `children`, en ese orden de prioridad) y delega en `ModulLoadingState`, `ModulErrorState` y `ModulEmptyState`; todos los textos llegan ya traducidos por props y el reintento invoca `onRetry`. `ModulLoadingState` se anuncia como ocupado con `message` como nombre y acepta un `skeleton` (`ModulSkeleton`, bloque estático y oculto a lectores de pantalla) en lugar del indicador. `ModulErrorState` y `ModulFieldMessage` (con error) llevan un icono además del color. `ModulButton` acepta `loading` (bloquea y se anuncia ocupado), `success` y `error`; `ModulInput` acepta `loading` y `success`. Hover y presionado usan los tokens `hover` y `pressed` del tema, y el esqueleto el token `skeleton`, todos con valores en tema claro y oscuro. Quedan fuera las animaciones.
+- `ModulButton`: `variant` es `primary`, `secondary` o `danger` (`danger` queda por compatibilidad); las pantallas de acceso usan además `brand` (relleno morado), `brandOutline` (contorno morado) y `outline` (contorno neutro), con radio de 12, y `large` da un alto de 52. Con `icon` y sin `label` es un botón de solo icono y exige `accessibilityLabel`.
+- Estados de los componentes: `ModulStateContainer` decide qué mostrar según el resultado de una consulta (carga, error, vacío o `children`, en ese orden de prioridad) y delega en `ModulLoadingState`, `ModulErrorState` y `ModulEmptyState`; todos los textos llegan ya traducidos por props y el reintento invoca `onRetry`. `ModulLoadingState` se anuncia como ocupado con `message` como nombre y acepta un `skeleton` (`ModulSkeleton`, bloque estático y oculto a lectores de pantalla) en lugar del indicador. `ModulErrorState` y `ModulFieldMessage` (con error) llevan un icono además del color. `ModulButton` acepta `loading` (bloquea y se anuncia ocupado), `success` y `error`; `ModulInput` acepta `loading` y `success`. Hover y presionado usan los tokens `hover` y `pressed` del tema, y el esqueleto el token `skeleton`, todos con valores en tema claro y oscuro. Las animaciones de los componentes salen de `utils/animations/animations.ts` (`animateTo`, `springTo`, con las duraciones y curvas comunes), agrupadas por tipo en regiones.
 - `ModulFloatingButton`: botón de solo icono anclado abajo a la derecha; va dentro de un contenedor que ocupe la pantalla (`ModulView flex1`). Abre lo que defina la pantalla desde `onPress`.
-- `ModulInput`: un solo campo con `type` (`text`, `password` con botón de mostrar y ocultar, `number`, `textarea`, `search` con botón de borrar, `date` y `time` con máscara `DD/MM/AAAA` y `HH:mm`, `select` con `options`), etiqueta, ayuda y error incluidos. `actionLabel` es el nombre accesible del botón del final del campo.
+- `ModulInput`: un solo campo con `type` (`text`, `password` con botón de mostrar y ocultar, `number`, `textarea`, `search` con botón de borrar, `date` y `time` con máscara `DD/MM/AAAA` y `HH:mm`, `select` con `options`), etiqueta, ayuda y error incluidos. `actionLabel` es el nombre accesible del botón del final del campo. Con `variant="floating"` el campo tiene borde de 12 y la etiqueta va dentro como texto guía: al enfocar o escribir sube animada al borde y vuelve a su lugar si queda vacío.
 - `ModulSwitch` y `ModulCheckbox` (`type` `checkbox` o `radio`; `round` para la casilla redonda de tarea): controlados desde afuera con `checked` y `onChange`.
 - `ModulBadge` (insignia y contador), `ModulAvatar` (imagen o iniciales), `ModulProgress` (valor de 0 a 100) y `ModulChip`. `ModulChipGroup` muestra los chips en un deslizador horizontal, o como control segmentado con `segmented`. `ModulChip` con `onRemove` es un chip de filtro activo.
 - `ModulList`: lista virtualizada (solo renderiza lo cercano a la pantalla) con estados de carga, error y vacío; sus filas son `ModulListItem` (icono, descripción, acciones secundarias, `compact`). `ModulMenu` es el menú contextual y el selector de `ModulInput` lo reutiliza.
@@ -243,7 +268,8 @@ Se arman solo con átomos y moléculas, sin diseño propio, y los textos llegan 
 - `ModulDialog` y `ModulBottomSheet`: envuelven a `ModulModal` (que no cambia) con título y botón de cierre. Al abrirse llevan el foco al título; se cierran con el botón de retroceso de Android, con Escape en web y con el botón de cierre. `ModulBottomSheet` es el mismo diálogo anclado abajo. Se abren desde cualquier pantalla con `visible` y `onClose`; el contenido lo define cada pantalla.
 - `ModulListPattern`: búsqueda (`ModulInput` `search`), filtros opcionales (`ModulChipGroup`) y `ModulList` con sus estados de carga, error y vacío.
 - `ModulFormContainer`: muestra los errores generales del servidor (`serverErrors`) como alerta y las acciones de enviar y cancelar; `submitting` las deshabilita. `toFieldErrors(problem.errors)` convierte los errores por campo del servidor (`ApiProblem.errors`) en el `error` de cada `ModulInput`.
-- Plantillas de pantalla, una por plataforma. Móvil (`templates/mobile/`, una sola columna y controles táctiles de 44): `ModulListView`, `ModulFormView`, `ModulDetailView`, `ModulAuthView`, `ModulSettingsView` y `ModulAgendaView`. Web (`templates/web/`, sufijo `Web`, controles `compact` de 32): `ModulPageWeb` es la estructura común (contenido centrado de 1120 como máximo y encabezado con título y acciones) y las demás se apoyan en ella. `ModulListViewWeb` pone búsqueda y filtros en una fila y la lista en una tarjeta; `ModulFormViewWeb` muestra los campos en dos columnas dentro de una tarjeta de 720; `ModulDetailViewWeb` suma un panel lateral (`aside`); `ModulSettingsViewWeb` lista las secciones a la izquierda y muestra la elegida a la derecha; `ModulAgendaViewWeb` pone el título y la barra de herramientas en la misma fila; `ModulAuthViewWeb` centra el formulario en una tarjeta. `ModulButton` y `ModulInput` aceptan `compact`.
+- `ModulAuthForm`: formulario de las pantallas de acceso. Recibe `fields` (cada uno es un `ModulInput` flotante), `submitLabel`, `serverError`, `aside`, `links`, `providers` y `result` (reemplaza el formulario por un mensaje con una acción). En mobile usa `ModulAuthView` con `variant="brand"`; en web y escritorio, con `brand` (nombre y mensaje), usa `ModulAuthViewWeb` con `layout="split"` (panel de marca y formulario).
+- Plantillas de pantalla, una por plataforma. Móvil (`templates/mobile/`, una sola columna y controles táctiles de 44): `ModulListView`, `ModulFormView`, `ModulDetailView`, `ModulAuthView`, `ModulSettingsView` y `ModulAgendaView`. Web (`templates/web/`, sufijo `Web`, controles `compact` de 32): `ModulPageWeb` es la estructura común (contenido centrado de 1120 como máximo y encabezado con título y acciones) y las demás se apoyan en ella. `ModulListViewWeb` pone búsqueda y filtros en una fila y la lista en una tarjeta; `ModulFormViewWeb` muestra los campos en dos columnas dentro de una tarjeta de 720; `ModulDetailViewWeb` suma un panel lateral (`aside`); `ModulSettingsViewWeb` lista las secciones a la izquierda y muestra la elegida a la derecha; `ModulAgendaViewWeb` pone el título y la barra de herramientas en la misma fila; `ModulAuthViewWeb` centra el formulario en una tarjeta (o, con `layout="split"`, lo pone junto a un panel de marca). `ModulButton` y `ModulInput` aceptan `compact`.
 
 ```tsx
 <ModulListScreen title="Tasks" searchLabel="Search" searchValue={query} onSearchChange={setQuery} data={tasks} renderItem={renderTask} emptyTitle="No tasks" />

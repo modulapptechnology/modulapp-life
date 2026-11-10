@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Animated, Easing, ScrollView } from 'react-native';
+import { Animated, ScrollView } from 'react-native';
 import { layout } from '@life/theme';
+import { animateTo } from '../../../utils/animations/animations';
 import { useStyles } from '../../../utils/useStyles/useStyles';
 import { ModulView } from '../../atoms/ModulView/ModulView';
 import { ModulHeader } from '../../molecules/ModulHeader/ModulHeader';
@@ -43,13 +44,11 @@ export function ModulLayoutWeb({
 
   // El ancho se anima de 0 al ancho completo; el contenido sigue montado hasta que termina de cerrarse.
   useEffect(() => {
-    Animated.timing(width, {
-      toValue: sidebarOpen ? layout.sidebarWidth : 0,
-      duration: layout.slideDuration,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (!sidebarOpen && finished) setMounted(false);
+    animateTo(width, sidebarOpen ? layout.sidebarWidth : 0, {
+      nativeDriver: false,
+      onEnd: ({ finished }) => {
+        if (!sidebarOpen && finished) setMounted(false);
+      },
     });
 
     return () => width.stopAnimation();

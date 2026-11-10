@@ -3,8 +3,12 @@ import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react
 import { moduleRegistry, session, translate, useEnabledModules, useSession } from '@life/core';
 import { ModulLayoutWeb, ModulText, toSidebarSections, type NavSection } from '@life/ui';
 import HomePage from './pages/HomePage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import LoginPage from './pages/LoginPage';
 import ModulePage from './pages/ModulePage';
+import RegisterPage from './pages/RegisterPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 import { sessionManager } from './services/session/session';
 import SettingsPage from './pages/SettingsPage';
 
@@ -76,6 +80,14 @@ export default function App() {
         />
       )}
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterPage />} />
+      <Route
+        path="/forgot-password"
+        element={user ? <Navigate to="/" replace /> : <ForgotPasswordPage />}
+      />
+      {/* Se abren desde el enlace del correo, con o sin sesión iniciada. */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route element={user ? layout : <Navigate to="/login" replace />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/profile" element={<ModulePage nameKey="user.profile" />} />
