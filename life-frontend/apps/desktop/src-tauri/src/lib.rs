@@ -30,13 +30,22 @@ fn secure_delete(key: String) -> Result<(), String> {
   }
 }
 
+// Oculta la barra de menú de la ventana (Windows y Linux) sin quitar el menú de la aplicación.
+#[tauri::command]
+fn hide_menu(window: tauri::WebviewWindow) -> Result<(), String> {
+  window.hide_menu().map_err(|error| error.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
+    // Guarda y restaura el tamaño y la posición de la ventana entre sesiones.
+    .plugin(tauri_plugin_window_state::Builder::default().build())
     .invoke_handler(tauri::generate_handler![
       secure_get,
       secure_set,
-      secure_delete
+      secure_delete,
+      hide_menu
     ])
     .run(tauri::generate_context!())
     .expect("error while building tauri application");

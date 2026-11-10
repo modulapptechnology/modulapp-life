@@ -112,6 +112,12 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'auth.validation.codeInvalid': 'El código debe tener 6 dígitos.',
     'module.tasks': 'Tareas',
     'module.agenda': 'Agenda',
+    'module.capture': 'Captura',
+    'menu.file': 'Archivo',
+    'menu.goTo': 'Ir a',
+    'menu.newCapture': 'Nueva captura',
+    'menu.reload': 'Recargar',
+    'menu.quit': 'Salir',
   },
   en: {
     'nav.home': 'Home',
@@ -222,6 +228,12 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'auth.validation.codeInvalid': 'The code must have 6 digits.',
     'module.tasks': 'Tasks',
     'module.agenda': 'Agenda',
+    'module.capture': 'Capture',
+    'menu.file': 'File',
+    'menu.goTo': 'Go to',
+    'menu.newCapture': 'New capture',
+    'menu.reload': 'Reload',
+    'menu.quit': 'Quit',
   },
 };
 
