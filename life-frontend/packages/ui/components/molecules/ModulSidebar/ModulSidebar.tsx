@@ -42,7 +42,7 @@ export type ModulSidebarProps = {
   signOut?: ModulSidebarSignOut;
 };
 
-function isActive(sectionPath: string, activePath: string) {
+export function isActive(sectionPath: string, activePath: string) {
   if (sectionPath === '/') return activePath === '/';
   return activePath === sectionPath || activePath.startsWith(`${sectionPath}/`);
 }

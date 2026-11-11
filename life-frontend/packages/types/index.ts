@@ -7,6 +7,18 @@ export type ModuleAccent = Extract<
   'primary' | 'secondary' | 'success' | 'info' | 'warning'
 >;
 
+export type ModuleNavLink = {
+  path: string;
+  nameKey: string;
+  icon: ModuleIconName;
+};
+
+export type ModuleNavGroup = {
+  id: string;
+  titleKey: string;
+  links: ModuleNavLink[];
+};
+
 // Un módulo de la app: lo que necesita la navegación para mostrarlo y llevar a él.
 export type ModuleDefinition = {
   id: string;
@@ -14,6 +26,7 @@ export type ModuleDefinition = {
   nameKey: string;
   icon: ModuleIconName;
   accent: ModuleAccent;
+  groups?: ModuleNavGroup[];
 };
 
 export type SessionUser = {

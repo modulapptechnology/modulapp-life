@@ -4,7 +4,18 @@ import { ModulLayoutWeb, type NavSection } from './ModulLayoutWeb';
 
 const NAV_SECTIONS: NavSection[] = [
   { path: '/', label: 'Inicio', icon: 'Home2Icon' },
-  { path: '/tareas', label: 'Tareas', icon: 'ChecklistMinimalisticIcon' },
+  {
+    path: '/tareas',
+    label: 'Tareas',
+    icon: 'ChecklistMinimalisticIcon',
+    groups: [
+      {
+        id: 'mias',
+        title: 'Mis tareas',
+        links: [{ path: '/tareas/hoy', label: 'Hoy y vencido', icon: 'ClockCircleIcon' }],
+      },
+    ],
+  },
   { path: '/agenda', label: 'Agenda', icon: 'CalendarIcon' },
 ];
 
@@ -27,23 +38,25 @@ describe('ModulLayoutWeb', () => {
     expect(screen.getByTestId('web-main')).toBeOnTheScreen();
   });
 
-  it('oculta la barra lateral con el botón del encabezado cuando termina la animación', async () => {
+  it('deja solo la barra de íconos al cerrar con el botón del encabezado', async () => {
     const botonCerrar = 'Cerrar barra lateral';
+    await renderLayout('/tareas');
 
-    await renderLayout();
     await fireEvent.press(screen.getByRole('button', { name: botonCerrar }));
 
-    await waitFor(() => expect(screen.queryByTestId('web-sidebar')).toBeNull());
+    await waitFor(() => expect(screen.queryByTestId('web-sidebar-panel')).toBeNull());
+    expect(screen.getByRole('tab', { name: 'Tareas' })).toBeOnTheScreen();
   });
 
-  it('vuelve a mostrar la barra lateral al tocar el botón por segunda vez', async () => {
+  it('vuelve a mostrar el panel al tocar el botón por segunda vez', async () => {
     const botonDelSidebar = { name: /barra lateral/ };
-
-    await renderLayout();
+    await renderLayout('/tareas');
     await fireEvent.press(screen.getByRole('button', botonDelSidebar));
+    await waitFor(() => expect(screen.queryByTestId('web-sidebar-panel')).toBeNull());
+
     await fireEvent.press(screen.getByRole('button', botonDelSidebar));
 
-    expect(screen.getByTestId('web-sidebar')).toBeOnTheScreen();
+    expect(screen.getByTestId('web-sidebar-panel')).toBeOnTheScreen();
   });
 
   it('marca como activa solo la sección de la ruta actual', async () => {

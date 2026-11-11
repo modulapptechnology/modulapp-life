@@ -85,6 +85,14 @@ describe('estilos de la barra lateral y el panel deslizable', () => {
     expect(ancho).toBe(layout.sidebarWidth);
   });
 
+  it('da a la barra de íconos el ancho del layout', () => {
+    const estilos = createViewStyles(lightColors);
+
+    const ancho = estilos.rail.width;
+
+    expect(ancho).toBe(layout.railWidth);
+  });
+
   it('da al panel deslizable el ancho del layout y toda la altura', () => {
     const estilos = createViewStyles(lightColors);
 
