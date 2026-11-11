@@ -235,7 +235,7 @@ import { ModulButton, ModulText, ModulView } from '@life/ui';
 | Ruta (en `ui/`) | Contenido |
 | --- | --- |
 | `components/atoms/` | `ModulView`, `ModulText`, `ModulButton`, `ModulFloatingButton`, `ModulIcon`, `ModulFieldMessage`, `ModulSkeleton`, `ModulBadge`, `ModulAvatar`, `ModulProgress`, `ModulChip`, `ModulModal`, `ModulDrawer`, `ModulDatePicker` |
-| `components/molecules/` | `ModulInput`, `ModulSwitch`, `ModulCheckbox`, `ModulChipGroup`, `ModulLoadingState`, `ModulEmptyState`, `ModulErrorState`, `ModulStateContainer`, `ModulOptionGroup`, `ModulListItem`, `ModulList`, `ModulMenu`, `ModulToast`, `ModulConfirmDialog`, `ModulMessages` (`ModulMessagesProvider`), `ModulBarChart`, `ModulCircularProgress`, `ModulDragDrop` (`ModulDragProvider`, `ModulDraggable`, `ModulDropZone`), `ModulHeader`, `ModulSidebar` |
+| `components/molecules/` | `ModulInput`, `ModulSwitch`, `ModulCheckbox`, `ModulChipGroup`, `ModulLoadingState`, `ModulEmptyState`, `ModulErrorState`, `ModulStateContainer`, `ModulOptionGroup`, `ModulListItem`, `ModulList`, `ModulMenu`, `ModulToast`, `ModulConfirmDialog`, `ModulMessages` (`ModulMessagesProvider`), `ModulBarChart`, `ModulCircularProgress`, `ModulDragDrop` (`ModulDragProvider`, `ModulDraggable`, `ModulDropZone`), `ModulHeader`, `ModulSidebar`, `ModulSidebarRail` |
 | `components/organisms/` | `ModulDialog`, `ModulBottomSheet`, `ModulListPattern`, `ModulFormContainer` (`toFieldErrors`) |
 | `components/templates/mobile/` | `ModulListView`, `ModulFormView`, `ModulDetailView`, `ModulAuthView`, `ModulSettingsView`, `ModulAgendaView` |
 | `components/templates/web/` | `ModulPageWeb`, `ModulListViewWeb`, `ModulFormViewWeb`, `ModulDetailViewWeb`, `ModulAuthViewWeb`, `ModulSettingsViewWeb`, `ModulAgendaViewWeb` |

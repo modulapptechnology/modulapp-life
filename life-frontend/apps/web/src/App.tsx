@@ -2,7 +2,10 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
   CAPTURE_SECTION,
+  HOME_SECTION,
   moduleRegistry,
+  PROFILE_SECTION,
+  SETTINGS_SECTION,
   session,
   translate,
   useEnabledModules,
@@ -35,10 +38,14 @@ export default function App() {
   }, []);
 
   // El sidebar sale del registro de módulos habilitados, así que no cambia al agregar uno.
-  const sections: NavSection[] = [
-    { path: '/', label: translate('nav.home'), icon: 'Home2Icon' },
-    ...toSidebarSections(modules, translate),
-  ];
+  const sections: NavSection[] = toSidebarSections([HOME_SECTION, ...modules], translate);
+  const [profileSection, settingsSection] = toSidebarSections(
+    [PROFILE_SECTION, SETTINGS_SECTION],
+    translate,
+  );
+  const links = [HOME_SECTION, PROFILE_SECTION, SETTINGS_SECTION, ...modules].flatMap((section) =>
+    (section.groups ?? []).flatMap((group) => group.links),
+  );
 
   const layout = (
     <ModulLayoutWeb
@@ -52,12 +59,11 @@ export default function App() {
               avatarUri: user.avatarUri,
               path: '/profile',
               caption: translate('user.profile'),
+              groups: profileSection.groups,
             }
           : null
       }
-      footerSections={[
-        { path: '/settings', label: translate('user.settings'), icon: 'SettingsIcon' },
-      ]}
+      footerSections={[settingsSection]}
       signOut={{
         label: translate('user.signOut'),
         onSignOut: () => void sessionManager.signOut(),
@@ -112,6 +118,9 @@ export default function App() {
             path={module.path}
             element={<ModulePage nameKey={module.nameKey} />}
           />
+        ))}
+        {links.map((link) => (
+          <Route key={link.path} path={link.path} element={<ModulePage nameKey={link.nameKey} />} />
         ))}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

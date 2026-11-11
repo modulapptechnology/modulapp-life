@@ -2,6 +2,7 @@ export const layout = {
   maxContentWidth: 720,
   screenMargin: 16,
   screenPaddingY: 16,
+  railWidth: 66,
   sidebarWidth: 220,
   drawerWidth: 280,
   slideDuration: 200,

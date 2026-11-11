@@ -35,6 +35,7 @@ export const createViewStyles = (colors: ThemeColors) =>
     previewDesktopHalf: { width: 60 },
     previewPhoneHalf: { width: 27 },
     divider: { height: 1, backgroundColor: colors.border },
+    rail: { width: layout.railWidth },
     sidebar: { width: layout.sidebarWidth },
     drawer: { width: layout.drawerWidth, height: '100%' },
 

@@ -37,6 +37,7 @@ export * from './components/molecules/ModulDragDrop/ModulDragDrop';
 export * from './components/atoms/ModulDatePicker/ModulDatePicker';
 export * from './components/molecules/ModulHeader/ModulHeader';
 export * from './components/molecules/ModulSidebar/ModulSidebar';
+export * from './components/molecules/ModulSidebarRail/ModulSidebarRail';
 export * from './components/molecules/ModulAppearanceModal/ModulAppearanceModal';
 export * from './components/layouts/ModulLayoutWeb/ModulLayoutWeb';
 export * from './components/layouts/ModulSettings/ModulSettings';
