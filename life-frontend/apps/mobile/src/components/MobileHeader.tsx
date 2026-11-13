@@ -1,6 +1,13 @@
 import { Pressable } from 'react-native';
-import { session, translate, useSession } from '@life/core';
-import { ModulAvatar, ModulHeader, ModulIcon, ModulText, ModulView } from '@life/ui';
+import { session, translate, useConnectivity, useSession } from '@life/core';
+import {
+  ModulAvatar,
+  ModulConnectionIndicator,
+  ModulHeader,
+  ModulIcon,
+  ModulText,
+  ModulView,
+} from '@life/ui';
 import { router } from 'expo-router';
 
 type MobileHeaderProps = {
@@ -15,19 +22,30 @@ function goBack() {
 
 export function MobileHeader({ title }: MobileHeaderProps) {
   const { user } = useSession(session);
+  const { status } = useConnectivity();
 
   return (
     <ModulHeader
       end={
-        <ModulView
-          accessible
-          accessibilityLabel={translate('settings.notifications.title')}
-          alignCenter
-          justifyCenter
-          minH44
-          minW44
-        >
-          <ModulIcon name="BellIcon" color="textSecondary" />
+        <ModulView row alignCenter gap8>
+          <ModulConnectionIndicator
+            status={status}
+            labels={{
+              offline: translate('connectivity.offline'),
+              syncing: translate('connectivity.syncing'),
+              synced: translate('connectivity.synced'),
+            }}
+          />
+          <ModulView
+            accessible
+            accessibilityLabel={translate('settings.notifications.title')}
+            alignCenter
+            justifyCenter
+            minH44
+            minW44
+          >
+            <ModulIcon name="BellIcon" color="textSecondary" />
+          </ModulView>
         </ModulView>
       }
     >

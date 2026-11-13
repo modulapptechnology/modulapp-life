@@ -28,6 +28,7 @@ export * from './components/molecules/ModulListItem/ModulListItem';
 export * from './components/molecules/ModulList/ModulList';
 export * from './components/molecules/ModulMenu/ModulMenu';
 export * from './components/molecules/ModulToast/ModulToast';
+export * from './components/molecules/ModulConnectionIndicator/ModulConnectionIndicator';
 export * from './components/molecules/ModulConfirmDialog/ModulConfirmDialog';
 export * from './components/molecules/ModulMessages/ModulMessages';
 export * from './components/molecules/ModulOptionGroup/ModulOptionGroup';

@@ -5,6 +5,7 @@ import { appearanceStore, session, useAppearance, useSession } from '@life/core'
 import { ModulMessagesProvider, ModulView, ThemeProvider } from '@life/ui';
 import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { connectivityMonitor } from '../services/connectivity/connectivity';
 import { sessionManager } from '../services/session/session';
 export const unstable_settings = {
   anchor: 'welcome',
@@ -18,6 +19,8 @@ export default function RootLayout() {
   useEffect(() => {
     void sessionManager.restore();
   }, []);
+
+  useEffect(() => connectivityMonitor.start(), []);
 
   if (!fontsLoaded) return null;
 

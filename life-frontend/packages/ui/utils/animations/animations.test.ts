@@ -1,6 +1,13 @@
 import { Animated } from 'react-native';
 import { animateTo, animationDurations, springTo } from './animations';
 
+// Las animaciones usan temporizadores: se simulan y se descartan para que no sigan tras terminar la prueba.
+beforeEach(() => jest.useFakeTimers());
+afterEach(() => {
+  jest.clearAllTimers();
+  jest.useRealTimers();
+});
+
 describe('animateTo', () => {
   it('anima el valor hasta el destino con la duración estándar', () => {
     const timing = jest.spyOn(Animated, 'timing');

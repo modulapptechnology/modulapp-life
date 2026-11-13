@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithTheme } from '../../../testing/renderWithTheme/renderWithTheme';
 import { ModulLayoutWeb, type NavSection } from './ModulLayoutWeb';
 
@@ -28,6 +28,15 @@ function renderLayout(activePath = '/', onNavigate = jest.fn()) {
 }
 
 describe('ModulLayoutWeb', () => {
+  // La animación del panel avanza con temporizadores: se controlan para que sus cambios ocurran dentro de act.
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(async () => {
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    jest.useRealTimers();
+  });
+
   it('muestra el encabezado, la barra lateral y el contenido', async () => {
     const botonDelSidebar = 'Cerrar barra lateral';
 
