@@ -14,20 +14,27 @@ public sealed class UnitOfWork(LifeDbContext context) : IUnitOfWork
         var strategy = context.Database.CreateExecutionStrategy();
         var attempt = 0;
 
-        return await strategy.ExecuteAsync(async token =>
+        try
         {
-            if (attempt++ > 0)
+            return await strategy.ExecuteAsync(async token =>
             {
-                context.ChangeTracker.Clear();
-            }
+                if (attempt++ > 0)
+                {
+                    context.ChangeTracker.Clear();
+                }
 
-            await using var transaction = await context.Database.BeginTransactionAsync(token);
-            var result = await operation(token);
-            await context.SaveChangesAsync(token);
-            await transaction.CommitAsync(token);
+                await using var transaction = await context.Database.BeginTransactionAsync(token);
+                var result = await operation(token);
+                await context.SaveChangesAsync(token);
+                await transaction.CommitAsync(token);
 
-            return result;
-        }, cancellationToken);
+                return result;
+            }, cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new ConcurrencyConflictException(exception);
+        }
     }
 
     public async Task ExecuteInTransactionAsync(

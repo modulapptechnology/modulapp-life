@@ -247,8 +247,26 @@ Todas las claves foráneas son obligatorias, con borrado `Restrict` e índice, y
 
 - **Caso de uso**: `CreateWorkspace` (`Application/Workspaces`) guarda el espacio y su miembro `Owner` (el creador) con `IUnitOfWork.ExecuteInTransactionAsync`: o quedan los dos o ninguno. El nombre y la descripción se guardan sin espacios sobrantes; una descripción vacía se guarda como nulo.
 - **Límite del plan**: cuenta los espacios propios no eliminados del usuario (`IWorkspaceRepository.CountOwnedAsync`) dentro de la misma transacción y rechaza con `409` al llegar a `Workspaces:Limits:MaxOwnedWorkspaces` (por defecto 5). Todavía no existe un modelo de planes, así que el valor es el mismo para todos los usuarios y se cambia por configuración (`appsettings` o variable `Workspaces__Limits__MaxOwnedWorkspaces`); un valor que no sea un entero positivo impide arrancar la API. Dos peticiones simultáneas del mismo usuario podrían superar el límite por una unidad: no hay bloqueo adicional.
-- **Fuera de alcance**: edición, consulta y gestión de miembros.
+- **Fuera de alcance**: gestión de miembros.
 - **Pruebas**: `CreateWorkspaceTests` y `CreateWorkspaceRequestValidatorTests` (`Application.Tests`), `CreateWorkspaceTests` de la API con repositorio en memoria (sin base de datos) y `WorkspaceRepositoryTests` (`Infrastructure.Tests`, con base de pruebas).
+
+### Consulta y edición de espacios de trabajo
+
+`WorkspacesController` expone, además de la creación, la consulta, la edición y el archivado. Todas las rutas exigen sesión; las que llevan `{workspaceId}` usan las políticas de "Autenticación y autorización de endpoints", así que un espacio ajeno responde `404` y un rol insuficiente `403`.
+
+| Ruta | Política | Respuesta |
+|---|---|---|
+| `GET /api/v1/workspaces` | Sesión | `200` con la lista de los espacios en los que el usuario es miembro (incluidos los archivados), ordenada por nombre. |
+| `GET /api/v1/workspaces/{workspaceId}` | `WorkspaceMember` | `200` con el espacio. `404` si no es miembro. |
+| `PUT /api/v1/workspaces/{workspaceId}` | `WorkspaceAdmin` | `200` con el espacio actualizado. `400` con el detalle por campo. `403` si es `Member`. `404` si no es miembro. `409` si la versión está desactualizada o el espacio está archivado. |
+| `POST /api/v1/workspaces/{workspaceId}/archive` | `WorkspaceOwner` | `204`. `403` si es `Admin` o `Member`. `404` si no es miembro. |
+
+- **Respuesta**: `WorkspaceSummaryResponse` (`id`, `name`, `description`, `type`, `status`, `role` —el del usuario— y `rowVersion`). Los enums viajan como texto y `rowVersion` en base64.
+- **Edición**: el cuerpo es `{ "name", "description", "rowVersion" }`; solo cambian el nombre y la descripción (hasta 200 y 1000, sin espacios sobrantes; una descripción vacía se guarda como nulo). El tipo y el propietario no se editan.
+- **Concurrencia**: `rowVersion` es la versión de fila que devolvió la última lectura. `UpdateWorkspace` la compara con la guardada y rechaza con `409` si no coincide; si otra operación modifica el espacio entre la lectura y el guardado, `UnitOfWork` traduce `DbUpdateConcurrencyException` a `ConcurrencyConflictException` (`Application/Common`) y el resultado también es `409`. El cliente debe recargar y reintentar con la nueva versión.
+- **Archivado**: `ArchiveWorkspace` cambia `Status` a `Archived`; repetirlo responde `204` sin cambios. Un espacio archivado sigue en el listado y en el detalle, pero no se puede editar (`409`). Seguirá contando para el límite de espacios propios, y desarchivar no está soportado.
+- **Casos de uso**: `ListWorkspaces`, `GetWorkspace`, `UpdateWorkspace` y `ArchiveWorkspace` (`Application/Workspaces`); `IWorkspaceRepository` agrega `FindAsync` (con seguimiento, para editar), `FindByMemberAsync` y `ListByMemberAsync` (proyecciones sin seguimiento que incluyen el rol del usuario).
+- **Pruebas**: `UpdateWorkspaceTests`, `ArchiveWorkspaceTests` y `UpdateWorkspaceRequestValidatorTests` (`Application.Tests`) y `WorkspaceQueryAndEditTests` de la API con repositorio en memoria (sin base de datos).
 
 ### Registro con correo y contraseña
 
