@@ -15,6 +15,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
       'Hay operaciones pendientes de sincronizar. Si cierras sesión se perderán.',
     'common.cancel': 'Cancelar',
     'common.close': 'Cerrar',
+    'common.back': 'Volver',
     'settings.modules.title': 'Módulos',
     'settings.modules.disableTitle': '¿Deshabilitar {module}?',
     'settings.modules.disableMessage':
@@ -136,6 +137,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'settings.reminders': 'Recordatorios',
     'nav.more': 'Ver más',
     'nav.add': 'Agregar',
+    'nav.modules': 'Módulos',
     'menu.file': 'Archivo',
     'menu.goTo': 'Ir a',
     'menu.newCapture': 'Nueva captura',
@@ -155,6 +157,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'user.signOutPending': 'There are operations pending sync. They will be lost if you sign out.',
     'common.cancel': 'Cancel',
     'common.close': 'Close',
+    'common.back': 'Back',
     'settings.modules.title': 'Modules',
     'settings.modules.disableTitle': 'Disable {module}?',
     'settings.modules.disableMessage':
@@ -275,6 +278,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'settings.reminders': 'Reminders',
     'nav.more': 'See more',
     'nav.add': 'Add',
+    'nav.modules': 'Modules',
     'menu.file': 'File',
     'menu.goTo': 'Go to',
     'menu.newCapture': 'New capture',
