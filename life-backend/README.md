@@ -227,15 +227,28 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 
 ### Modelo de espacios de trabajo
 
-`Workspace`, `WorkspaceMember` y `WorkspaceInvitation` (`Domain/Workspaces`) heredan de `BaseEntity` (GUID, auditoría, eliminación lógica y versión de fila). Se guardan en las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations`, configuradas en `Persistence/Configuration` y expuestas en `LifeDbContext`. Este modelo no tiene lógica de negocio ni API: la creación, la pertenencia y las invitaciones se implementan sobre él.
+`Workspace`, `WorkspaceMember` y `WorkspaceInvitation` (`Domain/Workspaces`) heredan de `BaseEntity` (GUID, auditoría, eliminación lógica y versión de fila). Se guardan en las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations`, configuradas en `Persistence/Configuration` y expuestas en `LifeDbContext`. La creación de espacios está en "Creación de espacios de trabajo"; la pertenencia y las invitaciones se implementan sobre este modelo.
 
 | Entidad | Campos y reglas |
 |---|---|
-| `Workspace` | `Name` (obligatorio, hasta 200), `Type` (`WorkspaceType`: `Personal`, `Household`, `Other`; `Personal` por defecto), `Status` (`WorkspaceStatus`: `Active`, `Archived`; `Active` por defecto) y `OwnerId`, obligatorio con clave foránea a `Users`. Como `OwnerId` no admite nulos, la base impide un espacio sin propietario. |
+| `Workspace` | `Name` (obligatorio, hasta 200), `Description` (opcional, hasta 1000), `Type` (`WorkspaceType`: `Personal`, `Household`, `Other`; `Personal` por defecto), `Status` (`WorkspaceStatus`: `Active`, `Archived`; `Active` por defecto) y `OwnerId`, obligatorio con clave foránea a `Users`. Como `OwnerId` no admite nulos, la base impide un espacio sin propietario. |
 | `WorkspaceMember` | `WorkspaceId`, `UserId` y `Role` (`WorkspaceRole`: `Member`, `Admin`, `Owner`; `Member` por defecto). Índice único `(WorkspaceId, UserId)` filtrado `[IsDeleted] = 0`: un usuario pertenece una sola vez a un mismo espacio, y quien salió (eliminación lógica) puede volver a unirse. Un segundo índice único sobre `WorkspaceId` filtrado `[IsDeleted] = 0 AND [Role] = 2` admite como máximo un miembro `Owner` por espacio. |
 | `WorkspaceInvitation` | `WorkspaceId`, `Email` (hasta 320, sin distinguir mayúsculas), `Role`, `TokenHash` (solo el hash, hasta 64; único entre activos), `Status` (`InvitationStatus`: `Pending`, `Accepted`, `Revoked`, `Expired`) y `ExpiresAt`. |
 
 Todas las claves foráneas son obligatorias, con borrado `Restrict` e índice, y cada columna `enum` tiene su `CHECK` (`CK_Workspaces_Type`, `CK_Workspaces_Status`, `CK_WorkspaceMembers_Role`, `CK_WorkspaceInvitations_Role`, `CK_WorkspaceInvitations_Status`), generado con `EnumCheckConstraint`. Que el propietario de un espacio figure también como miembro `Owner` lo garantiza la lógica de negocio, no la base. La migración es `AddWorkspacesTables`.
+
+### Creación de espacios de trabajo
+
+`POST /api/v1/workspaces` (`WorkspacesController`) crea un espacio. Exige sesión (no lleva `[AllowAnonymous]`) y toma al creador del token con `ClaimsPrincipalExtensions.GetUserId()`, nunca del cuerpo.
+
+| Petición | Respuesta |
+|---|---|
+| `{ "name", "type", "description" }`: `name` obligatorio (hasta 200), `type` es `Personal`, `Household` u `Other` (nombre o número) y `description` opcional (hasta 1000) | `201` con `{ id }`. `400` con el detalle por campo si el nombre falta o es muy largo, el tipo no existe o la descripción es muy larga. `401` sin sesión válida. `409` si el usuario ya tiene el máximo de espacios propios. |
+
+- **Caso de uso**: `CreateWorkspace` (`Application/Workspaces`) guarda el espacio y su miembro `Owner` (el creador) con `IUnitOfWork.ExecuteInTransactionAsync`: o quedan los dos o ninguno. El nombre y la descripción se guardan sin espacios sobrantes; una descripción vacía se guarda como nulo.
+- **Límite del plan**: cuenta los espacios propios no eliminados del usuario (`IWorkspaceRepository.CountOwnedAsync`) dentro de la misma transacción y rechaza con `409` al llegar a `Workspaces:Limits:MaxOwnedWorkspaces` (por defecto 5). Todavía no existe un modelo de planes, así que el valor es el mismo para todos los usuarios y se cambia por configuración (`appsettings` o variable `Workspaces__Limits__MaxOwnedWorkspaces`); un valor que no sea un entero positivo impide arrancar la API. Dos peticiones simultáneas del mismo usuario podrían superar el límite por una unidad: no hay bloqueo adicional.
+- **Fuera de alcance**: edición, consulta y gestión de miembros.
+- **Pruebas**: `CreateWorkspaceTests` y `CreateWorkspaceRequestValidatorTests` (`Application.Tests`), `CreateWorkspaceTests` de la API con repositorio en memoria (sin base de datos) y `WorkspaceRepositoryTests` (`Infrastructure.Tests`, con base de pruebas).
 
 ### Registro con correo y contraseña
 
@@ -354,7 +367,7 @@ Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Passwor
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, `AddEmailVerificationAttempts` agrega `FailedAttempts` a esa tabla y quita la unicidad de `TokenHash` (los códigos de 6 dígitos se repiten entre usuarios),, `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`, y `AddWorkspacesTables` crea las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations` con sus relaciones, índices únicos y restricciones `CHECK`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, `AddEmailVerificationAttempts` agrega `FailedAttempts` a esa tabla y quita la unicidad de `TokenHash` (los códigos de 6 dígitos se repiten entre usuarios),, `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`, `AddWorkspacesTables` crea las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations` con sus relaciones, índices únicos y restricciones `CHECK`, y `AddDescriptionToWorkspaces` agrega la columna `Description` a `Workspaces`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 

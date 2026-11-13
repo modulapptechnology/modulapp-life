@@ -1,4 +1,5 @@
 using Application.Users;
+using Application.Workspaces;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -17,6 +18,7 @@ public static class DependencyInjection
         services.TryAddScoped<LoginUser>();
         services.TryAddScoped<RefreshSession>();
         services.TryAddScoped<EndSession>();
+        services.TryAddScoped<CreateWorkspace>();
 
         return services;
     }

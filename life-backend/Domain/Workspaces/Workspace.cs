@@ -7,6 +7,8 @@ public class Workspace : BaseEntity
 {
     public string Name { get; set; } = string.Empty;
 
+    public string? Description { get; set; }
+
     public WorkspaceType Type { get; set; } = WorkspaceType.Personal;
 
     public WorkspaceStatus Status { get; set; } = WorkspaceStatus.Active;

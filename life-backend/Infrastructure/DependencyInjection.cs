@@ -1,5 +1,6 @@
 using System.Text;
 using Application.Users;
+using Application.Workspaces;
 using Infrastructure.Email;
 using Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.AddSingleton(BuildLoginOptions(configuration));
         services.AddSingleton(BuildAccessTokenOptions(configuration));
         services.AddSingleton(BuildRefreshTokenOptions(configuration));
+        services.AddSingleton(BuildWorkspaceLimitOptions(configuration));
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
         services.AddSingleton<IVerificationTokenService, VerificationTokenService>();
@@ -125,6 +127,17 @@ public static class DependencyInjection
             RefreshTokenOptions.DefaultLifetimeDays);
 
         return new RefreshTokenOptions(TimeSpan.FromDays(days));
+    }
+
+    private static WorkspaceLimitOptions BuildWorkspaceLimitOptions(IConfiguration configuration)
+    {
+        var section = configuration.GetSection(WorkspaceLimitOptions.SectionName);
+        var maxOwned = ReadPositiveNumber(
+            section,
+            WorkspaceLimitOptions.MaxOwnedWorkspacesKey,
+            WorkspaceLimitOptions.DefaultMaxOwnedWorkspaces);
+
+        return new WorkspaceLimitOptions(maxOwned);
     }
 
     private static int ReadPositiveNumber(IConfigurationSection section, string key, int defaultValue)
