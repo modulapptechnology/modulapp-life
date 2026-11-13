@@ -20,7 +20,8 @@ builder.Services
     .AddInfrastructure(builder.Configuration)
     .AddPersistence(builder.Configuration)
     .AddAccessTokenAuthentication()
-    .AddApiAuthorization();
+    .AddApiAuthorization()
+    .AddSubscriptionReconciliationWorker();
 
 var app = builder.Build();
 

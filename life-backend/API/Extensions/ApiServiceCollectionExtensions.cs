@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using API.Filters;
+using API.Subscriptions;
 using Asp.Versioning;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -50,6 +51,13 @@ public static class ApiServiceCollectionExtensions
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
         services.AddCors(options => options.AddPolicy(CorsPolicyName, policy =>
             policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+
+        return services;
+    }
+
+    public static IServiceCollection AddSubscriptionReconciliationWorker(this IServiceCollection services)
+    {
+        services.AddHostedService<SubscriptionReconciliationWorker>();
 
         return services;
     }
