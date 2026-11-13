@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "tauri": "tauri",
+    "build": "tauri build",
+    "build:test": "tauri build --config src-tauri/tauri.conf.test-env.json",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },

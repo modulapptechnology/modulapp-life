@@ -45,4 +45,14 @@ describe('tauri.conf.json del escritorio', () => {
 
     expect(nombre).toBe(APP_NAME);
   });
+
+  it('la compilación de pruebas empaqueta la web en modo test', () => {
+    const base = JSON.parse(readFileSync(join(__dirname, 'tauri.conf.json'), 'utf8'));
+    const pruebas = JSON.parse(readFileSync(join(__dirname, 'tauri.conf.test-env.json'), 'utf8'));
+
+    const comando = pruebas.build.beforeBuildCommand;
+
+    expect(base.build.beforeBuildCommand).toBe('npm run build -w @life/web');
+    expect(comando).toBe('npm run build:test -w @life/web');
+  });
 });
