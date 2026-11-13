@@ -1,4 +1,5 @@
 using Domain.Users;
+using Domain.Workspaces;
 using Microsoft.EntityFrameworkCore;
 using Persistence.Auditing;
 using Persistence.Configuration;
@@ -21,6 +22,12 @@ public class LifeDbContext(
     public DbSet<LoginAttempt> LoginAttempts => Set<LoginAttempt>();
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    public DbSet<Workspace> Workspaces => Set<Workspace>();
+
+    public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
+
+    public DbSet<WorkspaceInvitation> WorkspaceInvitations => Set<WorkspaceInvitation>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {

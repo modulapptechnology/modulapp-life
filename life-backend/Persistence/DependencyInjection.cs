@@ -1,6 +1,7 @@
 using Application.Common;
 using Application.Users;
 using Application.VersionHistory;
+using Application.Workspaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IWorkspaceMembershipReader, WorkspaceMembershipReader>();
 
         return services;
     }

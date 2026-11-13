@@ -57,7 +57,16 @@ public class MigrationsTests : IAsyncLifetime
         var businessTables = tables.Where(name => name != "__EFMigrationsHistory").Order();
 
         Assert.Equal(
-            ["EmailVerificationTokens", "ExternalAccounts", "LoginAttempts", "RefreshTokens", "Users"],
+            [
+                "EmailVerificationTokens",
+                "ExternalAccounts",
+                "LoginAttempts",
+                "RefreshTokens",
+                "Users",
+                "WorkspaceInvitations",
+                "WorkspaceMembers",
+                "Workspaces",
+            ],
             businessTables);
     }
 

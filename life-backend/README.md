@@ -225,6 +225,18 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 
 `ExternalAccount` vincula un usuario con una cuenta de un proveedor externo: `UserId` (obligatorio, sin borrado en cascada), `Provider` (hasta 50) y `ProviderUserId` (hasta 256). El par proveedor + identificador es único entre las cuentas no eliminadas, por lo que la misma cuenta externa no se vincula a dos usuarios.
 
+### Modelo de espacios de trabajo
+
+`Workspace`, `WorkspaceMember` y `WorkspaceInvitation` (`Domain/Workspaces`) heredan de `BaseEntity` (GUID, auditoría, eliminación lógica y versión de fila). Se guardan en las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations`, configuradas en `Persistence/Configuration` y expuestas en `LifeDbContext`. Este modelo no tiene lógica de negocio ni API: la creación, la pertenencia y las invitaciones se implementan sobre él.
+
+| Entidad | Campos y reglas |
+|---|---|
+| `Workspace` | `Name` (obligatorio, hasta 200), `Type` (`WorkspaceType`: `Personal`, `Household`, `Other`; `Personal` por defecto), `Status` (`WorkspaceStatus`: `Active`, `Archived`; `Active` por defecto) y `OwnerId`, obligatorio con clave foránea a `Users`. Como `OwnerId` no admite nulos, la base impide un espacio sin propietario. |
+| `WorkspaceMember` | `WorkspaceId`, `UserId` y `Role` (`WorkspaceRole`: `Member`, `Admin`, `Owner`; `Member` por defecto). Índice único `(WorkspaceId, UserId)` filtrado `[IsDeleted] = 0`: un usuario pertenece una sola vez a un mismo espacio, y quien salió (eliminación lógica) puede volver a unirse. Un segundo índice único sobre `WorkspaceId` filtrado `[IsDeleted] = 0 AND [Role] = 2` admite como máximo un miembro `Owner` por espacio. |
+| `WorkspaceInvitation` | `WorkspaceId`, `Email` (hasta 320, sin distinguir mayúsculas), `Role`, `TokenHash` (solo el hash, hasta 64; único entre activos), `Status` (`InvitationStatus`: `Pending`, `Accepted`, `Revoked`, `Expired`) y `ExpiresAt`. |
+
+Todas las claves foráneas son obligatorias, con borrado `Restrict` e índice, y cada columna `enum` tiene su `CHECK` (`CK_Workspaces_Type`, `CK_Workspaces_Status`, `CK_WorkspaceMembers_Role`, `CK_WorkspaceInvitations_Role`, `CK_WorkspaceInvitations_Status`), generado con `EnumCheckConstraint`. Que el propietario de un espacio figure también como miembro `Owner` lo garantiza la lógica de negocio, no la base. La migración es `AddWorkspacesTables`.
+
 ### Registro con correo y contraseña
 
 `AuthController` expone el registro y la confirmación del correo. Los casos de uso son `RegisterUser` y `VerifyEmail` (`Application/Users`); `AddInfrastructure(configuration)` registra el hash, el generador de tokens y el envío de correo, y `AddPersistence` el `IUserRepository`.
@@ -296,7 +308,7 @@ dotnet user-secrets set "Authentication:AccessToken:SigningKey" "<valor aleatori
 
 Cada sesión es un par: un token de acceso JWT de corta duración y un token de renovación opaco.
 
-- **Validación**: `AddAccessTokenAuthentication` (`API/Extensions`) registra JwtBearer con la misma clave, emisor y audiencia con que se emite, algoritmo HS256 y sin tolerancia de reloj. `UseAuthentication` va antes de `UseAuthorization`. Un token expirado, alterado o ausente en un endpoint protegido devuelve `401`. Proteger los endpoints es de la tarea de autorización.
+- **Validación**: `AddAccessTokenAuthentication` (`API/Extensions`) registra JwtBearer con la misma clave, emisor y audiencia con que se emite, algoritmo HS256 y sin tolerancia de reloj. `UseAuthentication` va antes de `UseAuthorization`. Un token expirado, alterado o ausente en un endpoint protegido devuelve `401`. Qué endpoints son protegidos lo define la sección "Autenticación y autorización de endpoints".
 - **Renovación**: `POST /api/v1/auth/refresh` con `{ "refreshToken" }` devuelve `200` con la misma forma que el login (`accessToken`, `tokenType`, `expiresAt`, `refreshToken`, `refreshTokenExpiresAt`). No exige un token de acceso vigente, así que funciona tras un periodo sin conexión mientras el token de renovación no haya vencido. `401` si es desconocido, vencido, revocado o el usuario no está `Active`; `400` si falta; `429` por el límite de frecuencia de la política `Login`.
 - **Rotación**: cada renovación marca el token usado (`UsedAt`) y emite uno nuevo con vigencia completa, de la misma familia (`FamilyId`) y dispositivo (`DeviceId`). El login acepta un `deviceId` opcional (máx. 100 caracteres); si no llega, el servidor genera uno.
 - **Reutilización**: presentar un token ya rotado devuelve `401` y revoca (`RevokedAt`) todos los tokens de su familia, de modo que el token nuevo del atacante o del dueño legítimo deja de servir y hay que iniciar sesión de nuevo.
@@ -342,7 +354,7 @@ Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Passwor
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, `AddEmailVerificationAttempts` agrega `FailedAttempts` a esa tabla y quita la unicidad de `TokenHash` (los códigos de 6 dígitos se repiten entre usuarios), y `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, `AddEmailVerificationAttempts` agrega `FailedAttempts` a esa tabla y quita la unicidad de `TokenHash` (los códigos de 6 dígitos se repiten entre usuarios),, `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`, y `AddWorkspacesTables` crea las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations` con sus relaciones, índices únicos y restricciones `CHECK`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 
@@ -436,6 +448,27 @@ Un origen no configurado no recibe la cabecera `Access-Control-Allow-Origin` y e
 - Un cuerpo JSON con un tipo incorrecto también responde `400`, pero con el mensaje genérico `El valor no es válido.`, para no exponer tipos, rutas ni posiciones internas (`ValidationProblemFactory`).
 - No se validan aquí las reglas de negocio de módulos específicos.
 - `tests/API.Tests/Validation` prueba el patrón con un controlador y un validador que solo existen en el servidor de pruebas.
+
+### Autenticación y autorización de endpoints
+
+Todo endpoint es privado por defecto: `AddApiAuthorization` (`API/Authorization`) define una política de respaldo (`FallbackPolicy`) que exige un usuario autenticado, de modo que un controlador o endpoint nuevo queda protegido sin declarar nada. La autorización se valida siempre en el servidor.
+
+- **Endpoints públicos**: solo responden sin sesión los marcados con `[AllowAnonymous]`, uno por acción (no por controlador): `GET /api/v1/house` y, en `AuthController`, `register`, `login`, `refresh`, `logout` y `verify-email`. En Desarrollo, `/openapi/v1.json` también es público; Swagger UI es solo la página. `GET /house/database` (solo Desarrollo) exige un token de acceso. Hacer público un endpoint nuevo exige declararlo y agregarlo a la lista de `ProtectedByDefaultTests`, que falla si la lista real cambia.
+- **Respuestas estandarizadas**: `ProblemAuthorizationResultHandler` responde `application/problem+json` con `401` (sin sesión válida, con la cabecera `WWW-Authenticate`), `403` (identidad válida sin permisos suficientes) y `404` (recurso ajeno, para no revelar su existencia).
+- **Políticas reutilizables** (`AuthorizationPolicies`), que se aplican con `[Authorize(Policy = ...)]`:
+
+| Política | Qué exige | Si no se cumple |
+|---|---|---|
+| `OwnUser` | Que el `{userId}` de la ruta sea el usuario autenticado (perfil, preferencias, sesiones). | `404` |
+| `WorkspaceMember` | Que el usuario sea miembro del `{workspaceId}` de la ruta. | `404` si no es miembro |
+| `WorkspaceAdmin` | Rol `Admin` o superior en el espacio. | `404` si no es miembro; `403` si su rol es menor |
+| `WorkspaceOwner` | Rol `Owner` en el espacio. | `404` si no es miembro; `403` si su rol es menor |
+
+  La pertenencia y el rol se consultan con `IWorkspaceMembershipReader` (`Application/Workspaces`, implementado en `Persistence`). Las reglas de permisos de cada módulo y la gestión de roles quedan fuera: estas políticas solo comparan el rol mínimo.
+- **Identidad**: `ClaimsPrincipalExtensions.GetUserId()` devuelve el id del usuario autenticado desde el token (`sub`); los casos de uso y controladores no deben tomarlo del cuerpo ni de la ruta.
+- **Datos de otros miembros**: `WorkspaceMemberSummary` (`UserId`, `Name`, `AvatarUrl`, `Role`) define lo visible de otros miembros del espacio; `IWorkspaceMembershipReader.ListMembersAsync` proyecta solo esos campos (nunca el correo).
+- **Campos sensibles**: ninguna respuesta incluye hashes, contraseñas ni secretos; `ResponseContractsTests` lo comprueba sobre todos los DTO `*Response` y `*Summary` de `Application`. Los tokens solo viajan en la respuesta de sesión (`LoginResponse`).
+- **Pruebas**: `tests/API.Tests/Security/ProtectedByDefaultTests` y `AuthorizationPolicyTests`, con `TestPoliciesController` e `InMemoryWorkspaceMembershipReader` (sin base de datos). Las rutas de prueba anónimas que antes se llamaban sin sesión ahora usan `CreateApiClient(userId)`.
 
 ### Swagger y `API.http`
 
@@ -569,9 +602,9 @@ dotnet test tests/Infrastructure.Tests/Infrastructure.Tests.csproj
 
 - Usa la cadena `ConnectionStrings:Test` (ver "Configurar la cadena de conexión"), que no se versiona. Sin ella, las pruebas con base se omiten.
 - Cada ejecución parte de una base vacía: `TestDatabase.PrepareEmptyAsync` elimina y crea la base sin el esquema provisional ni datos semilla. La base se elimina al terminar.
-- `MigrationsTests` usa su propia base (`ModulLifeInfrastructureMigrationsTest`) y comprueba que todas las migraciones se aplican en orden sobre una base vacía, que no quedan migraciones pendientes ni cambios del modelo sin migrar, y que se crean las tablas `Users` y `ExternalAccounts`.
+- `MigrationsTests` usa su propia base (`ModulLifeInfrastructureMigrationsTest`) y comprueba que todas las migraciones se aplican en orden sobre una base vacía, que no quedan migraciones pendientes ni cambios del modelo sin migrar, y que se crean las tablas de usuarios y de espacios de trabajo.
 - El resto de las pruebas comparten una base (`ModulLifeInfrastructureTest`, colección `MigratedDatabase`) con las migraciones ya aplicadas y se ejecutan en serie. Cada prueba crea sus propios datos con correos y cuentas únicos, así no depende del orden.
-- `UserPersistenceTests`, `ExternalAccountPersistenceTests` y `UnitOfWorkTests` cubren lectura, escritura, eliminación lógica, versión de fila y las restricciones de integridad: correo único entre usuarios activos sin distinguir mayúsculas, cuenta externa única por proveedor, clave foránea de la cuenta externa, longitud máxima y reversión de la transacción.
+- `UserPersistenceTests`, `ExternalAccountPersistenceTests` y `UnitOfWorkTests` cubren lectura, escritura, eliminación lógica, versión de fila y las restricciones de integridad: correo único entre usuarios activos sin distinguir mayúsculas, cuenta externa única por proveedor, clave foránea de la cuenta externa, longitud máxima y reversión de la transacción. `WorkspacePersistenceTests` cubre el propietario obligatorio, la pertenencia única por usuario y espacio (y su reingreso tras eliminarla), el propietario único, los valores enumerados y el borrado restringido.
 - Todavía no hay repositorios: las pruebas usan `LifeDbContext` y `UnitOfWork`. Cuando existan, se agregan en `tests/Infrastructure.Tests/Persistence` con las mismas fixtures.
 
 ## Integración continua
