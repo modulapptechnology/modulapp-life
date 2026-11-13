@@ -140,4 +140,11 @@ export const SETTINGS_SECTION: Pick<ModuleDefinition, 'path' | 'nameKey' | 'icon
 // Captura es parte del núcleo: no es un módulo habilitable ni aparece en el menú lateral. Solo expone su ruta.
 export const CAPTURE_SECTION = { path: '/captura', nameKey: 'module.capture' } as const;
 
+export const MOBILE_TABS: Pick<ModuleDefinition, 'path' | 'nameKey' | 'icon'>[] = [
+  { path: '/', nameKey: 'nav.home', icon: 'Home2Icon' },
+  { path: '/inbox', nameKey: 'home.inbox', icon: 'InboxIcon' },
+  { path: '/planner', nameKey: 'module.agenda', icon: 'CalendarIcon' },
+  { path: '/modules', nameKey: 'nav.modules', icon: 'LayersIcon' },
+];
+
 export const moduleRegistry = createModuleRegistry(DEFAULT_MODULES);

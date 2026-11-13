@@ -37,4 +37,12 @@ describe('ModulHeader', () => {
     expect(screen.getByText('Migas')).toBeOnTheScreen();
     expect(screen.getByText('Acciones')).toBeOnTheScreen();
   });
+
+  it('no muestra el botón de la barra lateral cuando no hay quien lo atienda', async () => {
+    const sinBarraLateral = undefined;
+
+    await renderWithTheme(<ModulHeader onToggleSidebar={sinBarraLateral} />);
+
+    expect(screen.queryByRole('button')).toBeNull();
+  });
 });

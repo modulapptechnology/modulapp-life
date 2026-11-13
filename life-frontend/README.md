@@ -40,6 +40,8 @@ apps/mobile/src/
   test/         utilidades de prueba
 ```
 
+La navegación principal es una barra de pestañas inferior. Las pantallas con pestañas (Inicio, Bandeja, Planner y Módulos) viven en el grupo de rutas `app/(tabs)/`, cuyos paréntesis evitan que `tabs` aparezca en la URL (siguen siendo `/`, `/inbox`, `/planner` y `/modules`). `(tabs)/_layout.tsx` muestra `MobileHeader` (usuario a la izquierda y campana de notificaciones a la derecha) sobre las pestañas, y `MobileTabBar` dibuja la barra con `ModulTabBar` de `@life/ui`. Las pestañas salen de `MOBILE_TABS` en `@life/core`, y el texto de cada una es solo la etiqueta de accesibilidad. El botón flotante `+` abre la hoja inferior de nueva captura (`ModulBottomSheet`), que sube desde abajo y no es una ruta. Perfil y Ajustes quedan fuera de las pestañas; `MobileHeader` recibe `title` para mostrar la flecha de volver en esas pantallas, y Perfil enlaza a Ajustes. La campana y los contenidos de la hoja de captura, Bandeja, Planner, Módulos y Perfil son por ahora marcadores de posición.
+
 ### Web
 
 `apps/web/src/main.tsx` monta el enrutador, `App.tsx` define las rutas, las páginas viven en `apps/web/src/pages/` y el layout en `apps/web/src/layout/`.
@@ -235,7 +237,7 @@ import { ModulButton, ModulText, ModulView } from '@life/ui';
 | Ruta (en `ui/`) | Contenido |
 | --- | --- |
 | `components/atoms/` | `ModulView`, `ModulText`, `ModulButton`, `ModulFloatingButton`, `ModulIcon`, `ModulFieldMessage`, `ModulSkeleton`, `ModulBadge`, `ModulAvatar`, `ModulProgress`, `ModulChip`, `ModulModal`, `ModulDrawer`, `ModulDatePicker` |
-| `components/molecules/` | `ModulInput`, `ModulSwitch`, `ModulCheckbox`, `ModulChipGroup`, `ModulLoadingState`, `ModulEmptyState`, `ModulErrorState`, `ModulStateContainer`, `ModulOptionGroup`, `ModulListItem`, `ModulList`, `ModulMenu`, `ModulToast`, `ModulConfirmDialog`, `ModulMessages` (`ModulMessagesProvider`), `ModulBarChart`, `ModulCircularProgress`, `ModulDragDrop` (`ModulDragProvider`, `ModulDraggable`, `ModulDropZone`), `ModulHeader`, `ModulSidebar`, `ModulSidebarRail` |
+| `components/molecules/` | `ModulInput`, `ModulSwitch`, `ModulCheckbox`, `ModulChipGroup`, `ModulLoadingState`, `ModulEmptyState`, `ModulErrorState`, `ModulStateContainer`, `ModulOptionGroup`, `ModulListItem`, `ModulList`, `ModulMenu`, `ModulToast`, `ModulConfirmDialog`, `ModulMessages` (`ModulMessagesProvider`), `ModulBarChart`, `ModulCircularProgress`, `ModulDragDrop` (`ModulDragProvider`, `ModulDraggable`, `ModulDropZone`), `ModulHeader`, `ModulSidebar`, `ModulSidebarRail`, `ModulTabBar` |
 | `components/organisms/` | `ModulDialog`, `ModulBottomSheet`, `ModulListPattern`, `ModulFormContainer` (`toFieldErrors`) |
 | `components/templates/mobile/` | `ModulListView`, `ModulFormView`, `ModulDetailView`, `ModulAuthView`, `ModulSettingsView`, `ModulAgendaView` |
 | `components/templates/web/` | `ModulPageWeb`, `ModulListViewWeb`, `ModulFormViewWeb`, `ModulDetailViewWeb`, `ModulAuthViewWeb`, `ModulSettingsViewWeb`, `ModulAgendaViewWeb` |
@@ -418,7 +420,7 @@ npm run format:check    # comprobar sin modificar archivos
 - Las llamadas HTTP se centralizan en los servicios (`services/` en móvil y web, y `@life/api-client`); los componentes y las pantallas no llaman a la API directamente. La URL sale de `EXPO_PUBLIC_API_URL`.
 - Los estilos se mantienen organizados y reutilizables en el tema y en las props de `@life/ui`; no se repiten valores en cada pantalla.
 - Mobile, web y escritorio comparten lo común en `packages/*`. No se duplica lógica entre plataformas; lo que difiere se separa con archivos `.web.tsx` y `.native.tsx`, y el cambio se comprueba en las plataformas afectadas.
-- Se mantiene un único layout principal reutilizable (`ModulLayoutWeb`, `ModulHeader`, `ModulSidebar`, etc.). Los módulos funcionales entran como vistas dentro de ese layout y no crean uno propio.
+- Se mantiene un único layout principal reutilizable (`ModulLayoutWeb`, `ModulHeader`, `ModulSidebar`, `ModulTabBar`, etc.). Los módulos funcionales entran como vistas dentro de ese layout y no crean uno propio.
 - Los textos visibles pasan por `translate` (`@life/core`), que hoy es una implementación temporal y se reemplazará por ModulApp Translation: el resto del código solo depende de su firma, y no se crean mecanismos de traducción paralelos.
 - Los servicios, hooks, contextos y proveedores (`useTheme`, `useMessages`, `useSession`) se usan con sus tipos concretos, sin perder la información de tipos con `any`, `object` ni conversiones. No se agregan mecanismos de acceso alternativos cuando el proyecto ya tiene uno (proveedores y hooks para el tema y los mensajes, y el cliente de la API).
 - Los tipos se exportan e importan por el paquete (`@life/types`, `@life/ui`) y no por rutas relativas entre paquetes, para aprovechar el autocompletado y la navegación del IDE.

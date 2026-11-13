@@ -4,13 +4,18 @@ import { ModulView } from '../../atoms/ModulView/ModulView';
 import { ModulIcon } from '../../atoms/ModulIcon/ModulIcon';
 
 export type ModulHeaderProps = {
-  sidebarOpen: boolean;
-  onToggleSidebar: () => void;
+  sidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
   children?: ReactNode;
   end?: ReactNode;
 };
 
-export function ModulHeader({ sidebarOpen, onToggleSidebar, children, end }: ModulHeaderProps) {
+export function ModulHeader({
+  sidebarOpen = false,
+  onToggleSidebar,
+  children,
+  end,
+}: ModulHeaderProps) {
   return (
     <ModulView
       accessibilityRole="header"
@@ -24,15 +29,17 @@ export function ModulHeader({ sidebarOpen, onToggleSidebar, children, end }: Mod
       minH44
     >
       <ModulView row alignCenter gap8>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={sidebarOpen ? 'Cerrar barra lateral' : 'Abrir barra lateral'}
-          accessibilityState={{ expanded: sidebarOpen }}
-          onPress={onToggleSidebar}
-          hitSlop={8}
-        >
-          <ModulIcon name="SidebarMinimalisticIcon" size="md" color="textSecondary" />
-        </Pressable>
+        {onToggleSidebar ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={sidebarOpen ? 'Cerrar barra lateral' : 'Abrir barra lateral'}
+            accessibilityState={{ expanded: sidebarOpen }}
+            onPress={onToggleSidebar}
+            hitSlop={8}
+          >
+            <ModulIcon name="SidebarMinimalisticIcon" size="md" color="textSecondary" />
+          </Pressable>
+        ) : null}
         {children}
       </ModulView>
       {end}
