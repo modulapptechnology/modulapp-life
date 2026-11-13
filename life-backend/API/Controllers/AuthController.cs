@@ -1,6 +1,7 @@
 using API.Extensions;
 using Application.Users;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -8,6 +9,7 @@ namespace API.Controllers;
 
 public class AuthController(IConfiguration configuration) : ApiControllerBase
 {
+    [AllowAnonymous]
     [HttpPost("register")]
     [EnableRateLimiting(ApiServiceCollectionExtensions.RegistrationRateLimitPolicy)]
     [ProducesResponseType<RegisterUserResponse>(StatusCodes.Status201Created)]
@@ -30,6 +32,7 @@ public class AuthController(IConfiguration configuration) : ApiControllerBase
         return StatusCode(StatusCodes.Status201Created, response);
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     [EnableRateLimiting(ApiServiceCollectionExtensions.LoginRateLimitPolicy)]
     [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
@@ -53,6 +56,7 @@ public class AuthController(IConfiguration configuration) : ApiControllerBase
         return Ok(DeliverRefreshToken(response));
     }
 
+    [AllowAnonymous]
     [HttpPost("refresh")]
     [EnableRateLimiting(ApiServiceCollectionExtensions.LoginRateLimitPolicy)]
     [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
@@ -94,6 +98,7 @@ public class AuthController(IConfiguration configuration) : ApiControllerBase
         return Ok(DeliverRefreshToken(response));
     }
 
+    [AllowAnonymous]
     [HttpPost("logout")]
     [EnableRateLimiting(ApiServiceCollectionExtensions.LoginRateLimitPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -115,6 +120,7 @@ public class AuthController(IConfiguration configuration) : ApiControllerBase
             : response;
     }
 
+    [AllowAnonymous]
     [HttpPost("verify-email")]
     [EnableRateLimiting(ApiServiceCollectionExtensions.RegistrationRateLimitPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
