@@ -225,6 +225,18 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 
 `ExternalAccount` vincula un usuario con una cuenta de un proveedor externo: `UserId` (obligatorio, sin borrado en cascada), `Provider` (hasta 50) y `ProviderUserId` (hasta 256). El par proveedor + identificador es único entre las cuentas no eliminadas, por lo que la misma cuenta externa no se vincula a dos usuarios.
 
+### Modelo de espacios de trabajo
+
+`Workspace`, `WorkspaceMember` y `WorkspaceInvitation` (`Domain/Workspaces`) heredan de `BaseEntity` (GUID, auditoría, eliminación lógica y versión de fila). Se guardan en las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations`, configuradas en `Persistence/Configuration` y expuestas en `LifeDbContext`. Este modelo no tiene lógica de negocio ni API: la creación, la pertenencia y las invitaciones se implementan sobre él.
+
+| Entidad | Campos y reglas |
+|---|---|
+| `Workspace` | `Name` (obligatorio, hasta 200), `Type` (`WorkspaceType`: `Personal`, `Household`, `Other`; `Personal` por defecto), `Status` (`WorkspaceStatus`: `Active`, `Archived`; `Active` por defecto) y `OwnerId`, obligatorio con clave foránea a `Users`. Como `OwnerId` no admite nulos, la base impide un espacio sin propietario. |
+| `WorkspaceMember` | `WorkspaceId`, `UserId` y `Role` (`WorkspaceRole`: `Member`, `Admin`, `Owner`; `Member` por defecto). Índice único `(WorkspaceId, UserId)` filtrado `[IsDeleted] = 0`: un usuario pertenece una sola vez a un mismo espacio, y quien salió (eliminación lógica) puede volver a unirse. Un segundo índice único sobre `WorkspaceId` filtrado `[IsDeleted] = 0 AND [Role] = 2` admite como máximo un miembro `Owner` por espacio. |
+| `WorkspaceInvitation` | `WorkspaceId`, `Email` (hasta 320, sin distinguir mayúsculas), `Role`, `TokenHash` (solo el hash, hasta 64; único entre activos), `Status` (`InvitationStatus`: `Pending`, `Accepted`, `Revoked`, `Expired`) y `ExpiresAt`. |
+
+Todas las claves foráneas son obligatorias, con borrado `Restrict` e índice, y cada columna `enum` tiene su `CHECK` (`CK_Workspaces_Type`, `CK_Workspaces_Status`, `CK_WorkspaceMembers_Role`, `CK_WorkspaceInvitations_Role`, `CK_WorkspaceInvitations_Status`), generado con `EnumCheckConstraint`. Que el propietario de un espacio figure también como miembro `Owner` lo garantiza la lógica de negocio, no la base. La migración es `AddWorkspacesTables`.
+
 ### Registro con correo y contraseña
 
 `AuthController` expone el registro y la confirmación del correo. Los casos de uso son `RegisterUser` y `VerifyEmail` (`Application/Users`); `AddInfrastructure(configuration)` registra el hash, el generador de tokens y el envío de correo, y `AddPersistence` el `IUserRepository`.
@@ -342,7 +354,7 @@ Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Passwor
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, `AddEmailVerificationAttempts` agrega `FailedAttempts` a esa tabla y quita la unicidad de `TokenHash` (los códigos de 6 dígitos se repiten entre usuarios), y `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, `AddEmailVerificationAttempts` agrega `FailedAttempts` a esa tabla y quita la unicidad de `TokenHash` (los códigos de 6 dígitos se repiten entre usuarios),, `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`, y `AddWorkspacesTables` crea las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations` con sus relaciones, índices únicos y restricciones `CHECK`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 
@@ -569,9 +581,9 @@ dotnet test tests/Infrastructure.Tests/Infrastructure.Tests.csproj
 
 - Usa la cadena `ConnectionStrings:Test` (ver "Configurar la cadena de conexión"), que no se versiona. Sin ella, las pruebas con base se omiten.
 - Cada ejecución parte de una base vacía: `TestDatabase.PrepareEmptyAsync` elimina y crea la base sin el esquema provisional ni datos semilla. La base se elimina al terminar.
-- `MigrationsTests` usa su propia base (`ModulLifeInfrastructureMigrationsTest`) y comprueba que todas las migraciones se aplican en orden sobre una base vacía, que no quedan migraciones pendientes ni cambios del modelo sin migrar, y que se crean las tablas `Users` y `ExternalAccounts`.
+- `MigrationsTests` usa su propia base (`ModulLifeInfrastructureMigrationsTest`) y comprueba que todas las migraciones se aplican en orden sobre una base vacía, que no quedan migraciones pendientes ni cambios del modelo sin migrar, y que se crean las tablas de usuarios y de espacios de trabajo.
 - El resto de las pruebas comparten una base (`ModulLifeInfrastructureTest`, colección `MigratedDatabase`) con las migraciones ya aplicadas y se ejecutan en serie. Cada prueba crea sus propios datos con correos y cuentas únicos, así no depende del orden.
-- `UserPersistenceTests`, `ExternalAccountPersistenceTests` y `UnitOfWorkTests` cubren lectura, escritura, eliminación lógica, versión de fila y las restricciones de integridad: correo único entre usuarios activos sin distinguir mayúsculas, cuenta externa única por proveedor, clave foránea de la cuenta externa, longitud máxima y reversión de la transacción.
+- `UserPersistenceTests`, `ExternalAccountPersistenceTests` y `UnitOfWorkTests` cubren lectura, escritura, eliminación lógica, versión de fila y las restricciones de integridad: correo único entre usuarios activos sin distinguir mayúsculas, cuenta externa única por proveedor, clave foránea de la cuenta externa, longitud máxima y reversión de la transacción. `WorkspacePersistenceTests` cubre el propietario obligatorio, la pertenencia única por usuario y espacio (y su reingreso tras eliminarla), el propietario único, los valores enumerados y el borrado restringido.
 - Todavía no hay repositorios: las pruebas usan `LifeDbContext` y `UnitOfWork`. Cuando existan, se agregan en `tests/Infrastructure.Tests/Persistence` con las mismas fixtures.
 
 ## Integración continua
