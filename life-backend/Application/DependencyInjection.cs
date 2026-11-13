@@ -19,6 +19,10 @@ public static class DependencyInjection
         services.TryAddScoped<RefreshSession>();
         services.TryAddScoped<EndSession>();
         services.TryAddScoped<CreateWorkspace>();
+        services.TryAddScoped<ListWorkspaces>();
+        services.TryAddScoped<GetWorkspace>();
+        services.TryAddScoped<UpdateWorkspace>();
+        services.TryAddScoped<ArchiveWorkspace>();
 
         return services;
     }
