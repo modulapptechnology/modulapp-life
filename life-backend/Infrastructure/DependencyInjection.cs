@@ -1,10 +1,13 @@
 using System.Text;
+using Application.Subscriptions;
 using Application.Users;
 using Application.Workspaces;
 using Infrastructure.Email;
 using Infrastructure.Security;
+using Infrastructure.Subscriptions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Infrastructure;
 
@@ -28,12 +31,55 @@ public static class DependencyInjection
         services.AddSingleton(BuildAccessTokenOptions(configuration));
         services.AddSingleton(BuildRefreshTokenOptions(configuration));
         services.AddSingleton(BuildWorkspaceLimitOptions(configuration));
+        AddSubscriptionReconciliation(services, configuration);
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
         services.AddSingleton<IVerificationTokenService, VerificationTokenService>();
         AddVerificationEmailSender(services, configuration);
 
         return services;
+    }
+
+    private static void AddSubscriptionReconciliation(
+        IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var options = BuildSubscriptionReconciliationOptions(configuration);
+
+        services.AddSingleton(options);
+        services.TryAddSingleton<IReconciliationLock, InProcessReconciliationLock>();
+        services.TryAddSingleton<IReconciliationAlerts, LoggingReconciliationAlerts>();
+
+        if (options.Enabled)
+        {
+            services.TryAddScoped<ReconcileSubscriptions>();
+        }
+    }
+
+    private static SubscriptionReconciliationOptions BuildSubscriptionReconciliationOptions(
+        IConfiguration configuration)
+    {
+        var section = configuration.GetSection(SubscriptionReconciliationOptions.SectionName);
+        var enabledValue = section[SubscriptionReconciliationOptions.EnabledKey];
+        var enabled = false;
+
+        if (enabledValue is not null && !bool.TryParse(enabledValue, out enabled))
+        {
+            throw new InvalidOperationException(
+                $"The setting '{section.Path}:{SubscriptionReconciliationOptions.EnabledKey}' must be "
+                    + $"'true' or 'false', but was '{enabledValue}'.");
+        }
+
+        var minutes = ReadPositiveNumber(
+            section,
+            SubscriptionReconciliationOptions.IntervalMinutesKey,
+            SubscriptionReconciliationOptions.DefaultIntervalMinutes);
+        var batchSize = ReadPositiveNumber(
+            section,
+            SubscriptionReconciliationOptions.BatchSizeKey,
+            SubscriptionReconciliationOptions.DefaultBatchSize);
+
+        return new SubscriptionReconciliationOptions(enabled, TimeSpan.FromMinutes(minutes), batchSize);
     }
 
     private static void AddVerificationEmailSender(IServiceCollection services, IConfiguration configuration)

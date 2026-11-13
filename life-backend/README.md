@@ -354,6 +354,23 @@ Cada sesión es un par: un token de acceso JWT de corta duración y un token de 
 
 `tests/API.Tests/Login/RefreshTests` y `tests/API.Tests/Security/AccessTokenValidationTests` prueban los endpoints sin base de datos; `Application.Tests/Users/RefreshSessionTests`, la rotación y la reutilización; `Application.Tests/Users/EndSessionTests`, el cierre de sesión; `Infrastructure.Tests/Persistence/RefreshTokenRepositoryTests`, el repositorio contra la base de pruebas. La migración es `AddRefreshTokens`.
 
+### Conciliación periódica de suscripciones
+
+El caso de uso `Application/Subscriptions/ReconcileSubscriptions` compara el estado local de cada suscripción con el del proveedor (pagos externo, Apple o Google), que es la fuente de verdad del estado de pago. `API/Subscriptions/SubscriptionReconciliationWorker` (un `BackgroundService`) lo ejecuta al arrancar y luego cada `IntervalMinutes`.
+
+- **Corrección**: si el estado o el vencimiento difieren, se aplica el del proveedor y se registra la entrada (`ReconciliationEntry`) en la misma transacción. Si ya coinciden no se escribe nada, por lo que ejecutarlo dos veces seguidas da el mismo resultado.
+- **Discrepancias sin solución**: si el proveedor no reconoce la suscripción, no se modifica nada y se emite una alerta por `IReconciliationAlerts` (por defecto, un log de error). Un fallo al consultar al proveedor o un conflicto de concurrencia se difiere a la siguiente ejecución y no genera alerta.
+- **Concurrencia**: `IReconciliationLock` evita ejecuciones simultáneas; la implementación por defecto (`InProcessReconciliationLock`) cubre un solo proceso.
+- **Contratos pendientes de implementar**: `ISubscriptionProviderClient` (uno por proveedor) e `ISubscriptionReconciliationStore` dependen del modelo de suscripciones y de las integraciones con cada proveedor, y se implementan en sus propios tickets. Hasta entonces la tarea queda deshabilitada.
+
+| Configuración | Detalle |
+|---|---|
+| `Subscriptions:Reconciliation:Enabled` | Activa la tarea; `false` por defecto. Con `true` se exige que estén registrados el almacén y los clientes de proveedor. |
+| `Subscriptions:Reconciliation:IntervalMinutes` | Minutos entre ejecuciones; 60 por defecto. |
+| `Subscriptions:Reconciliation:BatchSize` | Suscripciones leídas por lote; 100 por defecto. |
+
+`Application.Tests/Subscriptions/ReconcileSubscriptionsTests` prueba la corrección, la idempotencia, las alertas, los fallos del proveedor, los lotes y el bloqueo; `Infrastructure.Tests/Subscriptions/InProcessReconciliationLockTests`, el bloqueo en proceso.
+
 ### Restricciones de integridad
 
 La base impide los estados inconsistentes sin depender del código. Toda entidad nueva sigue esta convención:
