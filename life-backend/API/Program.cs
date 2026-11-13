@@ -1,3 +1,4 @@
+using API.Authorization;
 using API.Extensions;
 using Application;
 using Infrastructure;
@@ -18,7 +19,8 @@ builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration)
     .AddPersistence(builder.Configuration)
-    .AddAccessTokenAuthentication();
+    .AddAccessTokenAuthentication()
+    .AddApiAuthorization();
 
 var app = builder.Build();
 

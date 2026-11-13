@@ -13,7 +13,7 @@ public class ValidationTests(ApiFactory api)
     [Fact]
     public async Task Post_ValidRequest_Returns200WithTheResponseDto()
     {
-        var client = api.CreateApiClient();
+        var client = api.CreateApiClient(Guid.NewGuid());
 
         var response = await client.PostAsJsonAsync(_route, new { name = "Sample", quantity = 5 });
 
@@ -24,7 +24,7 @@ public class ValidationTests(ApiFactory api)
     [Fact]
     public async Task Post_EmptyName_Returns400ProblemDetailsWithTheInvalidField()
     {
-        var client = api.CreateApiClient();
+        var client = api.CreateApiClient(Guid.NewGuid());
 
         var response = await client.PostAsJsonAsync(_route, new { name = "", quantity = 5 });
 
@@ -40,7 +40,7 @@ public class ValidationTests(ApiFactory api)
     [Fact]
     public async Task Post_SeveralInvalidFields_ReturnsAllOfThemInTheSameResponse()
     {
-        var client = api.CreateApiClient();
+        var client = api.CreateApiClient(Guid.NewGuid());
 
         var response = await client.PostAsJsonAsync(_route, new { name = "", quantity = 0 });
 
@@ -57,7 +57,7 @@ public class ValidationTests(ApiFactory api)
     [InlineData(101, false)]
     public async Task Post_QuantityAtTheLimits_AcceptsOnlyTheAllowedRange(int quantity, bool accepted)
     {
-        var client = api.CreateApiClient();
+        var client = api.CreateApiClient(Guid.NewGuid());
 
         var response = await client.PostAsJsonAsync(_route, new { name = "Sample", quantity });
 
@@ -67,7 +67,7 @@ public class ValidationTests(ApiFactory api)
     [Fact]
     public async Task Post_WrongTypeInBody_Returns400WithoutInternalDetails()
     {
-        var client = api.CreateApiClient();
+        var client = api.CreateApiClient(Guid.NewGuid());
 
         var response = await client.PostAsJsonAsync(_route, new { name = "Sample", quantity = "abc" });
 
@@ -80,7 +80,7 @@ public class ValidationTests(ApiFactory api)
     [Fact]
     public async Task Post_EmptyJsonObject_Returns400WithTheMissingFields()
     {
-        var client = api.CreateApiClient();
+        var client = api.CreateApiClient(Guid.NewGuid());
 
         var response = await client.PostAsync(
             _route,

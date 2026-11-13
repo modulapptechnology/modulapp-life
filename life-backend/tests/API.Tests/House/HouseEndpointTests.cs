@@ -23,7 +23,7 @@ public class HouseEndpointTests(ApiFactory api)
     [Fact]
     public async Task Get_UnsupportedVersion_Returns404()
     {
-        var client = api.CreateApiClient();
+        var client = api.CreateApiClient(Guid.NewGuid());
 
         var response = await client.GetAsync("/api/v9/house");
 
@@ -33,7 +33,7 @@ public class HouseEndpointTests(ApiFactory api)
     [Fact]
     public async Task Post_MethodNotAllowed_Returns405()
     {
-        var client = api.CreateApiClient();
+        var client = api.CreateApiClient(Guid.NewGuid());
 
         var response = await client.PostAsync("/api/v1/house", content: null);
 

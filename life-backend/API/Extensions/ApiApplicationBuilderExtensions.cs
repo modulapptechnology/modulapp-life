@@ -8,7 +8,7 @@ public static class ApiApplicationBuilderExtensions
     {
         if (app.Environment.IsDevelopment())
         {
-            app.MapOpenApi();
+            app.MapOpenApi().AllowAnonymous();
             app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "LIFE API v1"));
 
             app.MapGet("/house/database", async (IConfiguration configuration) =>

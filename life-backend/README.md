@@ -308,7 +308,7 @@ dotnet user-secrets set "Authentication:AccessToken:SigningKey" "<valor aleatori
 
 Cada sesión es un par: un token de acceso JWT de corta duración y un token de renovación opaco.
 
-- **Validación**: `AddAccessTokenAuthentication` (`API/Extensions`) registra JwtBearer con la misma clave, emisor y audiencia con que se emite, algoritmo HS256 y sin tolerancia de reloj. `UseAuthentication` va antes de `UseAuthorization`. Un token expirado, alterado o ausente en un endpoint protegido devuelve `401`. Proteger los endpoints es de la tarea de autorización.
+- **Validación**: `AddAccessTokenAuthentication` (`API/Extensions`) registra JwtBearer con la misma clave, emisor y audiencia con que se emite, algoritmo HS256 y sin tolerancia de reloj. `UseAuthentication` va antes de `UseAuthorization`. Un token expirado, alterado o ausente en un endpoint protegido devuelve `401`. Qué endpoints son protegidos lo define la sección "Autenticación y autorización de endpoints".
 - **Renovación**: `POST /api/v1/auth/refresh` con `{ "refreshToken" }` devuelve `200` con la misma forma que el login (`accessToken`, `tokenType`, `expiresAt`, `refreshToken`, `refreshTokenExpiresAt`). No exige un token de acceso vigente, así que funciona tras un periodo sin conexión mientras el token de renovación no haya vencido. `401` si es desconocido, vencido, revocado o el usuario no está `Active`; `400` si falta; `429` por el límite de frecuencia de la política `Login`.
 - **Rotación**: cada renovación marca el token usado (`UsedAt`) y emite uno nuevo con vigencia completa, de la misma familia (`FamilyId`) y dispositivo (`DeviceId`). El login acepta un `deviceId` opcional (máx. 100 caracteres); si no llega, el servidor genera uno.
 - **Reutilización**: presentar un token ya rotado devuelve `401` y revoca (`RevokedAt`) todos los tokens de su familia, de modo que el token nuevo del atacante o del dueño legítimo deja de servir y hay que iniciar sesión de nuevo.
@@ -448,6 +448,27 @@ Un origen no configurado no recibe la cabecera `Access-Control-Allow-Origin` y e
 - Un cuerpo JSON con un tipo incorrecto también responde `400`, pero con el mensaje genérico `El valor no es válido.`, para no exponer tipos, rutas ni posiciones internas (`ValidationProblemFactory`).
 - No se validan aquí las reglas de negocio de módulos específicos.
 - `tests/API.Tests/Validation` prueba el patrón con un controlador y un validador que solo existen en el servidor de pruebas.
+
+### Autenticación y autorización de endpoints
+
+Todo endpoint es privado por defecto: `AddApiAuthorization` (`API/Authorization`) define una política de respaldo (`FallbackPolicy`) que exige un usuario autenticado, de modo que un controlador o endpoint nuevo queda protegido sin declarar nada. La autorización se valida siempre en el servidor.
+
+- **Endpoints públicos**: solo responden sin sesión los marcados con `[AllowAnonymous]`, uno por acción (no por controlador): `GET /api/v1/house` y, en `AuthController`, `register`, `login`, `refresh`, `logout` y `verify-email`. En Desarrollo, `/openapi/v1.json` también es público; Swagger UI es solo la página. `GET /house/database` (solo Desarrollo) exige un token de acceso. Hacer público un endpoint nuevo exige declararlo y agregarlo a la lista de `ProtectedByDefaultTests`, que falla si la lista real cambia.
+- **Respuestas estandarizadas**: `ProblemAuthorizationResultHandler` responde `application/problem+json` con `401` (sin sesión válida, con la cabecera `WWW-Authenticate`), `403` (identidad válida sin permisos suficientes) y `404` (recurso ajeno, para no revelar su existencia).
+- **Políticas reutilizables** (`AuthorizationPolicies`), que se aplican con `[Authorize(Policy = ...)]`:
+
+| Política | Qué exige | Si no se cumple |
+|---|---|---|
+| `OwnUser` | Que el `{userId}` de la ruta sea el usuario autenticado (perfil, preferencias, sesiones). | `404` |
+| `WorkspaceMember` | Que el usuario sea miembro del `{workspaceId}` de la ruta. | `404` si no es miembro |
+| `WorkspaceAdmin` | Rol `Admin` o superior en el espacio. | `404` si no es miembro; `403` si su rol es menor |
+| `WorkspaceOwner` | Rol `Owner` en el espacio. | `404` si no es miembro; `403` si su rol es menor |
+
+  La pertenencia y el rol se consultan con `IWorkspaceMembershipReader` (`Application/Workspaces`, implementado en `Persistence`). Las reglas de permisos de cada módulo y la gestión de roles quedan fuera: estas políticas solo comparan el rol mínimo.
+- **Identidad**: `ClaimsPrincipalExtensions.GetUserId()` devuelve el id del usuario autenticado desde el token (`sub`); los casos de uso y controladores no deben tomarlo del cuerpo ni de la ruta.
+- **Datos de otros miembros**: `WorkspaceMemberSummary` (`UserId`, `Name`, `AvatarUrl`, `Role`) define lo visible de otros miembros del espacio; `IWorkspaceMembershipReader.ListMembersAsync` proyecta solo esos campos (nunca el correo).
+- **Campos sensibles**: ninguna respuesta incluye hashes, contraseñas ni secretos; `ResponseContractsTests` lo comprueba sobre todos los DTO `*Response` y `*Summary` de `Application`. Los tokens solo viajan en la respuesta de sesión (`LoginResponse`).
+- **Pruebas**: `tests/API.Tests/Security/ProtectedByDefaultTests` y `AuthorizationPolicyTests`, con `TestPoliciesController` e `InMemoryWorkspaceMembershipReader` (sin base de datos). Las rutas de prueba anónimas que antes se llamaban sin sesión ahora usan `CreateApiClient(userId)`.
 
 ### Swagger y `API.http`
 

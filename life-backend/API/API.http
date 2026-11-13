@@ -4,8 +4,9 @@
 GET {{API_HostAddress}}/api/v1/house
 Accept: application/json
 
-### Database connection
+### Database connection (requires the accessToken returned by the login)
 GET {{API_HostAddress}}/house/database
+Authorization: Bearer <accessToken>
 Accept: application/json
 
 ### Register with email and password
