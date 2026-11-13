@@ -16,6 +16,9 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'common.cancel': 'Cancelar',
     'common.close': 'Cerrar',
     'common.back': 'Volver',
+    'connectivity.offline': 'Sin conexión',
+    'connectivity.syncing': 'Sincronizando',
+    'connectivity.synced': 'Sincronizado',
     'settings.modules.title': 'Módulos',
     'settings.modules.disableTitle': '¿Deshabilitar {module}?',
     'settings.modules.disableMessage':
@@ -158,6 +161,9 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'common.cancel': 'Cancel',
     'common.close': 'Close',
     'common.back': 'Back',
+    'connectivity.offline': 'Offline',
+    'connectivity.syncing': 'Syncing',
+    'connectivity.synced': 'Synced',
     'settings.modules.title': 'Modules',
     'settings.modules.disableTitle': 'Disable {module}?',
     'settings.modules.disableMessage':

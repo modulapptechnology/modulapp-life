@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { ThemeProvider } from '../../../theme/ThemeProvider';
 import { darkColors, lightColors } from '@life/theme';
 import { renderWithTheme } from '../../../testing/renderWithTheme/renderWithTheme';
@@ -44,6 +44,15 @@ function renderRail(activePath: string, onNavigate = jest.fn(), open = true) {
 }
 
 describe('ModulSidebarRail', () => {
+  // La animación del panel avanza con temporizadores: se controlan para que sus cambios ocurran dentro de act.
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(async () => {
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    jest.useRealTimers();
+  });
+
   it('muestra una opción por sección y marca como activa solo la de la ruta actual', async () => {
     const rutaActual = '/tareas';
 

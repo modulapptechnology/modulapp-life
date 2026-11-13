@@ -8,10 +8,18 @@ import {
   SETTINGS_SECTION,
   session,
   translate,
+  useConnectivity,
   useEnabledModules,
   useSession,
 } from '@life/core';
-import { ModulLayoutWeb, ModulText, toSidebarSections, type NavSection } from '@life/ui';
+import {
+  ModulConnectionIndicator,
+  ModulLayoutWeb,
+  ModulText,
+  ModulView,
+  toSidebarSections,
+  type NavSection,
+} from '@life/ui';
 import HomePage from './pages/HomePage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import LoginPage from './pages/LoginPage';
@@ -20,6 +28,7 @@ import RegisterPage from './pages/RegisterPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import { useDesktopWindow } from './desktop/useDesktopWindow';
+import { connectivityMonitor } from './services/connectivity/connectivity';
 import { sessionManager } from './services/session/session';
 import SettingsPage from './pages/SettingsPage';
 
@@ -28,6 +37,7 @@ const Catalog = lazy(() => import('@life/ui/catalog/Catalog'));
 export default function App() {
   const modules = useEnabledModules(moduleRegistry);
   const { user, pendingOperations } = useSession(session);
+  const { status } = useConnectivity();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -36,6 +46,8 @@ export default function App() {
   useEffect(() => {
     void sessionManager.restore();
   }, []);
+
+  useEffect(() => connectivityMonitor.start(), []);
 
   // El sidebar sale del registro de módulos habilitados, así que no cambia al agregar uno.
   const sections: NavSection[] = toSidebarSections([HOME_SECTION, ...modules], translate);
@@ -73,9 +85,19 @@ export default function App() {
         cancelLabel: translate('common.cancel'),
       }}
       headerContent={
-        <ModulText variant="body" fwBold>
-          {translate('nav.title')}
-        </ModulText>
+        <ModulView row alignCenter gap16>
+          <ModulText variant="body" fwBold>
+            {translate('nav.title')}
+          </ModulText>
+          <ModulConnectionIndicator
+            status={status}
+            labels={{
+              offline: translate('connectivity.offline'),
+              syncing: translate('connectivity.syncing'),
+              synced: translate('connectivity.synced'),
+            }}
+          />
+        </ModulView>
       }
     >
       <Outlet />

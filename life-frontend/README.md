@@ -190,6 +190,12 @@ Los métodos `get`, `post`, `put`, `patch` y `delete` nunca lanzan excepciones: 
 | `cancelled` | quien llama canceló la petición |
 
 `problem` sigue el formato de error estandarizado de la API (`title`, `detail`, `errors`). Ante un `401`, si el cliente recibe `refreshSession`, la ejecuta (una sola vez aunque haya varias peticiones a la vez) y repite la petición una vez; si no hay renovación o el `401` persiste, llama a `onSessionExpired`. Mostrar los errores en pantalla corresponde a cada vista.
+## Estado de conectividad
+
+`@life/core` expone el estado de conectividad de la app. `connectivityStore` guarda `online` (hay red **y** el servidor responde) y `useConnectivity()` devuelve `{ online, status }`, donde `status` es `offline`, `syncing` (con conexión y `pendingOperations > 0` en la sesión) o `synced`. Cualquier componente puede leerlo; el indicador visual es `ModulConnectionIndicator` (`@life/ui`), que se muestra en `MobileHeader` y en el encabezado web (y de escritorio).
+
+`createConnectivityMonitor` mantiene el estado: escucha la red del dispositivo (`expo-network` en móvil, los eventos `online`/`offline` del navegador en web y escritorio) y comprueba la alcanzabilidad del servidor con `GET api/v1/house` (`createServerProbe`; un `networkError`, un `timeout` o un `5xx` cuentan como no alcanzable) al arrancar, al cambiar la red y cada 15 s. Un cambio de estado solo se publica si se mantiene 2 s, para que la interfaz no parpadee. Cada app lo inicia al montarse desde `services/connectivity/`. La sincronización de datos y la cola de operaciones pendientes no forman parte de este módulo.
+
 ## Almacenamiento seguro de la sesión
 
 Los tokens de la sesión (acceso y renovación) se guardan con la interfaz común `SessionTokenStorage` de `@life/core` (`load`, `save`, `clear`), con una implementación por plataforma. `createSessionServices` conecta el almacenamiento, el gestor de sesión (`createSessionManager`) y el cliente de la API; cada app lo crea en `services/session/`.

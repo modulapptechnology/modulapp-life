@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { lightColors } from '@life/theme';
 import { renderWithTheme } from '../../../testing/renderWithTheme/renderWithTheme';
 import { ModulSidebar, type ModulSidebarProps, type ModulSidebarSection } from './ModulSidebar';
@@ -10,6 +10,15 @@ const SECTIONS: ModulSidebarSection[] = [
 ];
 
 describe('ModulSidebar', () => {
+  // La animación del panel avanza con temporizadores: se controlan para que sus cambios ocurran dentro de act.
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(async () => {
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+    jest.useRealTimers();
+  });
+
   it('muestra una sección por módulo y marca como activa solo la ruta actual', async () => {
     const rutaActual = '/tareas/pendientes';
 
