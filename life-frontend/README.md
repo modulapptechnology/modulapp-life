@@ -105,7 +105,7 @@ Con `nvm`, `nvm use` toma la versión de `.nvmrc`. `npm ci` instala exactamente 
 
 ## Entornos y variables
 
-La app tiene tres entornos. Cada uno tiene un archivo versionado con sus variables `EXPO_PUBLIC_*`, que apuntan a la URL de la API de ese entorno (la API usa su propia base de datos, ver el README del backend):
+La app tiene tres entornos. Cada uno tiene un archivo versionado con sus variables `EXPO_PUBLIC_*`, que apuntan a la URL de la API de ese entorno (la API usa su propia base de datos, ver el README del backend). Las tres apps usan los mismos nombres de variable:
 
 | Entorno | Archivo | `EXPO_PUBLIC_APP_ENV` | `EXPO_PUBLIC_API_URL` |
 |---|---|---|---|
@@ -115,30 +115,57 @@ La app tiene tres entornos. Cada uno tiene un archivo versionado con sus variabl
 
 Las variables `EXPO_PUBLIC_*` se incrustan en el código de la app y son visibles para cualquiera que la instale, por eso solo llevan valores públicos como la URL de la API; nunca contraseñas, claves ni tokens. Cualquier valor sensible vive en el backend o en los secretos de CI de GitHub Actions (ver el README del backend).
 
-`.env.example` es la plantilla y se versiona sin valores reales. Para valores locales propios (por ejemplo, la IP de tu equipo al probar en un dispositivo físico) se copia a `.env.local` (ignorado por Git), que tiene prioridad sobre el archivo del entorno. En el emulador de Android `localhost` es el propio emulador: allí se usa `http://10.0.2.2:5041` en `.env.local`. Desde `life-frontend`:
+Se mantiene el prefijo `EXPO_PUBLIC_` también en la web (`envPrefix` de Vite) para que las tres apps compartan variables; no se usa `VITE_*`.
+
+### Dónde está cada archivo
+
+| App | Archivos de entorno | Plantilla |
+|---|---|---|
+| Móvil | `apps/mobile/.env.development`, `.env.test`, `.env.production` (Expo lee los `.env` de `apps/mobile`, no los de la raíz) | `apps/mobile/.env.example` |
+| Web | `.env.*` de la raíz de `life-frontend` (`envDir` en `vite.config.ts`) | `apps/web/.env.example` |
+| Escritorio | los mismos de la raíz, porque empaqueta la web | `apps/desktop/.env.example` |
+
+Los archivos de cada entorno son públicos y se versionan; los de valores propios (`.env.local`) los ignora Git. Una prueba (`apps/desktop/src-tauri/envFiles.test.ts`) comprueba que los de la app móvil coinciden con los de la raíz y con los perfiles de `apps/mobile/eas.json`: al cambiar una URL se cambia en los tres lugares.
+
+Para valores locales propios (por ejemplo, la IP de tu equipo al probar en un dispositivo físico) se copia la plantilla a `.env.local` (tiene prioridad sobre el archivo del entorno): en `apps/mobile/.env.local` para el móvil y en `life-frontend/.env.local` para la web y el escritorio. En el emulador de Android `localhost` es el propio emulador: allí se usa `http://10.0.2.2:5041`. Desde `life-frontend`:
 
 ```powershell
+Copy-Item apps/mobile/.env.example apps/mobile/.env.local
 Copy-Item .env.example .env.local
 ```
 
+### Configuración tipada y error al iniciar
+
+Cada app lee las variables en un único módulo (`apps/mobile/src/config/env.ts` y `apps/web/src/config/env.ts`), que usa `readAppEnv` de `@life/core`. Devuelve `{ appEnv, apiUrl }` y, si falta una variable o es inválida (ambiente distinto de `development`, `test` o `production`, o URL que no es http/https), lanza un error que nombra cada variable al iniciar la app. El resto del código importa `env` de ese módulo y no lee `process.env` ni `import.meta.env`.
+
 ### Cambiar de entorno
 
-Expo elige el archivo según `NODE_ENV`. Desde `life-frontend`:
+Desde `life-frontend`:
 
 ```powershell
-# Desarrollo (por defecto con expo start)
-npx expo start
+# Móvil: Expo elige el archivo según NODE_ENV (desarrollo por defecto)
+npm run mobile
+$env:NODE_ENV = "test"; npm run mobile
 
-# Pruebas
-$env:NODE_ENV = "test"
-npx expo start
+# Web: Vite elige el archivo según el modo
+npm run web                       # desarrollo
+npm run build -w @life/web        # producción (.env.production)
+npm run build:test -w @life/web   # pruebas (.env.test)
 
-# Producción
-$env:NODE_ENV = "production"
-npx expo export
+# Escritorio: empaqueta la web con el ambiente
+npm run build -w @life/desktop        # producción
+npm run build:test -w @life/desktop   # pruebas
 ```
 
-El código lee la URL con `process.env.EXPO_PUBLIC_API_URL` y nunca la escribe directamente. La web y el escritorio la leen con `import.meta.env.EXPO_PUBLIC_API_URL`: `apps/web/vite.config.ts` toma los mismos archivos `.env*` de `life-frontend` (`envDir`) y expone solo las variables con prefijo `EXPO_PUBLIC_` (`envPrefix`).
+### Compilaciones del móvil con EAS
+
+`apps/mobile/eas.json` define los perfiles de EAS Build con sus variables: `development` (cliente de desarrollo, ambiente `development`), `preview` (distribución interna, ambiente `test`) y `production` (ambiente `production`). Desde `apps/mobile`:
+
+```powershell
+npx eas-cli@latest build --profile preview --platform android
+```
+
+La firma de las apps, el despliegue en tiendas y la firma de los instaladores de escritorio quedan fuera de esta configuración. El `projectId` de EAS lo agrega `eas init` cuando exista la cuenta de Expo.
 
 ## Cliente de la API
 
@@ -417,7 +444,7 @@ npm run format:check    # comprobar sin modificar archivos
 
 - Componentes funcionales y Hooks; no se usan componentes de clase.
 - Un componente no crece de más: cuando mezcla presentación y lógica, la lógica se separa en un hook o una utilidad con su prueba. La lógica de negocio no va en los componentes de presentación.
-- Las llamadas HTTP se centralizan en los servicios (`services/` en móvil y web, y `@life/api-client`); los componentes y las pantallas no llaman a la API directamente. La URL sale de `EXPO_PUBLIC_API_URL`.
+- Las llamadas HTTP se centralizan en los servicios (`services/` en móvil y web, y `@life/api-client`); los componentes y las pantallas no llaman a la API directamente. La URL sale de `env.apiUrl` (`EXPO_PUBLIC_API_URL`, ver "Entornos y variables").
 - Los estilos se mantienen organizados y reutilizables en el tema y en las props de `@life/ui`; no se repiten valores en cada pantalla.
 - Mobile, web y escritorio comparten lo común en `packages/*`. No se duplica lógica entre plataformas; lo que difiere se separa con archivos `.web.tsx` y `.native.tsx`, y el cambio se comprueba en las plataformas afectadas.
 - Se mantiene un único layout principal reutilizable (`ModulLayoutWeb`, `ModulHeader`, `ModulSidebar`, `ModulTabBar`, etc.). Los módulos funcionales entran como vistas dentro de ese layout y no crean uno propio.

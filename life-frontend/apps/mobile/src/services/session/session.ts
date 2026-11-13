@@ -1,5 +1,6 @@
 import { createSecureSessionStorage, createSessionServices } from '@life/core';
 import * as SecureStore from 'expo-secure-store';
+import { env } from '../../config/env';
 
 const options: SecureStore.SecureStoreOptions = {
   keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
@@ -12,7 +13,7 @@ const storage = createSecureSessionStorage({
 });
 
 export const { manager: sessionManager, apiClient } = createSessionServices({
-  baseUrl: process.env.EXPO_PUBLIC_API_URL ?? '',
+  baseUrl: env.apiUrl,
   storage,
   delivery: 'body',
 });
