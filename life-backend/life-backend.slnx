@@ -8,6 +8,7 @@
   <Project Path="tests/API.Tests/API.Tests.csproj" />
   <Project Path="tests/Application.Tests/Application.Tests.csproj" />
   <Project Path="tests/Domain.Tests/Domain.Tests.csproj" />
+  <Project Path="tests/Flows.Tests/Flows.Tests.csproj" />
   <Project Path="tests/Infrastructure.Tests/Infrastructure.Tests.csproj" />
   <Project Path="tests/Support.Tests/Support.Tests.csproj" />
   <Project Path="tests/Support.Tool/Support.Tool.csproj" />

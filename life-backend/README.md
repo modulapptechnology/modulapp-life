@@ -562,7 +562,7 @@ public void AddApplication_WithValidCollection_ReturnsSameCollection()
 
 ### Entorno de pruebas de integración
 
-Las pruebas de integración y de flujos críticos usan una base SQL Server aislada por proyecto de pruebas, que se crea y se elimina en cada ejecución. El nombre es `ModulLife<Proyecto>Test`: `ModulLifeApiTest` para `API.Tests` y `ModulLifeSupportTest` para `Support.Tests`. Preparar o limpiar una base no afecta a las demás.
+Las pruebas de integración y de flujos críticos usan una base SQL Server aislada por proyecto de pruebas, que se crea y se elimina en cada ejecución. El nombre es `ModulLife<Proyecto>Test`: `ModulLifeApiTest` para `API.Tests`, `ModulLifeFlowsTest` para `Flows.Tests` y `ModulLifeSupportTest` para `Support.Tests`. Preparar o limpiar una base no afecta a las demás.
 
 Nunca se usa la base de desarrollo ni la de producción: `TestDatabaseOptions` rechaza cualquier nombre de base que no termine en `Test` (incluidos `ModulLifeDev`, `ModulLifeProd` y `master`) y siempre reemplaza la base indicada en la cadena de conexión.
 
@@ -573,6 +573,7 @@ Nunca se usa la base de desarrollo ni la de producción: `TestDatabaseOptions` r
 | `tests/Support.Tests` | Pruebas del propio entorno; las que necesitan la base se omiten si no hay cadena de conexión |
 | `tests/API.Tests` | Pruebas de integración de la API |
 | `tests/Infrastructure.Tests` | Pruebas de integración de `Persistence` e `Infrastructure` contra SQL Server (ver "Pruebas de integración de Persistence e Infrastructure") |
+| `tests/Flows.Tests` | Pruebas de flujos críticos de extremo a extremo (ver "Pruebas de flujos críticos") |
 
 Los datos semilla y constructores viven en `life-backend/Support` y son solo del backend: el frontend mantiene su propia configuración y dependencias de pruebas y no los comparte. Los usuarios (`dbo.Users`) y espacios de trabajo (`dbo.Workspaces`) de `Support` son tipos provisionales de pruebas. Cuando existan las entidades y las migraciones, `Schema.sql` y los constructores se reemplazan por ellas.
 
@@ -654,6 +655,23 @@ dotnet test tests/Infrastructure.Tests/Infrastructure.Tests.csproj
 - El resto de las pruebas comparten una base (`ModulLifeInfrastructureTest`, colección `MigratedDatabase`) con las migraciones ya aplicadas y se ejecutan en serie. Cada prueba crea sus propios datos con correos y cuentas únicos, así no depende del orden.
 - `UserPersistenceTests`, `ExternalAccountPersistenceTests` y `UnitOfWorkTests` cubren lectura, escritura, eliminación lógica, versión de fila y las restricciones de integridad: correo único entre usuarios activos sin distinguir mayúsculas, cuenta externa única por proveedor, clave foránea de la cuenta externa, longitud máxima y reversión de la transacción. `WorkspacePersistenceTests` cubre el propietario obligatorio, la pertenencia única por usuario y espacio (y su reingreso tras eliminarla), el propietario único, los valores enumerados y el borrado restringido.
 - Todavía no hay repositorios: las pruebas usan `LifeDbContext` y `UnitOfWork`. Cuando existan, se agregan en `tests/Infrastructure.Tests/Persistence` con las mismas fixtures.
+
+#### Pruebas de flujos críticos
+
+`tests/Flows.Tests` prueba de extremo a extremo los flujos que la aplicación no puede romper: levanta la API completa en memoria (`WebApplicationFactory<Program>`, entorno `Testing`) con la autenticación, la persistencia y las migraciones reales sobre SQL Server, y la recorre solo por HTTP, igual que un cliente. Está separado de las pruebas unitarias y de integración, referencia `API` y `Support`, y se ejecuta por separado:
+
+```powershell
+dotnet test tests/Flows.Tests/Flows.Tests.csproj
+```
+
+- Usa la cadena `ConnectionStrings:Test` (ver "Configurar la cadena de conexión") y su propia base, `ModulLifeFlowsTest`, que se crea vacía, se migra al empezar y se elimina al terminar. Sin la cadena, las pruebas con base se omiten.
+- Cada escenario es independiente: registra sus propios usuarios con un correo único (`FlowUser.SignUpAsync`) y crea sus propios espacios de trabajo, así que puede ejecutarse solo (`--filter "FullyQualifiedName~PermissionsFlowTests"`). No usa datos reales.
+- El único doble de prueba es el envío del correo de verificación (`CapturingEmailSender`), que guarda el código para que el flujo pueda verificar la cuenta.
+- Cuando un paso falla, `FlowStep.ExpectAsync` lanza `FlowStepFailedException` con el paso, el estado esperado, el recibido y el cuerpo de la respuesta (hasta 500 caracteres), por ejemplo: `Flow step 'create workspace' failed: expected 201 Created but received 400 BadRequest. Response: {...}`.
+- Flujos cubiertos hoy: registro, verificación del correo e inicio de sesión (`AuthenticationFlowTests`) y crear, consultar, listar y editar un espacio de trabajo (`WorkspaceFlowTests`).
+- Permisos (`PermissionsFlowTests`): sin sesión se responde 401; un miembro no puede editar (403) y un administrador no puede archivar (403); un miembro sí consulta.
+- Aislamiento (`IsolationFlowTests`): un usuario ajeno recibe 404 al consultar, editar o archivar un espacio de trabajo que no es suyo y no lo ve en su listado.
+- Los flujos de capturar y procesar una entrada, y de crear una tarea y un evento, se agregan en `Flows/` cuando existan sus endpoints, con `FlowUser` y `WorkspaceFlow`. Las pruebas de la aplicación web y las de móvil y escritorio no forman parte de este proyecto.
 
 ## Integración continua
 
@@ -761,7 +779,7 @@ dotnet test tests/Domain.Tests/Domain.Tests.csproj
 dotnet test tests/Application.Tests/Application.Tests.csproj
 ```
 
-- Las pruebas de integración (`tests/API.Tests` y `tests/Infrastructure.Tests`) usan la base de pruebas y se ejecutan solo en el entorno local (ver "Entorno de pruebas de integración").
+- Las pruebas de integración y de flujos críticos (`tests/API.Tests`, `tests/Infrastructure.Tests` y `tests/Flows.Tests`) usan la base de pruebas y se ejecutan solo en el entorno local (ver "Entorno de pruebas de integración").
 - El formato, la compilación y los analizadores no reportan errores, ni `using` o referencias sin uso.
 - Las pruebas existentes y las de lo modificado pasan.
 - No cambiaron contratos ni comportamientos funcionales, y se revisaron los efectos secundarios en las funcionalidades relacionadas.
