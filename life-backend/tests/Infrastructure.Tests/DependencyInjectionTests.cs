@@ -1,4 +1,5 @@
 using Application.Users;
+using Application.Workspaces;
 using Infrastructure.Email;
 using Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
@@ -174,6 +175,39 @@ public class DependencyInjectionTests
         var options = provider.GetRequiredService<RefreshTokenOptions>();
 
         Assert.Equal(TimeSpan.FromDays(7), options.Lifetime);
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithoutWorkspaceLimitSettings_UsesFiveOwnedWorkspaces()
+    {
+        using var provider = BuildProvider(BuildConfiguration());
+
+        var options = provider.GetRequiredService<WorkspaceLimitOptions>();
+
+        Assert.Equal(5, options.MaxOwnedWorkspaces);
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithConfiguredWorkspaceLimit_UsesThatValue()
+    {
+        using var provider = BuildProvider(BuildConfiguration(("Workspaces:Limits:MaxOwnedWorkspaces", "2")));
+
+        var options = provider.GetRequiredService<WorkspaceLimitOptions>();
+
+        Assert.Equal(2, options.MaxOwnedWorkspaces);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("many")]
+    public void AddInfrastructure_WithInvalidWorkspaceLimit_ThrowsInvalidOperationException(string value)
+    {
+        var configuration = BuildConfiguration(("Workspaces:Limits:MaxOwnedWorkspaces", value));
+
+        var action = () => new ServiceCollection().AddInfrastructure(configuration);
+
+        Assert.Throws<InvalidOperationException>(action);
     }
 
     [Theory]

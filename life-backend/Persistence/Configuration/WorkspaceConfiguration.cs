@@ -10,6 +10,8 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
 
     public const int NameMaxLength = 200;
 
+    public const int DescriptionMaxLength = 1000;
+
     public static readonly string TypeCheckConstraintName =
         EnumCheckConstraint.Name(TableName, nameof(Workspace.Type));
 
@@ -28,6 +30,7 @@ public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
                 EnumCheckConstraint.Sql<WorkspaceStatus>(nameof(Workspace.Status)));
         });
         builder.Property(workspace => workspace.Name).IsRequired().HasMaxLength(NameMaxLength);
+        builder.Property(workspace => workspace.Description).HasMaxLength(DescriptionMaxLength);
         builder.Property(workspace => workspace.Type).IsRequired();
         builder.Property(workspace => workspace.Status).IsRequired();
         builder.HasOne(workspace => workspace.Owner)
