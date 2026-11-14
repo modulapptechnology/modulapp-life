@@ -6,11 +6,13 @@ on:
     paths:
       - 'life-backend/**'
       - '.github/workflows/backend.yml'
+      - '.github/scripts/test-summary.sh'
   push:
     branches: [review, main, 'release/**']
     paths:
       - 'life-backend/**'
       - '.github/workflows/backend.yml'
+      - '.github/scripts/test-summary.sh'
 
 permissions:
   contents: read
@@ -69,3 +71,185 @@ jobs:
 
       - name: Analizadores y reglas de estilo (advertencias como errores)
         run: dotnet build life-backend.slnx --no-restore --configuration Release -warnaserror
+
+  unit-tests:
+    name: Pruebas unitarias del backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: life-backend/global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('life-backend/Directory.Packages.props', 'life-backend/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - run: dotnet restore life-backend.slnx
+
+      - run: dotnet build life-backend.slnx --no-restore --configuration Release
+
+      # Cada proyecto de pruebas es un paso aparte; el segundo corre aunque el primero falle
+      - name: Domain.Tests
+        run: >
+          dotnet test tests/Domain.Tests/Domain.Tests.csproj --no-build --configuration Release
+          --logger "trx;LogFileName=Domain.Tests.trx" --results-directory test-results
+
+      - name: Application.Tests
+        if: ${{ !cancelled() }}
+        run: >
+          dotnet test tests/Application.Tests/Application.Tests.csproj --no-build --configuration Release
+          --logger "trx;LogFileName=Application.Tests.trx" --results-directory test-results
+
+      - name: Resumen de resultados
+        if: ${{ !cancelled() }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/test-summary.sh" "Pruebas unitarias del backend" test-results
+
+      - name: Guardar resultados
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-unitarias-backend
+          path: life-backend/test-results
+          if-no-files-found: ignore
+
+  integration-tests:
+    name: Pruebas de integración del backend
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" -b -o /dev/null'
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 20s
+    env:
+      # Solo el servidor: cada proyecto de pruebas crea y elimina su propia base ModulLife<Proyecto>Test
+      ConnectionStrings__Test: Server=localhost,1433;User Id=sa;Password=${{ secrets.TEST_DB_PASSWORD }};TrustServerCertificate=True
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sin la cadena las pruebas con base se omiten y el job pasaría en verde sin probar nada
+      - name: Verificar el secreto de la base de pruebas
+        env:
+          TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+        run: |
+          if [ -z "$TEST_DB_PASSWORD" ]; then
+            echo "::error::Falta el secreto TEST_DB_PASSWORD (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: life-backend/global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('life-backend/Directory.Packages.props', 'life-backend/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - run: dotnet restore life-backend.slnx
+
+      - run: dotnet build life-backend.slnx --no-restore --configuration Release
+
+      - name: Support.Tests
+        run: >
+          dotnet test tests/Support.Tests/Support.Tests.csproj --no-build --configuration Release
+          --logger "trx;LogFileName=Support.Tests.trx" --results-directory test-results
+
+      - name: API.Tests
+        if: ${{ !cancelled() }}
+        run: >
+          dotnet test tests/API.Tests/API.Tests.csproj --no-build --configuration Release
+          --logger "trx;LogFileName=API.Tests.trx" --results-directory test-results
+
+      - name: Infrastructure.Tests
+        if: ${{ !cancelled() }}
+        run: >
+          dotnet test tests/Infrastructure.Tests/Infrastructure.Tests.csproj --no-build --configuration Release
+          --logger "trx;LogFileName=Infrastructure.Tests.trx" --results-directory test-results
+
+      - name: Resumen de resultados
+        if: ${{ !cancelled() }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/test-summary.sh" "Pruebas de integración del backend" test-results
+
+      - name: Guardar resultados
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-integracion-backend
+          path: life-backend/test-results
+          if-no-files-found: ignore
+
+  critical-flows-tests:
+    name: Pruebas de flujos críticos
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" -b -o /dev/null'
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 20s
+    env:
+      ConnectionStrings__Test: Server=localhost,1433;User Id=sa;Password=${{ secrets.TEST_DB_PASSWORD }};TrustServerCertificate=True
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar el secreto de la base de pruebas
+        env:
+          TEST_DB_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
+        run: |
+          if [ -z "$TEST_DB_PASSWORD" ]; then
+            echo "::error::Falta el secreto TEST_DB_PASSWORD (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: life-backend/global.json
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('life-backend/Directory.Packages.props', 'life-backend/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - run: dotnet restore life-backend.slnx
+
+      - run: dotnet build life-backend.slnx --no-restore --configuration Release
+
+      - name: Flows.Tests
+        run: >
+          dotnet test tests/Flows.Tests/Flows.Tests.csproj --no-build --configuration Release
+          --logger "trx;LogFileName=Flows.Tests.trx" --results-directory test-results
+
+      - name: Resumen de resultados
+        if: ${{ !cancelled() }}
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/test-summary.sh" "Pruebas de flujos críticos" test-results
+
+      - name: Guardar resultados
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-flujos-criticos
+          path: life-backend/test-results
+          if-no-files-found: ignore
