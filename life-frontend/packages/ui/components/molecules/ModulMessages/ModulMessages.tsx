@@ -30,7 +30,7 @@ type MessagesApi = {
   confirm: (options: ConfirmOptions) => Promise<boolean>;
 };
 
-type ToastEntry = { id: number; message: string; type: ModulToastType };
+type ToastEntry = { id: number; message: string; type: ModulToastType; visible: boolean };
 type PendingConfirm = { options: ConfirmOptions; resolve: (accepted: boolean) => void };
 
 const MessagesContext = createContext<MessagesApi | null>(null);
@@ -63,14 +63,20 @@ export function ModulMessagesProvider({
     return () => active.forEach(clearTimeout);
   }, []);
 
-  const dismiss = useCallback((id: number) => {
+  const remove = useCallback((id: number) => {
     setToasts((current) => current.filter((entry) => entry.id !== id));
+  }, []);
+
+  const dismiss = useCallback((id: number) => {
+    setToasts((current) =>
+      current.map((entry) => (entry.id === id ? { ...entry, visible: false } : entry)),
+    );
   }, []);
 
   const toast = useCallback(
     (message: string, { type = 'info', duration = DEFAULT_DURATION }: ToastOptions = {}) => {
       const id = nextId.current++;
-      setToasts((current) => [...current, { id, message, type }].slice(-MAX_TOASTS));
+      setToasts((current) => [...current, { id, message, type, visible: true }].slice(-MAX_TOASTS));
       const timer = setTimeout(() => {
         timers.current.delete(timer);
         dismiss(id);
@@ -102,8 +108,10 @@ export function ModulMessagesProvider({
             key={entry.id}
             message={entry.message}
             type={entry.type}
+            visible={entry.visible}
             closeLabel={closeLabel}
             onClose={() => dismiss(entry.id)}
+            onExited={() => remove(entry.id)}
           />
         ))}
       </ModulView>
