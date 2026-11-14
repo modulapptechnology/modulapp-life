@@ -147,6 +147,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'menu.newCapture': 'Nueva captura',
     'menu.reload': 'Recargar',
     'menu.quit': 'Salir',
+    'workspace.select': 'Cambiar de espacio',
   },
   en: {
     'nav.home': 'Home',
@@ -292,6 +293,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'menu.newCapture': 'New capture',
     'menu.reload': 'Reload',
     'menu.quit': 'Quit',
+    'workspace.select': 'Switch workspace',
   },
 };
 

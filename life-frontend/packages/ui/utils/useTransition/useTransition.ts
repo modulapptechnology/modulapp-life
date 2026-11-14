@@ -16,15 +16,20 @@ export function useTransition(visible: boolean, onExited?: () => void) {
   useEffect(() => {
     if (!visible && !mounted) return;
 
-    animateTo(progress, visible ? 1 : 0, {
-      onEnd: ({ finished }) => {
-        if (visible || !finished) return;
-        setMounted(false);
-        exited.current?.();
-      },
-    });
+    const start = setTimeout(() => {
+      animateTo(progress, visible ? 1 : 0, {
+        onEnd: ({ finished }) => {
+          if (visible || !finished) return;
+          setMounted(false);
+          exited.current?.();
+        },
+      });
+    }, 0);
 
-    return () => progress.stopAnimation();
+    return () => {
+      clearTimeout(start);
+      progress.stopAnimation();
+    };
   }, [visible, mounted, progress]);
 
   return { mounted, progress };
