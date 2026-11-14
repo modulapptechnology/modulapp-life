@@ -2,3 +2,6 @@
 .idea/
 .vs/
 .vscode/
+
+# Resultados de pruebas generados por el CI y en local
+test-results/

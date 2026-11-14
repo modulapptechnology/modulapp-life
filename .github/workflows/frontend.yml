@@ -64,3 +64,48 @@ jobs:
 
       - name: Formato (Prettier)
         run: npm run format:check
+
+  unit-tests:
+    name: Pruebas unitarias del frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: life-frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: life-frontend/package-lock.json
+
+      - run: npm ci
+
+      # Jest corre los proyectos de mobile, web, desktop y paquetes (ver jest.config.js)
+      - name: Pruebas (Jest)
+        run: |
+          mkdir -p test-results
+          npm test -- --ci --json --outputFile=test-results/jest.json
+
+      - name: Resumen de resultados
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "### Pruebas unitarias del frontend"
+            echo
+            if [ -f test-results/jest.json ]; then
+              echo "| Suites | Pruebas | Pasaron | Fallaron | Omitidas |"
+              echo "|---|---|---|---|---|"
+              jq -r '"| \(.numTotalTestSuites) | \(.numTotalTests) | \(.numPassedTests) | \(.numFailedTests) | \(.numPendingTests) |"' test-results/jest.json
+              echo
+              jq -r '.testResults[] | select(.status == "failed") | "- Falló `\(.name)`"' test-results/jest.json
+            else
+              echo "Sin resultados: Jest falló antes de probar."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar resultados
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-unitarias-frontend
+          path: life-frontend/test-results
+          if-no-files-found: ignore
