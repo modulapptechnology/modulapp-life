@@ -159,7 +159,41 @@ describe('createSessionManager', () => {
 
     expect([await storage.load(), store.getState()]).toEqual([
       null,
-      { user: null, pendingOperations: 3 },
+      { user: null, pendingOperations: 3, restoring: false },
     ]);
+  });
+});
+
+describe('createSessionManager restore y estado de carga', () => {
+  function setupRestoring(post?: jest.Mock) {
+    const postMock = post ?? jest.fn();
+    const client = { post: postMock } as unknown as ApiClient;
+    const storage = createMemorySessionStorage();
+    const store = createSessionStore({ restoring: true });
+    const manager = createSessionManager({
+      client,
+      storage,
+      store,
+      delivery: 'body',
+      now: () => NOW,
+    });
+    return { manager, storage, store };
+  }
+
+  it('termina la carga sin usuario cuando no hay sesión guardada', async () => {
+    const { manager, store } = setupRestoring();
+
+    await manager.restore();
+
+    expect([store.getState().user, store.getState().restoring]).toEqual([null, false]);
+  });
+
+  it('termina la carga con usuario cuando hay un token de acceso vigente', async () => {
+    const { manager, storage, store } = setupRestoring();
+    await storage.save({ ...storedTokens, accessTokenExpiresAt: '2026-11-07T12:10:00Z' });
+
+    await manager.restore();
+
+    expect([store.getState().user?.id, store.getState().restoring]).toEqual(['u-1', false]);
   });
 });

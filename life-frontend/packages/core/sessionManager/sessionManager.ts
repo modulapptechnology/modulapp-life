@@ -105,15 +105,19 @@ export function createSessionManager(config: SessionManagerConfig): SessionManag
     },
 
     async restore() {
-      const stored = await loadStored();
-      if (stored && Date.parse(stored.accessTokenExpiresAt) > now()) {
-        const user = readUserFromAccessToken(stored.accessToken);
-        if (user) {
-          store.signIn(user);
-          return true;
+      try {
+        const stored = await loadStored();
+        if (stored && Date.parse(stored.accessTokenExpiresAt) > now()) {
+          const user = readUserFromAccessToken(stored.accessToken);
+          if (user) {
+            store.signIn(user);
+            return true;
+          }
         }
+        return delivery === 'cookie' || stored?.refreshToken ? await refresh() : false;
+      } finally {
+        store.finishRestore();
       }
-      return delivery === 'cookie' || stored?.refreshToken ? await refresh() : false;
     },
 
     refresh,

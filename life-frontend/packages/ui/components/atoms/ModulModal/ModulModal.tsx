@@ -75,7 +75,7 @@ export function ModulModal({
           <ModulView
             w100
             maxW480
-            maxH70
+            maxH100
             bgSurface
             borderSubtle
             roundedLg

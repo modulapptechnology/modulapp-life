@@ -5,6 +5,7 @@ import {
   HOME_SECTION,
   moduleRegistry,
   PROFILE_SECTION,
+  resolveReturnPath,
   SETTINGS_SECTION,
   session,
   translate,
@@ -36,9 +37,10 @@ const Catalog = lazy(() => import('@life/ui/catalog/Catalog'));
 
 export default function App() {
   const modules = useEnabledModules(moduleRegistry);
-  const { user, pendingOperations } = useSession(session);
+  const { user, pendingOperations, restoring } = useSession(session);
   const { status } = useConnectivity();
   const navigate = useNavigate();
+  const location = useLocation();
   const { pathname } = useLocation();
 
   useDesktopWindow(pathname, modules, navigate);
@@ -104,6 +106,14 @@ export default function App() {
     </ModulLayoutWeb>
   );
 
+  if (restoring) {
+    return (
+      <ModulView flex1 justifyCenter>
+        <ModulText>{translate('common.loading')}</ModulText>
+      </ModulView>
+    );
+  }
+
   return (
     <Routes>
       {/* Catálogo del sistema de diseño: solo en desarrollo, sin sesión ni enlace en el menú. */}
@@ -117,7 +127,19 @@ export default function App() {
           }
         />
       )}
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route
+        path="/login"
+        element={
+          user ? (
+            <Navigate
+              to={resolveReturnPath((location.state as { from?: string } | null)?.from)}
+              replace
+            />
+          ) : (
+            <LoginPage />
+          )
+        }
+      />
       <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterPage />} />
       <Route
         path="/forgot-password"
@@ -126,7 +148,15 @@ export default function App() {
       {/* Se abren desde el enlace del correo, con o sin sesión iniciada. */}
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
-      <Route element={user ? layout : <Navigate to="/login" replace />}>
+      <Route
+        element={
+          user ? (
+            layout
+          ) : (
+            <Navigate to="/login" replace state={{ from: pathname + location.search }} />
+          )
+        }
+      >
         <Route path="/" element={<HomePage />} />
         <Route path="/profile" element={<ModulePage nameKey="user.profile" />} />
         <Route
