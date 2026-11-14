@@ -3,6 +3,7 @@ import type { SessionUser } from '@life/types';
 export type SessionState = {
   user: SessionUser | null;
   pendingOperations: number;
+  restoring: boolean;
 };
 
 export type SessionStore = {
@@ -11,11 +12,12 @@ export type SessionStore = {
   signOut: () => void;
   expireSession: () => void;
   setPendingOperations: (count: number) => void;
+  finishRestore: () => void;
   subscribe: (listener: () => void) => () => void;
 };
 
 export function createSessionStore(initial: Partial<SessionState> = {}): SessionStore {
-  let state: SessionState = { user: null, pendingOperations: 0, ...initial };
+  let state: SessionState = { user: null, pendingOperations: 0, restoring: false, ...initial };
   const listeners = new Set<() => void>();
 
   function update(next: Partial<SessionState>) {
@@ -29,6 +31,7 @@ export function createSessionStore(initial: Partial<SessionState> = {}): Session
     signOut: () => update({ user: null, pendingOperations: 0 }),
     expireSession: () => update({ user: null }),
     setPendingOperations: (count) => update({ pendingOperations: Math.max(0, count) }),
+    finishRestore: () => update({ restoring: false }),
     subscribe(listener) {
       listeners.add(listener);
       return () => {
@@ -38,4 +41,4 @@ export function createSessionStore(initial: Partial<SessionState> = {}): Session
   };
 }
 
-export const session = createSessionStore({ user: { id: 'demo', name: 'Usuario Demo' } });
+export const session = createSessionStore({ restoring: true });

@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Audiowide_400Regular } from '@expo-google-fonts/audiowide';
 import { Comfortaa_400Regular, Comfortaa_700Bold, useFonts } from '@expo-google-fonts/comfortaa';
-import { appearanceStore, session, useAppearance, useSession } from '@life/core';
+import { appearanceStore, resolveReturnPath, session, useAppearance, useSession } from '@life/core';
 import { ModulMessagesProvider, ModulView, ThemeProvider } from '@life/ui';
-import { Stack } from 'expo-router';
+import { router, Stack, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { connectivityMonitor } from '../services/connectivity/connectivity';
 import { sessionManager } from '../services/session/session';
@@ -11,18 +11,41 @@ export const unstable_settings = {
   anchor: 'welcome',
 };
 
+const PUBLIC_PATHS = [
+  '/welcome',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+];
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Audiowide_400Regular, Comfortaa_400Regular, Comfortaa_700Bold });
   const appearance = useAppearance(appearanceStore);
-  const { user } = useSession(session);
+  const { user, restoring } = useSession(session);
+  const pathname = usePathname();
+  const returnTo = useRef<string | null>(null);
 
   useEffect(() => {
     void sessionManager.restore();
   }, []);
 
+  useEffect(() => {
+    if (restoring) return;
+    if (!user) {
+      if (pathname !== '/' && !PUBLIC_PATHS.includes(pathname)) returnTo.current = pathname;
+      return;
+    }
+    if (returnTo.current) {
+      router.replace(resolveReturnPath(returnTo.current) as never);
+      returnTo.current = null;
+    }
+  }, [user, restoring, pathname]);
+
   useEffect(() => connectivityMonitor.start(), []);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded || restoring) return null;
 
   return (
     <ThemeProvider preference={appearance.preference} accent={appearance.accent}>
