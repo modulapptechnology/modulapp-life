@@ -520,7 +520,7 @@ Todo endpoint es privado por defecto: `AddApiAuthorization` (`API/Authorization`
 
 ### Swagger y `API.http`
 
-En Desarrollo, `http://localhost:5041/swagger` abre Swagger UI y el documento OpenAPI está en `/openapi/v1.json`. `API/API.http` trae peticiones de ejemplo para la ruta base versionada y para comprobar CORS.
+En Desarrollo, `http://localhost:5041/swagger` abre Swagger UI y el documento OpenAPI está en `/openapi/v1.json`. El documento declara el esquema `Bearer` (HTTP, JWT) y marca con un candado los endpoints que exigen autenticación (`API/OpenApi`: `BearerSecurityDocumentTransformer` y `AuthorizationOperationTransformer`); los públicos (`[AllowAnonymous]`) salen sin candado. Para probar un endpoint protegido: iniciar sesión con `POST /api/v1/auth/login`, pulsar **Authorize**, pegar el `accessToken` (sin el prefijo `Bearer`) y ejecutar la petición; Swagger UI envía `Authorization: Bearer <token>`. El token solo se guarda en la página abierta: no cambia las reglas de acceso del servidor ni se versiona. `OpenApiSecurityTests` comprueba el esquema y que los públicos no queden marcados. `API/API.http` trae peticiones de ejemplo para la ruta base versionada y para comprobar CORS.
 
 ## Pruebas unitarias
 
