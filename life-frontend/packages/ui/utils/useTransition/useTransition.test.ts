@@ -7,7 +7,12 @@ jest.mock('../animations/animations', () => ({
 }));
 
 const mockedAnimateTo = jest.mocked(animateTo);
+const iniciarAnimacion = () =>
+  act(async () => {
+    jest.runOnlyPendingTimers();
+  });
 const terminarAnimacion = async (finished: boolean) => {
+  await iniciarAnimacion();
   await act(async () => {
     mockedAnimateTo.mock.lastCall?.[2]?.onEnd?.({ finished });
   });
@@ -15,7 +20,12 @@ const terminarAnimacion = async (finished: boolean) => {
 
 describe('useTransition', () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     mockedAnimateTo.mockClear();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('arranca montado cuando empieza visible', async () => {
@@ -30,6 +40,7 @@ describe('useTransition', () => {
     const visible = false;
 
     const { result } = await renderHook(() => useTransition(visible));
+    await iniciarAnimacion();
 
     expect(result.current.mounted).toBe(false);
     expect(mockedAnimateTo).not.toHaveBeenCalled();
@@ -39,6 +50,7 @@ describe('useTransition', () => {
     const visible = true;
 
     const { result } = await renderHook(() => useTransition(visible));
+    await iniciarAnimacion();
 
     expect(mockedAnimateTo).toHaveBeenCalledWith(result.current.progress, 1, expect.any(Object));
   });
@@ -52,6 +64,7 @@ describe('useTransition', () => {
     );
 
     await rerender({ visible: true });
+    await iniciarAnimacion();
 
     expect(result.current.mounted).toBe(true);
     expect(mockedAnimateTo).toHaveBeenLastCalledWith(
@@ -70,6 +83,7 @@ describe('useTransition', () => {
     );
 
     await rerender({ visible: false });
+    await iniciarAnimacion();
 
     expect(result.current.mounted).toBe(true);
     expect(mockedAnimateTo).toHaveBeenLastCalledWith(
@@ -114,5 +128,14 @@ describe('useTransition', () => {
     await terminarAnimacion(true);
 
     expect(onExited).not.toHaveBeenCalled();
+  });
+
+  it('inicia la animación una sola vez aunque el efecto se monte dos veces', async () => {
+    const visible = true;
+
+    await renderHook(() => useTransition(visible));
+    await iniciarAnimacion();
+
+    expect(mockedAnimateTo).toHaveBeenCalledTimes(1);
   });
 });

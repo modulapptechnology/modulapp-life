@@ -28,3 +28,6 @@ export * from './connectivityStore/connectivityStore';
 export * from './connectivityMonitor/connectivityMonitor';
 export * from './serverProbe/serverProbe';
 export * from './useConnectivity/useConnectivity';
+export * from './workspaceService/workspaceService';
+export * from './workspaceStore/workspaceStore';
+export * from './useWorkspaces/useWorkspaces';

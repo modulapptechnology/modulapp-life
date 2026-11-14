@@ -10,6 +10,7 @@ export type ApiClientConfig = {
   timeoutMs?: number;
   fetchFn?: typeof fetch;
   createCorrelationId?: () => string;
+  getWorkspaceId?: () => string | null | undefined;
 };
 
 export type ApiRequestOptions = {
@@ -28,6 +29,7 @@ export type ApiClient = {
 };
 
 export const CORRELATION_HEADER = 'X-Correlation-Id';
+export const WORKSPACE_HEADER = 'X-Workspace-Id';
 
 function defaultCorrelationId(): string {
   if (typeof globalThis.crypto?.randomUUID === 'function') {
@@ -125,6 +127,11 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
     }
     if (options.body !== undefined) {
       headers['Content-Type'] = 'application/json';
+    }
+
+    const workspaceId = config.getWorkspaceId?.();
+    if (workspaceId) {
+      headers[WORKSPACE_HEADER] = workspaceId;
     }
 
     try {

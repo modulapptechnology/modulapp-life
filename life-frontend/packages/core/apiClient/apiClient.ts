@@ -7,6 +7,7 @@ export type SessionApiClientOptions = {
   refreshSession?: () => Promise<boolean>;
   onSessionExpired?: () => void;
   fetchFn?: typeof fetch;
+  getWorkspaceId?: () => string | null | undefined;
 };
 
 export function createSessionApiClient(
@@ -20,5 +21,6 @@ export function createSessionApiClient(
     refreshSession: options.refreshSession,
     onSessionExpired: options.onSessionExpired ?? store.expireSession,
     fetchFn: options.fetchFn,
+    getWorkspaceId: options.getWorkspaceId,
   });
 }
