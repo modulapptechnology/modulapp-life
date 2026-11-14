@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Application.Workspaces;
 using Domain.Workspaces;
 using Microsoft.EntityFrameworkCore;
@@ -21,8 +22,9 @@ public sealed class WorkspaceRepository(LifeDbContext context) : IWorkspaceRepos
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        return ProjectMemberWorkspaces(userId)
+        return MemberWorkspaces(userId)
             .Where(workspace => workspace.Id == workspaceId)
+            .Select(ToSummary(userId))
             .SingleOrDefaultAsync(cancellationToken);
     }
 
@@ -30,8 +32,9 @@ public sealed class WorkspaceRepository(LifeDbContext context) : IWorkspaceRepos
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        return await ProjectMemberWorkspaces(userId)
+        return await MemberWorkspaces(userId)
             .OrderBy(workspace => workspace.Name)
+            .Select(ToSummary(userId))
             .ToListAsync(cancellationToken);
     }
 
@@ -42,18 +45,22 @@ public sealed class WorkspaceRepository(LifeDbContext context) : IWorkspaceRepos
         context.Workspaces.Add(workspace);
     }
 
-    private IQueryable<WorkspaceSummaryResponse> ProjectMemberWorkspaces(Guid userId)
+    private IQueryable<Workspace> MemberWorkspaces(Guid userId)
     {
         return context.Workspaces
             .AsNoTracking()
-            .Where(workspace => workspace.Members.Any(member => member.UserId == userId))
-            .Select(workspace => new WorkspaceSummaryResponse(
-                workspace.Id,
-                workspace.Name,
-                workspace.Description,
-                workspace.Type,
-                workspace.Status,
-                workspace.Members.First(member => member.UserId == userId).Role,
-                workspace.RowVersion));
+            .Where(workspace => workspace.Members.Any(member => member.UserId == userId));
+    }
+
+    private static Expression<Func<Workspace, WorkspaceSummaryResponse>> ToSummary(Guid userId)
+    {
+        return workspace => new WorkspaceSummaryResponse(
+            workspace.Id,
+            workspace.Name,
+            workspace.Description,
+            workspace.Type,
+            workspace.Status,
+            workspace.Members.First(member => member.UserId == userId).Role,
+            workspace.RowVersion);
     }
 }

@@ -81,4 +81,54 @@ public class WorkspaceRepositoryTests(MigratedDatabaseFixture database)
 
         Assert.Equal(1, count);
     }
+
+    [RequiresTestDatabaseFact]
+    public async Task FindByMemberAsync_WithAMemberOfTheWorkspace_ReturnsItsSummaryWithTheRoleOfTheMember()
+    {
+        await using var context = database.CreateContext();
+        var owner = await SaveUserAsync(context);
+        var workspace = NewWorkspace(owner.Id);
+        context.Workspaces.Add(workspace);
+        await context.SaveChangesAsync();
+        var repository = new WorkspaceRepository(context);
+
+        var summary = await repository.FindByMemberAsync(workspace.Id, owner.Id);
+
+        Assert.Equal((workspace.Id, WorkspaceRole.Owner), (summary?.Id, summary?.Role));
+    }
+
+    [RequiresTestDatabaseFact]
+    public async Task FindByMemberAsync_WithAUserWhoIsNotAMember_ReturnsNull()
+    {
+        await using var context = database.CreateContext();
+        var owner = await SaveUserAsync(context);
+        var outsider = await SaveUserAsync(context);
+        var workspace = NewWorkspace(owner.Id);
+        context.Workspaces.Add(workspace);
+        await context.SaveChangesAsync();
+        var repository = new WorkspaceRepository(context);
+
+        var summary = await repository.FindByMemberAsync(workspace.Id, outsider.Id);
+
+        Assert.Null(summary);
+    }
+
+    [RequiresTestDatabaseFact]
+    public async Task ListByMemberAsync_WithWorkspacesOfSeveralUsers_ReturnsOnlyTheOnesOfTheMemberOrderedByName()
+    {
+        await using var context = database.CreateContext();
+        var owner = await SaveUserAsync(context);
+        var other = await SaveUserAsync(context);
+        var work = NewWorkspace(owner.Id);
+        work.Name = "Work";
+        var home = NewWorkspace(owner.Id);
+        home.Name = "Home";
+        context.Workspaces.AddRange(work, home, NewWorkspace(other.Id));
+        await context.SaveChangesAsync();
+        var repository = new WorkspaceRepository(context);
+
+        var summaries = await repository.ListByMemberAsync(owner.Id);
+
+        Assert.Equal(["Home", "Work"], summaries.Select(summary => summary.Name));
+    }
 }
