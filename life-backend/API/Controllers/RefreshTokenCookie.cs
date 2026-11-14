@@ -1,6 +1,6 @@
-using Application.Users;
+using Life.Application.Users;
 
-namespace API.Controllers;
+namespace Life.API.Controllers;
 
 public static class RefreshTokenCookie
 {

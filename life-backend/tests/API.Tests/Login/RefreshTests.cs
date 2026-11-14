@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using API.Tests.Support;
-using Application.Common;
-using Application.Users;
-using Domain.Users;
+using Life.API.Tests.Support;
+using Life.Application.Common;
+using Life.Application.Users;
+using Life.Domain.Users;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace API.Tests.Login;
+namespace Life.API.Tests.Login;
 
 [Collection(ApiCollection.Name)]
 public class RefreshTests(ApiFactory api)

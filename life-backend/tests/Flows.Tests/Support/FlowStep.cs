@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace Flows.Tests.Support;
+namespace Life.Flows.Tests.Support;
 
 public static class FlowStep
 {

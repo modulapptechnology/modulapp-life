@@ -1,7 +1,7 @@
-using Domain.Workspaces;
+using Life.Domain.Workspaces;
 using Microsoft.AspNetCore.Authorization;
 
-namespace API.Authorization;
+namespace Life.API.Authorization;
 
 public static class ApiAuthorizationExtensions
 {

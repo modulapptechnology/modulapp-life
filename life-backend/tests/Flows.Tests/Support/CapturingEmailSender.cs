@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
-using Application.Users;
+using Life.Application.Users;
 
-namespace Flows.Tests.Support;
+namespace Life.Flows.Tests.Support;
 
 public sealed class CapturingEmailSender : IVerificationEmailSender
 {

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace Persistence.Conversion;
+namespace Life.Persistence.Conversion;
 
 public sealed class UtcDateTimeConverter() : ValueConverter<DateTime, DateTime>(
     value => value.Kind == DateTimeKind.Local ? value.ToUniversalTime() : value,

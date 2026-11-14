@@ -1,7 +1,7 @@
-using Domain.Common;
-using Domain.Workspaces;
+using Life.Domain.Common;
+using Life.Domain.Workspaces;
 
-namespace Domain.Tests.Workspaces;
+namespace Life.Domain.Tests.Workspaces;
 
 public class WorkspaceTests
 {

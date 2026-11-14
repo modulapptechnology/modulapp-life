@@ -1,6 +1,6 @@
-using Application.Subscriptions;
+using Life.Application.Subscriptions;
 
-namespace API.Subscriptions;
+namespace Life.API.Subscriptions;
 
 public sealed class SubscriptionReconciliationWorker(
     IServiceScopeFactory scopeFactory,

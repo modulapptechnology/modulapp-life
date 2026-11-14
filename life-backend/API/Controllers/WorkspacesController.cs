@@ -1,9 +1,9 @@
-using API.Authorization;
-using Application.Workspaces;
+using Life.API.Authorization;
+using Life.Application.Workspaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+namespace Life.API.Controllers;
 
 public class WorkspacesController : ApiControllerBase
 {

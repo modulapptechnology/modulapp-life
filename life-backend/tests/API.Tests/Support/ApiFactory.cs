@@ -1,13 +1,13 @@
 using FluentValidation;
+using Life.Support;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
-using Support;
 
-namespace API.Tests.Support;
+namespace Life.API.Tests.Support;
 
 public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
@@ -75,7 +75,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
         while (directory is not null)
         {
-            var candidate = Path.Combine(directory.FullName, "API", "API.csproj");
+            var candidate = Path.Combine(directory.FullName, "API", "Life.API.csproj");
 
             if (File.Exists(candidate))
             {

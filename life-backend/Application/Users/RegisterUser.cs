@@ -1,8 +1,8 @@
-using Application.Common;
-using Domain.Users;
+using Life.Application.Common;
+using Life.Domain.Users;
 using Microsoft.Extensions.Logging;
 
-namespace Application.Users;
+namespace Life.Application.Users;
 
 public sealed class RegisterUser(
     IUserRepository users,

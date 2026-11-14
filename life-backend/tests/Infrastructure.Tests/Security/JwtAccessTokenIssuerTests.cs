@@ -1,10 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Domain.Users;
-using Infrastructure.Security;
+using Life.Domain.Users;
+using Life.Infrastructure.Security;
 
-namespace Infrastructure.Tests.Security;
+namespace Life.Infrastructure.Tests.Security;
 
 public class JwtAccessTokenIssuerTests
 {

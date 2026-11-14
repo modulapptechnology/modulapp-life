@@ -1,8 +1,8 @@
+using Life.Persistence;
+using Life.Support;
 using Microsoft.EntityFrameworkCore;
-using Persistence;
-using Support;
 
-namespace Infrastructure.Tests.Support;
+namespace Life.Infrastructure.Tests.Support;
 
 public sealed class MigratedDatabaseFixture : IAsyncLifetime
 {

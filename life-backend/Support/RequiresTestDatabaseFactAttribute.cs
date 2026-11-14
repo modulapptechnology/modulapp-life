@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Support;
+namespace Life.Support;
 
 public sealed class RequiresTestDatabaseFactAttribute : FactAttribute
 {

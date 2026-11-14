@@ -1,4 +1,4 @@
-namespace Application.Subscriptions;
+namespace Life.Application.Subscriptions;
 
 public interface ISubscriptionProviderClient
 {

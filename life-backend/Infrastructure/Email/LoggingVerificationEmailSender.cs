@@ -1,7 +1,7 @@
-using Application.Users;
+using Life.Application.Users;
 using Microsoft.Extensions.Logging;
 
-namespace Infrastructure.Email;
+namespace Life.Infrastructure.Email;
 
 public sealed class LoggingVerificationEmailSender(
     ILogger<LoggingVerificationEmailSender> logger) : IVerificationEmailSender

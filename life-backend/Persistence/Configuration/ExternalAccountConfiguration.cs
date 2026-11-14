@@ -1,8 +1,8 @@
-using Domain.Users;
+using Life.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Persistence.Configuration;
+namespace Life.Persistence.Configuration;
 
 public class ExternalAccountConfiguration : IEntityTypeConfiguration<ExternalAccount>
 {

@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Persistence;
+using Life.Persistence;
 
 #nullable disable
 
-namespace Persistence.Migrations
+namespace Life.Persistence.Migrations
 {
     [DbContext(typeof(LifeDbContext))]
     [Migration("20261107213000_AddUserStatusCheckConstraint")]

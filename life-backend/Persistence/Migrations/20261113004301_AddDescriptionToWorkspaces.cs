@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace Persistence.Migrations
+namespace Life.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class AddDescriptionToWorkspaces : Migration

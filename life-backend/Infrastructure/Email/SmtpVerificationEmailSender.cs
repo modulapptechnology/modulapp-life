@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.Mail;
-using Application.Users;
+using Life.Application.Users;
 
-namespace Infrastructure.Email;
+namespace Life.Infrastructure.Email;
 
 public sealed class SmtpVerificationEmailSender(
     SmtpOptions smtp,

@@ -1,4 +1,4 @@
-namespace Infrastructure.Email;
+namespace Life.Infrastructure.Email;
 
 internal static class VerificationEmailContent
 {

@@ -1,7 +1,7 @@
-using Application.Users;
-using Infrastructure.Email;
+using Life.Application.Users;
+using Life.Infrastructure.Email;
 
-namespace Infrastructure.Tests.Email;
+namespace Life.Infrastructure.Tests.Email;
 
 public class SmtpVerificationEmailSenderTests
 {

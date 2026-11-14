@@ -1,4 +1,4 @@
-namespace Domain.Workspaces;
+namespace Life.Domain.Workspaces;
 
 public enum InvitationStatus
 {

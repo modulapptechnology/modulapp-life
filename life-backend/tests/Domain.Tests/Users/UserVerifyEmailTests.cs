@@ -1,6 +1,6 @@
-using Domain.Users;
+using Life.Domain.Users;
 
-namespace Domain.Tests.Users;
+namespace Life.Domain.Tests.Users;
 
 public class UserVerifyEmailTests
 {

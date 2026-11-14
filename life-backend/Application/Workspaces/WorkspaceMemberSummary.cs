@@ -1,5 +1,5 @@
-using Domain.Workspaces;
+using Life.Domain.Workspaces;
 
-namespace Application.Workspaces;
+namespace Life.Application.Workspaces;
 
 public sealed record WorkspaceMemberSummary(Guid UserId, string Name, string? AvatarUrl, WorkspaceRole Role);

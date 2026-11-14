@@ -1,10 +1,10 @@
-using Application.Common;
-using Application.Tests.Support;
-using Application.Workspaces;
-using Domain.Workspaces;
+using Life.Application.Common;
+using Life.Application.Tests.Support;
+using Life.Application.Workspaces;
+using Life.Domain.Workspaces;
 using NSubstitute;
 
-namespace Application.Tests.Workspaces;
+namespace Life.Application.Tests.Workspaces;
 
 public class UpdateWorkspaceTests
 {

@@ -1,4 +1,4 @@
-using Support;
+using Life.Support;
 
 var command = args.ElementAtOrDefault(0)?.ToLowerInvariant();
 var project = args.ElementAtOrDefault(1);

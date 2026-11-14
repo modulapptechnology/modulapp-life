@@ -1,15 +1,15 @@
 using System.Text;
-using Application.Subscriptions;
-using Application.Users;
-using Application.Workspaces;
-using Infrastructure.Email;
-using Infrastructure.Security;
-using Infrastructure.Subscriptions;
+using Life.Application.Subscriptions;
+using Life.Application.Users;
+using Life.Application.Workspaces;
+using Life.Infrastructure.Email;
+using Life.Infrastructure.Security;
+using Life.Infrastructure.Subscriptions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace Infrastructure;
+namespace Life.Infrastructure;
 
 public static class DependencyInjection
 {

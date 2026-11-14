@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
-using API.Tests.Support;
+using Life.API.Tests.Support;
+using Life.Support;
+using Life.Support.Seed;
 using Microsoft.Data.SqlClient;
-using Support;
-using Support.Seed;
 
-namespace API.Tests.Workspaces;
+namespace Life.API.Tests.Workspaces;
 
 [Collection(ApiCollection.Name)]
 public class WorkspacesTests(ApiFactory api)

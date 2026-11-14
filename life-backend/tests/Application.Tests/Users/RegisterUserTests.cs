@@ -1,10 +1,10 @@
-using Application.Tests.Support;
-using Application.Users;
-using Domain.Users;
+using Life.Application.Tests.Support;
+using Life.Application.Users;
+using Life.Domain.Users;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace Application.Tests.Users;
+namespace Life.Application.Tests.Users;
 
 public class RegisterUserTests
 {

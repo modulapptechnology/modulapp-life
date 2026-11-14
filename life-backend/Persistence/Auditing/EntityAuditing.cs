@@ -1,8 +1,8 @@
-using Domain.Common;
+using Life.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
-namespace Persistence.Auditing;
+namespace Life.Persistence.Auditing;
 
 public static class EntityAuditing
 {

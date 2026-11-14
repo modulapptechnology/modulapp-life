@@ -1,10 +1,10 @@
-using API.Tests.Support;
+using Life.API.Tests.Support;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace API.Tests.Security;
+namespace Life.API.Tests.Security;
 
 [Collection(ApiCollection.Name)]
 public class ProtectedByDefaultTests(ApiFactory api)

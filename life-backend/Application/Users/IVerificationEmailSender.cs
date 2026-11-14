@@ -1,4 +1,4 @@
-namespace Application.Users;
+namespace Life.Application.Users;
 
 public interface IVerificationEmailSender
 {

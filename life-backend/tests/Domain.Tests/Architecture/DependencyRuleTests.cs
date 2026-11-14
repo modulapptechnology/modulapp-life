@@ -1,15 +1,15 @@
 using System.Reflection;
 
-namespace Domain.Tests.Architecture;
+namespace Life.Domain.Tests.Architecture;
 
 public class DependencyRuleTests
 {
-    private static readonly string[] _otherProjects = ["Application", "Infrastructure", "Persistence", "API"];
+    private static readonly string[] _otherProjects = ["Life.Application", "Life.Infrastructure", "Life.Persistence", "Life.API"];
 
     [Fact]
     public void Domain_NoReferenciaAOtrosProyectos()
     {
-        var ensamblado = Assembly.Load("Domain");
+        var ensamblado = Assembly.Load("Life.Domain");
 
         var referencias = ensamblado
             .GetReferencedAssemblies()

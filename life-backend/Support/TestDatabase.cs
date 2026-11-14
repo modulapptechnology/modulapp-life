@@ -1,9 +1,9 @@
 using System.Reflection;
+using Life.Support.Builders;
+using Life.Support.Seed;
 using Microsoft.Data.SqlClient;
-using Support.Builders;
-using Support.Seed;
 
-namespace Support;
+namespace Life.Support;
 
 public sealed class TestDatabase(TestDatabaseOptions options)
 {

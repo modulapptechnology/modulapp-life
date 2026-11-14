@@ -1,7 +1,7 @@
-using Support.Builders;
-using Support.Seed;
+using Life.Support.Builders;
+using Life.Support.Seed;
 
-namespace Support.Tests;
+namespace Life.Support.Tests;
 
 public class BuildersTests
 {

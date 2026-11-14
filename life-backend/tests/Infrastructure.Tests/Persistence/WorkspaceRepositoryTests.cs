@@ -1,11 +1,11 @@
-using Domain.Users;
-using Domain.Workspaces;
-using Infrastructure.Tests.Support;
+using Life.Domain.Users;
+using Life.Domain.Workspaces;
+using Life.Infrastructure.Tests.Support;
+using Life.Persistence;
+using Life.Support;
 using Microsoft.EntityFrameworkCore;
-using Persistence;
-using Support;
 
-namespace Infrastructure.Tests.Persistence;
+namespace Life.Infrastructure.Tests.Persistence;
 
 [Collection(MigratedDatabaseCollection.Name)]
 public class WorkspaceRepositoryTests(MigratedDatabaseFixture database)

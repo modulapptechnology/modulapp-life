@@ -1,10 +1,10 @@
-using Domain.Users;
-using Infrastructure.Tests.Support;
+using Life.Domain.Users;
+using Life.Infrastructure.Tests.Support;
+using Life.Persistence;
+using Life.Support;
 using Microsoft.EntityFrameworkCore;
-using Persistence;
-using Support;
 
-namespace Infrastructure.Tests.Persistence;
+namespace Life.Infrastructure.Tests.Persistence;
 
 [Collection(MigratedDatabaseCollection.Name)]
 public class RefreshTokenRepositoryTests(MigratedDatabaseFixture database)

@@ -1,12 +1,12 @@
-using Domain.Common;
-using Domain.Users;
+using Life.Domain.Common;
+using Life.Domain.Users;
+using Life.Persistence;
+using Life.Persistence.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Persistence;
-using Persistence.Configuration;
 
-namespace API.Tests.Database;
+namespace Life.API.Tests.Database;
 
 public class UserConfigurationTests
 {

@@ -1,8 +1,8 @@
-using Application.Users;
-using Infrastructure.Security;
-using Persistence.Configuration;
+using Life.Application.Users;
+using Life.Infrastructure.Security;
+using Life.Persistence.Configuration;
 
-namespace Infrastructure.Tests.Security;
+namespace Life.Infrastructure.Tests.Security;
 
 public class VerificationTokenServiceTests
 {

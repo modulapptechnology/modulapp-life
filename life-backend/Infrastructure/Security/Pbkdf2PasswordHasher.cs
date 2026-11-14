@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
-using Application.Users;
+using Life.Application.Users;
 
-namespace Infrastructure.Security;
+namespace Life.Infrastructure.Security;
 
 public sealed class Pbkdf2PasswordHasher : IPasswordHasher
 {

@@ -1,10 +1,10 @@
 using System.Threading.RateLimiting;
-using API.Filters;
-using API.Subscriptions;
 using Asp.Versioning;
+using Life.API.Filters;
+using Life.API.Subscriptions;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace API.Extensions;
+namespace Life.API.Extensions;
 
 public static class ApiServiceCollectionExtensions
 {

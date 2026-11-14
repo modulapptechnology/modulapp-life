@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Application.Users;
+using Life.Application.Users;
 
-namespace Flows.Tests.Support;
+namespace Life.Flows.Tests.Support;
 
 public sealed record FlowUser(string Email, Guid Id, HttpClient Client)
 {

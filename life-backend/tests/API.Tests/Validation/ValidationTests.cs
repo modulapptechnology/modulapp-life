@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using API.Tests.Support;
+using Life.API.Tests.Support;
 
-namespace API.Tests.Validation;
+namespace Life.API.Tests.Validation;
 
 [Collection(ApiCollection.Name)]
 public class ValidationTests(ApiFactory api)

@@ -1,9 +1,9 @@
-using API.Controllers;
+using Life.API.Controllers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Tests.Security;
+namespace Life.API.Tests.Security;
 
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class JwtProbeController : ApiControllerBase

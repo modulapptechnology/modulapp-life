@@ -1,8 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
-using API.Tests.Support;
+using Life.API.Tests.Support;
 
-namespace API.Tests.House;
+namespace Life.API.Tests.House;
 
 [Collection(ApiCollection.Name)]
 public class HouseEndpointTests(ApiFactory api)

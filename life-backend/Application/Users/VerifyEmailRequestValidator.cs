@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Application.Users;
+namespace Life.Application.Users;
 
 public sealed class VerifyEmailRequestValidator : AbstractValidator<VerifyEmailRequest>
 {

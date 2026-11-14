@@ -1,9 +1,9 @@
-using Application.Subscriptions;
-using Application.Tests.Support;
+using Life.Application.Subscriptions;
+using Life.Application.Tests.Support;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace Application.Tests.Subscriptions;
+namespace Life.Application.Tests.Subscriptions;
 
 public class ReconcileSubscriptionsTests
 {

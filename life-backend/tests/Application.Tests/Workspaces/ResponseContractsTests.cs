@@ -1,8 +1,8 @@
 using System.Reflection;
-using Application.Users;
-using Application.Workspaces;
+using Life.Application.Users;
+using Life.Application.Workspaces;
 
-namespace Application.Tests.Workspaces;
+namespace Life.Application.Tests.Workspaces;
 
 public class ResponseContractsTests
 {

@@ -1,4 +1,4 @@
-namespace Application.VersionHistory;
+namespace Life.Application.VersionHistory;
 
 public sealed record VersionHistoryOptions(int RetentionDays = VersionHistoryOptions.DefaultRetentionDays)
 {

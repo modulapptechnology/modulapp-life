@@ -1,6 +1,6 @@
 using Microsoft.Data.SqlClient;
 
-namespace API.Extensions;
+namespace Life.API.Extensions;
 
 public static class ApiApplicationBuilderExtensions
 {

@@ -1,4 +1,4 @@
-namespace Domain.Common;
+namespace Life.Domain.Common;
 
 public abstract class BaseEntity
 {

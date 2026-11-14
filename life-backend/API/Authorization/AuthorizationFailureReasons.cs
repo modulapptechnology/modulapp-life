@@ -1,4 +1,4 @@
-namespace API.Authorization;
+namespace Life.API.Authorization;
 
 public static class AuthorizationFailureReasons
 {

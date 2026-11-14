@@ -1,9 +1,9 @@
 using System.Text;
-using Infrastructure.Security;
+using Life.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
-namespace API.Extensions;
+namespace Life.API.Extensions;
 
 public static class ApiAuthenticationExtensions
 {

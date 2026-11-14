@@ -1,4 +1,4 @@
-namespace Application.Users;
+namespace Life.Application.Users;
 
 public sealed record LoginOptions(int MaxFailedAttempts, TimeSpan LockoutDuration)
 {

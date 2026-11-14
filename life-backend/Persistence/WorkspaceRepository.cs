@@ -1,9 +1,9 @@
 using System.Linq.Expressions;
-using Application.Workspaces;
-using Domain.Workspaces;
+using Life.Application.Workspaces;
+using Life.Domain.Workspaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Persistence;
+namespace Life.Persistence;
 
 public sealed class WorkspaceRepository(LifeDbContext context) : IWorkspaceRepository
 {

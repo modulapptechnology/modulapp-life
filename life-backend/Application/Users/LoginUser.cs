@@ -1,7 +1,7 @@
-using Application.Common;
-using Domain.Users;
+using Life.Application.Common;
+using Life.Domain.Users;
 
-namespace Application.Users;
+namespace Life.Application.Users;
 
 public sealed class LoginUser(
     IUserRepository users,

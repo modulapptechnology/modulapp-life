@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using API.Controllers;
+using Life.API.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 
-namespace API.Tests.Support;
+namespace Life.API.Tests.Support;
 
 public sealed record TestConnection(string ConnectionString);
 

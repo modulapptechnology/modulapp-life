@@ -1,7 +1,7 @@
-using Application.Workspaces;
-using Domain.Workspaces;
+using Life.Application.Workspaces;
+using Life.Domain.Workspaces;
 
-namespace API.Tests.Support;
+namespace Life.API.Tests.Support;
 
 public sealed class InMemoryWorkspaceRepository : IWorkspaceRepository
 {

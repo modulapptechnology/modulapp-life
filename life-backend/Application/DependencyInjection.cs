@@ -1,10 +1,10 @@
-using Application.Users;
-using Application.Workspaces;
 using FluentValidation;
+using Life.Application.Users;
+using Life.Application.Workspaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace Application;
+namespace Life.Application;
 
 public static class DependencyInjection
 {

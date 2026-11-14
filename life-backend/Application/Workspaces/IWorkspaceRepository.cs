@@ -1,6 +1,6 @@
-using Domain.Workspaces;
+using Life.Domain.Workspaces;
 
-namespace Application.Workspaces;
+namespace Life.Application.Workspaces;
 
 public interface IWorkspaceRepository
 {

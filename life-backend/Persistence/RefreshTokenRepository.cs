@@ -1,8 +1,8 @@
-using Application.Users;
-using Domain.Users;
+using Life.Application.Users;
+using Life.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
-namespace Persistence;
+namespace Life.Persistence;
 
 public sealed class RefreshTokenRepository(LifeDbContext context) : IRefreshTokenRepository
 {

@@ -1,8 +1,8 @@
+using Life.Persistence.Conversion;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Persistence.Conversion;
 
-namespace API.Tests.Database;
+namespace Life.API.Tests.Database;
 
 public class BaseEntityConfigurationTests
 {

@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using Application.Workspaces;
-using Domain.Workspaces;
+using Life.Application.Workspaces;
+using Life.Domain.Workspaces;
 
-namespace Flows.Tests.Support;
+namespace Life.Flows.Tests.Support;
 
 public static class WorkspaceFlow
 {

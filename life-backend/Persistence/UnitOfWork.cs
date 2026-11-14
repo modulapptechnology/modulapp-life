@@ -1,7 +1,7 @@
-using Application.Common;
+using Life.Application.Common;
 using Microsoft.EntityFrameworkCore;
 
-namespace Persistence;
+namespace Life.Persistence;
 
 public sealed class UnitOfWork(LifeDbContext context) : IUnitOfWork
 {

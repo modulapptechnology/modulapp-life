@@ -1,12 +1,12 @@
-using Application.Users;
-using Application.Workspaces;
-using Infrastructure.Email;
-using Infrastructure.Security;
+using Life.Application.Users;
+using Life.Application.Workspaces;
+using Life.Infrastructure.Email;
+using Life.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Infrastructure.Tests;
+namespace Life.Infrastructure.Tests;
 
 public class DependencyInjectionTests
 {
