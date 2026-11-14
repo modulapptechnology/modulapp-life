@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using Asp.Versioning;
 using Life.API.Filters;
+using Life.API.OpenApi;
 using Life.API.Subscriptions;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -45,7 +46,11 @@ public static class ApiServiceCollectionExtensions
                 options.SubstituteApiVersionInUrl = true;
             });
 
-        services.AddOpenApi("v1");
+        services.AddOpenApi("v1", options =>
+        {
+            options.AddDocumentTransformer<BearerSecurityDocumentTransformer>();
+            options.AddOperationTransformer<AuthorizationOperationTransformer>();
+        });
         services.AddRateLimiting(configuration);
 
         var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
