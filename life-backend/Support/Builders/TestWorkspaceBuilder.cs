@@ -1,4 +1,4 @@
-namespace Support.Builders;
+namespace Life.Support.Builders;
 
 public sealed record TestWorkspace(Guid Id, string Name, Guid OwnerId, DateTime CreatedAt);
 

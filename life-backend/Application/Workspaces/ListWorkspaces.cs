@@ -1,4 +1,4 @@
-namespace Application.Workspaces;
+namespace Life.Application.Workspaces;
 
 public sealed class ListWorkspaces(IWorkspaceRepository workspaces)
 {

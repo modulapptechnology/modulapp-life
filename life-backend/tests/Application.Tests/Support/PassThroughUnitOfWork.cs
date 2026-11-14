@@ -1,6 +1,6 @@
-using Application.Common;
+using Life.Application.Common;
 
-namespace Application.Tests.Support;
+namespace Life.Application.Tests.Support;
 
 public sealed class PassThroughUnitOfWork : IUnitOfWork
 {

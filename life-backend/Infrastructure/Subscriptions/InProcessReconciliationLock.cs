@@ -1,6 +1,6 @@
-using Application.Subscriptions;
+using Life.Application.Subscriptions;
 
-namespace Infrastructure.Subscriptions;
+namespace Life.Infrastructure.Subscriptions;
 
 public sealed class InProcessReconciliationLock : IReconciliationLock
 {

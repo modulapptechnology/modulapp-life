@@ -1,7 +1,7 @@
-using Application.Workspaces;
+using Life.Application.Workspaces;
 using Microsoft.AspNetCore.Authorization;
 
-namespace API.Authorization;
+namespace Life.API.Authorization;
 
 public sealed class WorkspaceRoleHandler : AuthorizationHandler<WorkspaceRoleRequirement>
 {

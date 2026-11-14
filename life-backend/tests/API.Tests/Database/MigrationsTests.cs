@@ -1,7 +1,7 @@
+using Life.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Persistence;
 
-namespace API.Tests.Database;
+namespace Life.API.Tests.Database;
 
 public class MigrationsTests
 {

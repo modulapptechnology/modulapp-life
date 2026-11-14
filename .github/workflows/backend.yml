@@ -95,13 +95,13 @@ jobs:
       # Cada proyecto de pruebas es un paso aparte; el segundo corre aunque el primero falle
       - name: Domain.Tests
         run: >
-          dotnet test tests/Domain.Tests/Domain.Tests.csproj --no-build --configuration Release
+          dotnet test tests/Domain.Tests/Life.Domain.Tests.csproj --no-build --configuration Release
           --logger "trx;LogFileName=Domain.Tests.trx" --results-directory test-results
 
       - name: Application.Tests
         if: ${{ !cancelled() }}
         run: >
-          dotnet test tests/Application.Tests/Application.Tests.csproj --no-build --configuration Release
+          dotnet test tests/Application.Tests/Life.Application.Tests.csproj --no-build --configuration Release
           --logger "trx;LogFileName=Application.Tests.trx" --results-directory test-results
 
       - name: Resumen de resultados
@@ -165,19 +165,19 @@ jobs:
 
       - name: Support.Tests
         run: >
-          dotnet test tests/Support.Tests/Support.Tests.csproj --no-build --configuration Release
+          dotnet test tests/Support.Tests/Life.Support.Tests.csproj --no-build --configuration Release
           --logger "trx;LogFileName=Support.Tests.trx" --results-directory test-results
 
       - name: API.Tests
         if: ${{ !cancelled() }}
         run: >
-          dotnet test tests/API.Tests/API.Tests.csproj --no-build --configuration Release
+          dotnet test tests/API.Tests/Life.API.Tests.csproj --no-build --configuration Release
           --logger "trx;LogFileName=API.Tests.trx" --results-directory test-results
 
       - name: Infrastructure.Tests
         if: ${{ !cancelled() }}
         run: >
-          dotnet test tests/Infrastructure.Tests/Infrastructure.Tests.csproj --no-build --configuration Release
+          dotnet test tests/Infrastructure.Tests/Life.Infrastructure.Tests.csproj --no-build --configuration Release
           --logger "trx;LogFileName=Infrastructure.Tests.trx" --results-directory test-results
 
       - name: Resumen de resultados
@@ -239,7 +239,7 @@ jobs:
 
       - name: Flows.Tests
         run: >
-          dotnet test tests/Flows.Tests/Flows.Tests.csproj --no-build --configuration Release
+          dotnet test tests/Flows.Tests/Life.Flows.Tests.csproj --no-build --configuration Release
           --logger "trx;LogFileName=Flows.Tests.trx" --results-directory test-results
 
       - name: Resumen de resultados

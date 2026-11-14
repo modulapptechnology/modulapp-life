@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 
-namespace API.Authorization;
+namespace Life.API.Authorization;
 
 public sealed class ProblemAuthorizationResultHandler : IAuthorizationMiddlewareResultHandler
 {

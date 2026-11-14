@@ -1,7 +1,7 @@
-using Application.Common;
+using Life.Application.Common;
 using Microsoft.Extensions.Logging;
 
-namespace Application.Subscriptions;
+namespace Life.Application.Subscriptions;
 
 public sealed class ReconcileSubscriptions(
     IEnumerable<ISubscriptionProviderClient> providers,

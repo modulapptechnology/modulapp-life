@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace Persistence.Configuration;
+namespace Life.Persistence.Configuration;
 
 public static class IntegrityConventionsModelBuilderExtensions
 {

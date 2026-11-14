@@ -1,4 +1,4 @@
-namespace Domain.Users;
+namespace Life.Domain.Users;
 
 public enum LoginOutcome
 {

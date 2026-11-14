@@ -1,4 +1,4 @@
-namespace Persistence.Configuration;
+namespace Life.Persistence.Configuration;
 
 public static class EnumCheckConstraint
 {

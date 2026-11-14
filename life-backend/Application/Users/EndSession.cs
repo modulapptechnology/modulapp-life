@@ -1,6 +1,6 @@
-using Application.Common;
+using Life.Application.Common;
 
-namespace Application.Users;
+namespace Life.Application.Users;
 
 public sealed class EndSession(
     IRefreshTokenRepository refreshTokens,

@@ -2,7 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace API.Filters;
+namespace Life.API.Filters;
 
 public sealed class ValidationFilter(IServiceProvider services) : IAsyncActionFilter
 {

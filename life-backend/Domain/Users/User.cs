@@ -1,6 +1,6 @@
-using Domain.Common;
+using Life.Domain.Common;
 
-namespace Domain.Users;
+namespace Life.Domain.Users;
 
 public class User : BaseEntity
 {

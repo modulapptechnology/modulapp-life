@@ -1,12 +1,12 @@
-using Application.Common;
-using Application.Users;
-using Application.VersionHistory;
-using Application.Workspaces;
+using Life.Application.Common;
+using Life.Application.Users;
+using Life.Application.VersionHistory;
+using Life.Application.Workspaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Persistence;
+namespace Life.Persistence;
 
 public static class DependencyInjection
 {

@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
-using Application.Common;
-using Application.Users;
-using Domain.Users;
+using Life.Application.Common;
+using Life.Application.Users;
+using Life.Domain.Users;
 
-namespace API.Tests.Support;
+namespace Life.API.Tests.Support;
 
 public sealed class InMemoryUserRepository : IUserRepository
 {

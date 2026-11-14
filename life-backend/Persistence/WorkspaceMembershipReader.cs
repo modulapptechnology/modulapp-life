@@ -1,8 +1,8 @@
-using Application.Workspaces;
-using Domain.Workspaces;
+using Life.Application.Workspaces;
+using Life.Domain.Workspaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Persistence;
+namespace Life.Persistence;
 
 public sealed class WorkspaceMembershipReader(LifeDbContext context) : IWorkspaceMembershipReader
 {

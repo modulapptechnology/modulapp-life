@@ -1,9 +1,9 @@
-using Infrastructure.Tests.Support;
+using Life.Infrastructure.Tests.Support;
+using Life.Persistence;
+using Life.Support;
 using Microsoft.EntityFrameworkCore;
-using Persistence;
-using Support;
 
-namespace Infrastructure.Tests.Persistence;
+namespace Life.Infrastructure.Tests.Persistence;
 
 public class MigrationsTests : IAsyncLifetime
 {

@@ -9,9 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Infrastructure\Infrastructure.csproj" />
-    <ProjectReference Include="..\..\Persistence\Persistence.csproj" />
-    <ProjectReference Include="..\..\Support\Support.csproj" />
+    <ProjectReference Include="..\..\Support\Life.Support.csproj" />
   </ItemGroup>
 
   <ItemGroup>

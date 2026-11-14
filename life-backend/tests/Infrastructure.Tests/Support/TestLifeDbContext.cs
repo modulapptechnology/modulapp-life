@@ -1,7 +1,7 @@
+using Life.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Persistence;
 
-namespace Infrastructure.Tests.Support;
+namespace Life.Infrastructure.Tests.Support;
 
 public static class TestLifeDbContext
 {

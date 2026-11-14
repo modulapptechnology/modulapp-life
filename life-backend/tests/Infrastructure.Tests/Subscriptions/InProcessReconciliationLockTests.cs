@@ -1,6 +1,6 @@
-using Infrastructure.Subscriptions;
+using Life.Infrastructure.Subscriptions;
 
-namespace Infrastructure.Tests.Subscriptions;
+namespace Life.Infrastructure.Tests.Subscriptions;
 
 public class InProcessReconciliationLockTests
 {

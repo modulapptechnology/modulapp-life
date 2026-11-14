@@ -1,8 +1,8 @@
 using System.Reflection;
-using Domain.Common;
+using Life.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 
-namespace Persistence.Configuration;
+namespace Life.Persistence.Configuration;
 
 public static class BaseEntityModelBuilderExtensions
 {

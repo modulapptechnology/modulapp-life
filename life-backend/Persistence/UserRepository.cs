@@ -1,9 +1,9 @@
-using Application.Users;
-using Domain.Users;
+using Life.Application.Users;
+using Life.Domain.Users;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace Persistence;
+namespace Life.Persistence;
 
 public sealed class UserRepository(LifeDbContext context) : IUserRepository
 {

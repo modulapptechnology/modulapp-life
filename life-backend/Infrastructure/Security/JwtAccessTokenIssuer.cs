@@ -1,10 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Application.Users;
-using Domain.Users;
+using Life.Application.Users;
+using Life.Domain.Users;
 
-namespace Infrastructure.Security;
+namespace Life.Infrastructure.Security;
 
 public sealed class JwtAccessTokenIssuer(AccessTokenOptions options) : IAccessTokenIssuer
 {

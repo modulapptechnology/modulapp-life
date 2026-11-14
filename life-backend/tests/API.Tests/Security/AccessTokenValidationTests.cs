@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Headers;
-using API.Tests.Support;
-using Application.Users;
-using Domain.Users;
+using Life.API.Tests.Support;
+using Life.Application.Users;
+using Life.Domain.Users;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace API.Tests.Security;
+namespace Life.API.Tests.Security;
 
 [Collection(ApiCollection.Name)]
 public class AccessTokenValidationTests(ApiFactory api)

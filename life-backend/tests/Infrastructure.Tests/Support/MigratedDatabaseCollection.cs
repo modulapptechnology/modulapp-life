@@ -1,4 +1,4 @@
-namespace Infrastructure.Tests.Support;
+namespace Life.Infrastructure.Tests.Support;
 
 [CollectionDefinition(Name)]
 public sealed class MigratedDatabaseCollection : ICollectionFixture<MigratedDatabaseFixture>

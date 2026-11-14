@@ -1,8 +1,8 @@
-using Application.House;
+using Life.Application.House;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Controllers;
+namespace Life.API.Controllers;
 
 public class HouseController : ApiControllerBase
 {

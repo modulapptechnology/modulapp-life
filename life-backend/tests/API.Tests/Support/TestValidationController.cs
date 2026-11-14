@@ -1,8 +1,8 @@
-using API.Controllers;
 using FluentValidation;
+using Life.API.Controllers;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Tests.Support;
+namespace Life.API.Tests.Support;
 
 public sealed record CreateSampleRequest(string Name, int Quantity);
 

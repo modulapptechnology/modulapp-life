@@ -1,8 +1,8 @@
-namespace Application.Tests.Architecture;
+namespace Life.Application.Tests.Architecture;
 
 public class DependencyRuleTests
 {
-    private static readonly string[] _externalProjects = ["Infrastructure", "Persistence", "API"];
+    private static readonly string[] _externalProjects = ["Life.Infrastructure", "Life.Persistence", "Life.API"];
 
     [Fact]
     public void Application_NoReferenciaALasCapasExternas()

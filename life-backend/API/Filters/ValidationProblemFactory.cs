@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace API.Filters;
+namespace Life.API.Filters;
 
 public static class ValidationProblemFactory
 {

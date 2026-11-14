@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 
-namespace Application.Tests;
+namespace Life.Application.Tests;
 
 public class DependencyInjectionTests
 {

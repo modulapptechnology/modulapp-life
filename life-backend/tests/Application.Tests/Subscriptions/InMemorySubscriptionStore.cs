@@ -1,7 +1,7 @@
-using Application.Common;
-using Application.Subscriptions;
+using Life.Application.Common;
+using Life.Application.Subscriptions;
 
-namespace Application.Tests.Subscriptions;
+namespace Life.Application.Tests.Subscriptions;
 
 public sealed class InMemorySubscriptionStore(IEnumerable<LocalSubscription> subscriptions)
     : ISubscriptionReconciliationStore

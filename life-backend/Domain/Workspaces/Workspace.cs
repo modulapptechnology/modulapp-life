@@ -1,7 +1,7 @@
-using Domain.Common;
-using Domain.Users;
+using Life.Domain.Common;
+using Life.Domain.Users;
 
-namespace Domain.Workspaces;
+namespace Life.Domain.Workspaces;
 
 public class Workspace : BaseEntity
 {

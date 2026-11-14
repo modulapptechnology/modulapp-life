@@ -1,6 +1,6 @@
-using Domain.Common;
+using Life.Domain.Common;
 
-namespace Domain.Tests.Common;
+namespace Life.Domain.Tests.Common;
 
 public class BaseEntityTests
 {

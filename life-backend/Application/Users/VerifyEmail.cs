@@ -1,8 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
-using Application.Common;
+using Life.Application.Common;
 
-namespace Application.Users;
+namespace Life.Application.Users;
 
 public sealed class VerifyEmail(
     IUserRepository users,

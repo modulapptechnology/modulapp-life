@@ -1,8 +1,8 @@
-using Domain.Workspaces;
+using Life.Domain.Workspaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Persistence.Configuration;
+namespace Life.Persistence.Configuration;
 
 public class WorkspaceConfiguration : IEntityTypeConfiguration<Workspace>
 {

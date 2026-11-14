@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 
-namespace Support;
+namespace Life.Support;
 
 public sealed partial class TestDatabaseOptions
 {

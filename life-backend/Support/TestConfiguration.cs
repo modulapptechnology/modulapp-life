@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-namespace Support;
+namespace Life.Support;
 
 public static class TestConfiguration
 {

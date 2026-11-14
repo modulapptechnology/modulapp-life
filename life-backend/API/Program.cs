@@ -1,8 +1,8 @@
-using API.Authorization;
-using API.Extensions;
-using Application;
-using Infrastructure;
-using Persistence;
+using Life.API.Authorization;
+using Life.API.Extensions;
+using Life.Application;
+using Life.Infrastructure;
+using Life.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 

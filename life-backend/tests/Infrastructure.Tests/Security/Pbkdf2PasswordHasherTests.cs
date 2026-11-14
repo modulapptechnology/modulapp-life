@@ -1,7 +1,7 @@
-using Infrastructure.Security;
-using Persistence.Configuration;
+using Life.Infrastructure.Security;
+using Life.Persistence.Configuration;
 
-namespace Infrastructure.Tests.Security;
+namespace Life.Infrastructure.Tests.Security;
 
 public class Pbkdf2PasswordHasherTests
 {

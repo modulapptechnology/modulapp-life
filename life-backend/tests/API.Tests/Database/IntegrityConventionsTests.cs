@@ -1,10 +1,10 @@
-using Domain.Users;
+using Life.Domain.Users;
+using Life.Persistence.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Persistence.Configuration;
 
-namespace API.Tests.Database;
+namespace Life.API.Tests.Database;
 
 public class IntegrityConventionsTests
 {

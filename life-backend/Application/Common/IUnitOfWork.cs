@@ -1,4 +1,4 @@
-namespace Application.Common;
+namespace Life.Application.Common;
 
 public interface IUnitOfWork
 {

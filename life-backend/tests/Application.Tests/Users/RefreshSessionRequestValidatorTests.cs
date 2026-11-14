@@ -1,6 +1,6 @@
-using Application.Users;
+using Life.Application.Users;
 
-namespace Application.Tests.Users;
+namespace Life.Application.Tests.Users;
 
 public class RefreshSessionRequestValidatorTests
 {

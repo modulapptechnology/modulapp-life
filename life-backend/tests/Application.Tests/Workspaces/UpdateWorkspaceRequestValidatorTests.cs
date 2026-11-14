@@ -1,6 +1,6 @@
-using Application.Workspaces;
+using Life.Application.Workspaces;
 
-namespace Application.Tests.Workspaces;
+namespace Life.Application.Tests.Workspaces;
 
 public class UpdateWorkspaceRequestValidatorTests
 {

@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace API.Authorization;
+namespace Life.API.Authorization;
 
 public static class ClaimsPrincipalExtensions
 {

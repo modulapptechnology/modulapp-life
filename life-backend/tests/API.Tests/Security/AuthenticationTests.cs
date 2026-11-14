@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
-using API.Tests.Support;
-using Support;
-using Support.Seed;
+using Life.API.Tests.Support;
+using Life.Support;
+using Life.Support.Seed;
 
-namespace API.Tests.Security;
+namespace Life.API.Tests.Security;
 
 [Collection(ApiCollection.Name)]
 public class AuthenticationTests(ApiFactory api)

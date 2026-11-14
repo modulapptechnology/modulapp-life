@@ -1,4 +1,4 @@
-namespace Application.Tests.Support;
+namespace Life.Application.Tests.Support;
 
 public sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
 {

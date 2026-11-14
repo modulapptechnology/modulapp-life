@@ -1,4 +1,4 @@
-namespace Infrastructure.Security;
+namespace Life.Infrastructure.Security;
 
 public sealed record AccessTokenOptions(string SigningKey, string Issuer, string Audience, TimeSpan Lifetime)
 {

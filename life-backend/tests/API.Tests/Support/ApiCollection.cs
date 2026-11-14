@@ -1,4 +1,4 @@
-namespace API.Tests.Support;
+namespace Life.API.Tests.Support;
 
 [CollectionDefinition(Name)]
 public sealed class ApiCollection : ICollectionFixture<ApiFactory>

@@ -1,7 +1,7 @@
+using Life.Persistence.Auditing;
 using Microsoft.EntityFrameworkCore;
-using Persistence.Auditing;
 
-namespace API.Tests.Database;
+namespace Life.API.Tests.Database;
 
 public class EntityAuditingTests
 {

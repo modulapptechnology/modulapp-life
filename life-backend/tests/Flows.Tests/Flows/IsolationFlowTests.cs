@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
-using Application.Workspaces;
-using Flows.Tests.Support;
-using Support;
+using Life.Application.Workspaces;
+using Life.Flows.Tests.Support;
+using Life.Support;
 
-namespace Flows.Tests.Flows;
+namespace Life.Flows.Tests.Flows;
 
 [Collection(FlowsCollection.Name)]
 public class IsolationFlowTests(FlowsFactory api)

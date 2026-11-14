@@ -1,6 +1,6 @@
 using Microsoft.Data.SqlClient;
 
-namespace Support.Tests;
+namespace Life.Support.Tests;
 
 public class TestDatabaseOptionsTests
 {

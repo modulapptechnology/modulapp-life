@@ -1,7 +1,7 @@
-using Application.Common;
-using Domain.Workspaces;
+using Life.Application.Common;
+using Life.Domain.Workspaces;
 
-namespace Application.Workspaces;
+namespace Life.Application.Workspaces;
 
 public sealed class CreateWorkspace(
     IWorkspaceRepository workspaces,

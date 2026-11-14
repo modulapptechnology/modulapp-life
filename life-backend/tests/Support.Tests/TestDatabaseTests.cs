@@ -1,7 +1,7 @@
+using Life.Support.Seed;
 using Microsoft.Data.SqlClient;
-using Support.Seed;
 
-namespace Support.Tests;
+namespace Life.Support.Tests;
 
 public class TestDatabaseTests
 {

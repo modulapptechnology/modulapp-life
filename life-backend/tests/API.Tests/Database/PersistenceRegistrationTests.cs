@@ -1,11 +1,11 @@
-using Application.Common;
-using Application.VersionHistory;
+using Life.Application.Common;
+using Life.Application.VersionHistory;
+using Life.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Persistence;
 
-namespace API.Tests.Database;
+namespace Life.API.Tests.Database;
 
 public class PersistenceRegistrationTests
 {

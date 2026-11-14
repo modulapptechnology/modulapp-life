@@ -1,6 +1,6 @@
-using Domain.Common;
+using Life.Domain.Common;
 
-namespace Domain.Workspaces;
+namespace Life.Domain.Workspaces;
 
 public class WorkspaceInvitation : BaseEntity
 {

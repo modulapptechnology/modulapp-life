@@ -1,4 +1,4 @@
-namespace Application.Subscriptions;
+namespace Life.Application.Subscriptions;
 
 public sealed record ReconciliationSummary(int Checked, int Corrected, int Unresolved, int Deferred)
 {

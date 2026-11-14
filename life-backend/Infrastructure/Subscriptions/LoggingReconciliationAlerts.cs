@@ -1,7 +1,7 @@
-using Application.Subscriptions;
+using Life.Application.Subscriptions;
 using Microsoft.Extensions.Logging;
 
-namespace Infrastructure.Subscriptions;
+namespace Life.Infrastructure.Subscriptions;
 
 public sealed class LoggingReconciliationAlerts(ILogger<LoggingReconciliationAlerts> logger)
     : IReconciliationAlerts

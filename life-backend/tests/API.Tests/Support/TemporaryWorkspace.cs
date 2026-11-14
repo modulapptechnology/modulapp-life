@@ -1,8 +1,8 @@
+using Life.Support;
+using Life.Support.Builders;
 using Microsoft.Data.SqlClient;
-using Support;
-using Support.Builders;
 
-namespace API.Tests.Support;
+namespace Life.API.Tests.Support;
 
 public sealed class TemporaryWorkspace : IAsyncDisposable
 {

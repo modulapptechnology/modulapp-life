@@ -1,6 +1,6 @@
-using Support.Builders;
+using Life.Support.Builders;
 
-namespace Support.Seed;
+namespace Life.Support.Seed;
 
 public static class SeedData
 {

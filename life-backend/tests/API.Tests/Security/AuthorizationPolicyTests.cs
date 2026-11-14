@@ -1,12 +1,12 @@
 using System.Net;
 using System.Text.Json;
-using API.Tests.Support;
-using Application.Workspaces;
-using Domain.Workspaces;
+using Life.API.Tests.Support;
+using Life.Application.Workspaces;
+using Life.Domain.Workspaces;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace API.Tests.Security;
+namespace Life.API.Tests.Security;
 
 [Collection(ApiCollection.Name)]
 public class AuthorizationPolicyTests(ApiFactory api)

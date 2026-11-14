@@ -1,6 +1,6 @@
-using Application.VersionHistory;
+using Life.Application.VersionHistory;
 
-namespace Application.Tests.VersionHistory;
+namespace Life.Application.Tests.VersionHistory;
 
 public class VersionHistoryOptionsTests
 {

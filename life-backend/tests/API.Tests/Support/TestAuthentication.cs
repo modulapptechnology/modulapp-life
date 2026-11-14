@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace API.Tests.Support;
+namespace Life.API.Tests.Support;
 
 public static class TestAuthentication
 {

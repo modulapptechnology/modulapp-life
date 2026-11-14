@@ -1,11 +1,11 @@
-using API.Extensions;
-using Application.Users;
 using FluentValidation;
+using Life.API.Extensions;
+using Life.Application.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
-namespace API.Controllers;
+namespace Life.API.Controllers;
 
 public class AuthController(IConfiguration configuration) : ApiControllerBase
 {

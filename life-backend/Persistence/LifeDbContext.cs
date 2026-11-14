@@ -1,11 +1,11 @@
-using Domain.Users;
-using Domain.Workspaces;
+using Life.Domain.Users;
+using Life.Domain.Workspaces;
+using Life.Persistence.Auditing;
+using Life.Persistence.Configuration;
+using Life.Persistence.Conversion;
 using Microsoft.EntityFrameworkCore;
-using Persistence.Auditing;
-using Persistence.Configuration;
-using Persistence.Conversion;
 
-namespace Persistence;
+namespace Life.Persistence;
 
 public class LifeDbContext(
     DbContextOptions<LifeDbContext> options,

@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using Flows.Tests.Support;
-using Support;
+using Life.Flows.Tests.Support;
+using Life.Support;
 
-namespace Flows.Tests.Flows;
+namespace Life.Flows.Tests.Flows;
 
 [Collection(FlowsCollection.Name)]
 public class AuthenticationFlowTests(FlowsFactory api)

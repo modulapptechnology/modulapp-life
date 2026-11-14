@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using Domain.Workspaces;
+using Life.Domain.Workspaces;
 
-namespace Application.Workspaces;
+namespace Life.Application.Workspaces;
 
 public sealed record WorkspaceSummaryResponse(
     Guid Id,

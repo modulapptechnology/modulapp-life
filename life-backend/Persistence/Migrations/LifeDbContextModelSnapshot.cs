@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Persistence;
+using Life.Persistence;
 
 #nullable disable
 
-namespace Persistence.Migrations
+namespace Life.Persistence.Migrations
 {
     [DbContext(typeof(LifeDbContext))]
     partial class LifeDbContextModelSnapshot : ModelSnapshot

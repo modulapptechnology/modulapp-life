@@ -20,8 +20,8 @@ Las dependencias apuntan hacia adentro: `Domain` no referencia a ningún proyect
 
 ### Convenciones de la solución
 
-- Cada proyecto vive en su propia carpeta, con el mismo nombre que su `.csproj`.
-- Los nombres de proyecto no llevan prefijo (`API`, no `Life.API`).
+- Cada proyecto vive en su propia carpeta (`API/`, `Domain/`...); el archivo `.csproj`, el ensamblado y el namespace raíz llevan el prefijo `Life.` (`API/Life.API.csproj`, `Life.API`). Los comandos usan la carpeta (`--project API`).
+- Los nombres de proyecto y de namespace llevan el prefijo `Life.` (`Life.API`, `Life.Application`, `Life.Domain`, `Life.Infrastructure`, `Life.Persistence`, `Life.Support`). En esta documentación las capas se nombran por su carpeta.
 - El código de un módulo de negocio se organiza por funcionalidad dentro de cada capa (por ejemplo `Tasks/`), no por tipo técnico.
 - Los secretos, cadenas de conexión y archivos de entorno no se versionan: se usan `user-secrets` o `appsettings.Development.local.json`.
 
@@ -536,14 +536,14 @@ Las aserciones son las de xUnit (`Assert`). Cada proyecto de pruebas respeta la 
 Desde `life-backend`:
 
 ```powershell
-dotnet test tests/Domain.Tests/Domain.Tests.csproj
-dotnet test tests/Application.Tests/Application.Tests.csproj
+dotnet test tests/Domain.Tests/Life.Domain.Tests.csproj
+dotnet test tests/Application.Tests/Life.Application.Tests.csproj
 ```
 
 ### Convención
 
 - Las carpetas y archivos de cada proyecto replican la estructura de la capa que prueban (`Application/Tasks/CreateTask.cs` se prueba en `tests/Application.Tests/Tasks/CreateTaskTests.cs`).
-- Una clase por clase probada, con el sufijo `Tests`, en el namespace `<Proyecto>.<Carpeta>` (por ejemplo `Application.Tests.Tasks`).
+- Una clase por clase probada, con el sufijo `Tests`, en el namespace `Life.<Proyecto>.<Carpeta>` (por ejemplo `Life.Application.Tests.Tasks`).
 - Nombre del método: `Metodo_Escenario_ResultadoEsperado` con las tres partes en inglés, por ejemplo `Create_WithEmptyTitle_ThrowsException`.
 - Cada caso de uso o regla lleva como mínimo una prueba del caso exitoso, una de cada rechazo y una por cada valor límite.
 - Cada prueba tiene tres partes separadas por una línea en blanco: preparación, qué se prueba y la prueba (las aserciones).
@@ -633,7 +633,7 @@ Para datos adicionales se usan los constructores, por ejemplo `new TestUserBuild
 `tests/API.Tests` levanta la aplicación completa en memoria (`WebApplicationFactory<Program>`, entorno `Testing`) y la prueba por HTTP contra la base `ModulLifeApiTest`. Referencia `API` y `Support`, y se ejecuta por separado de las unitarias:
 
 ```powershell
-dotnet test tests/API.Tests/API.Tests.csproj
+dotnet test tests/API.Tests/Life.API.Tests.csproj
 ```
 
 - `ApiFactory` es una sola instancia compartida (colección `Api`): prepara la base al empezar y la elimina al terminar, y las clases se ejecutan en serie. Sin `ConnectionStrings:Test` las pruebas con base se omiten; las que no la necesitan (por ejemplo, el 401) corren igual.
@@ -646,7 +646,7 @@ dotnet test tests/API.Tests/API.Tests.csproj
 `tests/Infrastructure.Tests` prueba `Persistence` e `Infrastructure` contra SQL Server real, para detectar errores de mapeo, restricciones y esquema que no aparecen con pruebas en memoria. Está separado de las pruebas unitarias, referencia `Infrastructure`, `Persistence` y `Support` (no referencia `API`) y se ejecuta con un solo comando:
 
 ```powershell
-dotnet test tests/Infrastructure.Tests/Infrastructure.Tests.csproj
+dotnet test tests/Infrastructure.Tests/Life.Infrastructure.Tests.csproj
 ```
 
 - Usa la cadena `ConnectionStrings:Test` (ver "Configurar la cadena de conexión"), que no se versiona. Sin ella, las pruebas con base se omiten.
@@ -661,7 +661,7 @@ dotnet test tests/Infrastructure.Tests/Infrastructure.Tests.csproj
 `tests/Flows.Tests` prueba de extremo a extremo los flujos que la aplicación no puede romper: levanta la API completa en memoria (`WebApplicationFactory<Program>`, entorno `Testing`) con la autenticación, la persistencia y las migraciones reales sobre SQL Server, y la recorre solo por HTTP, igual que un cliente. Está separado de las pruebas unitarias y de integración, referencia `API` y `Support`, y se ejecuta por separado:
 
 ```powershell
-dotnet test tests/Flows.Tests/Flows.Tests.csproj
+dotnet test tests/Flows.Tests/Life.Flows.Tests.csproj
 ```
 
 - Usa la cadena `ConnectionStrings:Test` (ver "Configurar la cadena de conexión") y su propia base, `ModulLifeFlowsTest`, que se crea vacía, se migra al empezar y se elimina al terminar. Sin la cadena, las pruebas con base se omiten.
@@ -779,8 +779,8 @@ Cuando se modifica código, antes de pedir revisión se ejecuta, desde `life-bac
 ```powershell
 dotnet format life-backend.slnx --verify-no-changes
 dotnet build life-backend.slnx --configuration Release -warnaserror
-dotnet test tests/Domain.Tests/Domain.Tests.csproj
-dotnet test tests/Application.Tests/Application.Tests.csproj
+dotnet test tests/Domain.Tests/Life.Domain.Tests.csproj
+dotnet test tests/Application.Tests/Life.Application.Tests.csproj
 ```
 
 - Las pruebas de integración y de flujos críticos (`tests/API.Tests`, `tests/Infrastructure.Tests` y `tests/Flows.Tests`) usan la base de pruebas y se ejecutan solo en el entorno local (ver "Entorno de pruebas de integración").

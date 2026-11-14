@@ -1,6 +1,6 @@
 using Xunit;
 
-namespace Support;
+namespace Life.Support;
 
 public class TestDatabaseFixture(string project) : IAsyncLifetime
 {

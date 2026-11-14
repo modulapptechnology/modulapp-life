@@ -1,7 +1,7 @@
-using Application.Workspaces;
-using Domain.Workspaces;
+using Life.Application.Workspaces;
+using Life.Domain.Workspaces;
 
-namespace Application.Tests.Workspaces;
+namespace Life.Application.Tests.Workspaces;
 
 public class CreateWorkspaceRequestValidatorTests
 {

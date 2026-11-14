@@ -1,10 +1,10 @@
-using API.Authorization;
-using API.Controllers;
-using Application.Workspaces;
+using Life.API.Authorization;
+using Life.API.Controllers;
+using Life.Application.Workspaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace API.Tests.Support;
+namespace Life.API.Tests.Support;
 
 public class TestPoliciesController(IWorkspaceMembershipReader memberships) : ApiControllerBase
 {

@@ -1,7 +1,7 @@
 using System.Net;
-using Flows.Tests.Support;
+using Life.Flows.Tests.Support;
 
-namespace Flows.Tests.Flows;
+namespace Life.Flows.Tests.Flows;
 
 public class FlowStepTests
 {

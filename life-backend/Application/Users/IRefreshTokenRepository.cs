@@ -1,6 +1,6 @@
-using Domain.Users;
+using Life.Domain.Users;
 
-namespace Application.Users;
+namespace Life.Application.Users;
 
 public interface IRefreshTokenRepository
 {

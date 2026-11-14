@@ -1,8 +1,8 @@
-using Domain.Common;
+using Life.Domain.Common;
+using Life.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Persistence;
 
-namespace API.Tests.Database;
+namespace Life.API.Tests.Database;
 
 public sealed class SampleItem : BaseEntity
 {

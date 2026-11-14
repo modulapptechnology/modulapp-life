@@ -1,4 +1,4 @@
-namespace Support.Builders;
+namespace Life.Support.Builders;
 
 public sealed record TestUser(Guid Id, string Email, string Name, DateTime CreatedAt);
 
