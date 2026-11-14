@@ -8,7 +8,7 @@ describe('ModulSkeleton', () => {
 
     await renderWithTheme(<ModulSkeleton {...medidas} />);
 
-    expect(screen.toJSON()).toMatchObject({ props: { style: expect.arrayContaining([medidas]) } });
+    expect(screen.toJSON()).toMatchObject({ props: { style: medidas } });
   });
 
   it('es circular y toma el alto como lado', async () => {
@@ -17,7 +17,7 @@ describe('ModulSkeleton', () => {
     await renderWithTheme(<ModulSkeleton {...forma} />);
 
     expect(screen.toJSON()).toMatchObject({
-      props: { style: expect.arrayContaining([{ width: 40, height: 40 }]) },
+      props: { style: { width: 40, height: 40 } },
     });
   });
 

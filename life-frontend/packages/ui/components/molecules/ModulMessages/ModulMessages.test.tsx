@@ -1,4 +1,5 @@
 import { act, fireEvent, renderHook, screen } from '@testing-library/react-native';
+import { animationDurations } from '../../../utils/animations/animations';
 import { renderWithTheme } from '../../../testing/renderWithTheme/renderWithTheme';
 import { ModulButton } from '../../atoms/ModulButton/ModulButton';
 import { ModulMessagesProvider, useMessages } from './ModulMessages';
@@ -47,6 +48,9 @@ describe('ModulMessages', () => {
 
     await act(async () => {
       jest.advanceTimersByTime(4000);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(animationDurations.standard * 2);
     });
 
     expect(screen.queryByText('Guardado')).toBeNull();
