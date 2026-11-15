@@ -88,3 +88,16 @@ export type AuthResponse = {
   refreshToken: string;
   refreshTokenExpiresAt: string;
 };
+
+export type WorkspaceType = 'Personal' | 'Household' | 'Other';
+export type WorkspaceRole = 'Owner' | 'Admin' | 'Member';
+
+export type Workspace = {
+  id: string;
+  name: string;
+  description: string | null;
+  type: WorkspaceType;
+  status: string;
+  role: WorkspaceRole;
+  rowVersion: string;
+};

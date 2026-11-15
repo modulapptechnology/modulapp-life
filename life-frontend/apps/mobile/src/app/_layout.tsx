@@ -7,6 +7,7 @@ import { router, Stack, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { connectivityMonitor } from '../services/connectivity/connectivity';
 import { sessionManager } from '../services/session/session';
+import { workspaceStore } from '../services/workspace/workspaceStore';
 export const unstable_settings = {
   anchor: 'welcome',
 };
@@ -30,6 +31,10 @@ export default function RootLayout() {
   useEffect(() => {
     void sessionManager.restore();
   }, []);
+
+  useEffect(() => {
+    if (!user) workspaceStore.reset();
+  }, [user]);
 
   useEffect(() => {
     if (restoring) return;

@@ -12,12 +12,14 @@ import {
   useConnectivity,
   useEnabledModules,
   useSession,
+  useWorkspaces,
 } from '@life/core';
 import {
   ModulConnectionIndicator,
   ModulLayoutWeb,
   ModulText,
   ModulView,
+  ModulWorkspaceSelector,
   toSidebarSections,
   type NavSection,
 } from '@life/ui';
@@ -32,8 +34,24 @@ import { useDesktopWindow } from './desktop/useDesktopWindow';
 import { connectivityMonitor } from './services/connectivity/connectivity';
 import { sessionManager } from './services/session/session';
 import SettingsPage from './pages/SettingsPage';
+import { workspaceService } from './services/workspace/workspaceService';
+import { workspaceStore } from './services/workspace/workspaceStore';
 
 const Catalog = lazy(() => import('@life/ui/catalog/Catalog'));
+
+function WorkspaceSelector() {
+  const { workspaces, activeId, select } = useWorkspaces(workspaceStore, workspaceService);
+
+  return (
+    <ModulWorkspaceSelector
+      workspaces={workspaces}
+      activeId={activeId}
+      onSelect={(id) => void select(id)}
+      title={translate('workspace.select')}
+      closeLabel={translate('common.close')}
+    />
+  );
+}
 
 export default function App() {
   const modules = useEnabledModules(moduleRegistry);
@@ -48,6 +66,10 @@ export default function App() {
   useEffect(() => {
     void sessionManager.restore();
   }, []);
+
+  useEffect(() => {
+    if (!user) workspaceStore.reset();
+  }, [user]);
 
   useEffect(() => connectivityMonitor.start(), []);
 
@@ -91,6 +113,7 @@ export default function App() {
           <ModulText variant="body" fwBold>
             {translate('nav.title')}
           </ModulText>
+          <WorkspaceSelector />
           <ModulConnectionIndicator
             status={status}
             labels={{

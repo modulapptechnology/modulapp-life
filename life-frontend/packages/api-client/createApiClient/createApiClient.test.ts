@@ -1,4 +1,4 @@
-import { createApiClient, CORRELATION_HEADER } from './createApiClient';
+import { createApiClient, CORRELATION_HEADER, WORKSPACE_HEADER } from './createApiClient';
 
 type FetchMock = jest.Mock<ReturnType<typeof fetch>, Parameters<typeof fetch>>;
 
@@ -58,6 +58,32 @@ describe('createApiClient', () => {
     await client.get('/x');
 
     expect(headersOf(fetchMock)).not.toHaveProperty('Authorization');
+  });
+
+  it('agrega el espacio de trabajo activo a la petición', async () => {
+    const fetchMock = createFetch(respond(200, {}));
+    const client = createApiClient({
+      baseUrl: 'http://api',
+      fetchFn: fetchMock,
+      getWorkspaceId: () => 'espacio-1',
+    });
+
+    await client.get('/x');
+
+    expect(headersOf(fetchMock)).toMatchObject({ [WORKSPACE_HEADER]: 'espacio-1' });
+  });
+
+  it('no envía la cabecera del espacio cuando no hay uno activo', async () => {
+    const fetchMock = createFetch(respond(200, {}));
+    const client = createApiClient({
+      baseUrl: 'http://api',
+      fetchFn: fetchMock,
+      getWorkspaceId: () => null,
+    });
+
+    await client.get('/x');
+
+    expect(headersOf(fetchMock)).not.toHaveProperty(WORKSPACE_HEADER);
   });
 
   it('envía el cuerpo como JSON', async () => {

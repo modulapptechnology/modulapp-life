@@ -32,6 +32,12 @@ export function ModulDialog({
   useEffect(() => {
     if (!visible) return;
 
+    // findNodeHandle no existe en la web: allí el foco se mueve con el método focus del propio elemento.
+    if (Platform.OS === 'web') {
+      (titleRef.current as { focus?: () => void } | null)?.focus?.();
+      return;
+    }
+
     const handle = findNodeHandle(titleRef.current);
     if (handle) AccessibilityInfo.setAccessibilityFocus(handle);
   }, [visible]);
@@ -55,7 +61,9 @@ export function ModulDialog({
     <ModulModal visible={visible} onClose={onClose} closeLabel={closeLabel} placement={placement}>
       <ModulView row alignCenter justifyBetween gap8>
         <View ref={titleRef} accessible accessibilityRole="header" style={{ flex: 1 }}>
-          <ModulText variant="sectionTitle">{title}</ModulText>
+          <ModulText variant="sectionTitle" accessibilityRole="none">
+            {title}
+          </ModulText>
         </View>
         <ModulButton variant="secondary" label={closeLabel} onPress={onClose} />
       </ModulView>

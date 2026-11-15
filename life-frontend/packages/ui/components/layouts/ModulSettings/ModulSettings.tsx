@@ -42,6 +42,8 @@ export type ModulSettingsProps = {
   preferencesTitle: string;
   preferenceLinks: readonly ModulSettingsLink[];
   appearance?: ModulAppearanceProps;
+  // Acceso a los atajos de teclado, debajo de las preferencias: solo web y escritorio.
+  shortcuts?: { label: string; onPress: () => void };
   device?: 'desktop' | 'mobile';
 };
 
@@ -65,6 +67,7 @@ export function ModulSettings({
   preferencesTitle,
   preferenceLinks,
   appearance,
+  shortcuts,
   device = 'mobile',
 }: ModulSettingsProps) {
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -129,6 +132,9 @@ export function ModulSettings({
               }
             />
           ))}
+          {shortcuts ? (
+            <ModulListItem title={shortcuts.label} icon="ListIcon" onPress={shortcuts.onPress} />
+          ) : null}
         </ModulView>
       </ModulView>
 

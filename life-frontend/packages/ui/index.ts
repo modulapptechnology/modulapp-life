@@ -22,6 +22,7 @@ export * from './components/molecules/ModulEmptyState/ModulEmptyState';
 export * from './components/molecules/ModulErrorState/ModulErrorState';
 export * from './components/molecules/ModulStateContainer/ModulStateContainer';
 export * from './components/molecules/ModulChipGroup/ModulChipGroup';
+export * from './components/molecules/ModulWorkspaceSelector/ModulWorkspaceSelector';
 export * from './components/atoms/ModulModal/ModulModal';
 export * from './components/atoms/ModulDrawer/ModulDrawer';
 export * from './components/molecules/ModulListItem/ModulListItem';

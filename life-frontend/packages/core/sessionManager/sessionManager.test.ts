@@ -33,7 +33,14 @@ function setup(delivery: RefreshTokenDelivery = 'body', post?: jest.Mock) {
   const client = { post: postMock } as unknown as ApiClient;
   const storage = createMemorySessionStorage();
   const store = createSessionStore();
-  const manager = createSessionManager({ client, storage, store, delivery, now: () => NOW });
+  const manager = createSessionManager({
+    client,
+    storage,
+    store,
+    delivery,
+    now: () => NOW,
+    splashMs: 0,
+  });
   return { manager, storage, store, post: postMock };
 }
 
@@ -159,7 +166,7 @@ describe('createSessionManager', () => {
 
     expect([await storage.load(), store.getState()]).toEqual([
       null,
-      { user: null, pendingOperations: 3, restoring: false },
+      { user: null, pendingOperations: 3, restoring: false, entering: false },
     ]);
   });
 });

@@ -13,6 +13,7 @@ export type SessionServicesConfig = {
   delivery: RefreshTokenDelivery;
   store?: SessionStore;
   fetchFn?: typeof fetch;
+  getWorkspaceId?: () => string | null | undefined;
 };
 
 export type SessionServices = {
@@ -30,6 +31,7 @@ export function createSessionServices(config: SessionServicesConfig): SessionSer
   });
   const apiClient = createSessionApiClient(config.baseUrl, store, {
     refreshSession: manager.refresh,
+    getWorkspaceId: config.getWorkspaceId,
     onSessionExpired: () => {
       void manager.expire();
     },
