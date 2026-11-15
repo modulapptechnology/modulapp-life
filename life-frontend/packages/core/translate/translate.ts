@@ -40,6 +40,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'settings.preferences.appearance': 'Apariencia',
     'settings.preferences.language': 'Idioma',
     'settings.preferences.format': 'Formato',
+    'settings.preferences.shortcuts': 'Atajos',
     'settings.appearance.title': 'Apariencia',
     'settings.appearance.theme': 'Tema',
     'settings.appearance.accent': 'Color de acento',
@@ -147,6 +148,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'menu.newCapture': 'Nueva captura',
     'menu.reload': 'Recargar',
     'menu.quit': 'Salir',
+    'shortcuts.title': 'Atajos de teclado',
     'workspace.select': 'Cambiar de espacio',
   },
   en: {
@@ -187,6 +189,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'settings.preferences.appearance': 'Appearance',
     'settings.preferences.language': 'Language',
     'settings.preferences.format': 'Format',
+    'settings.preferences.shortcuts': 'Shortcuts',
     'settings.appearance.title': 'Appearance',
     'settings.appearance.theme': 'Theme',
     'settings.appearance.accent': 'Accent color',
@@ -293,6 +296,7 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'menu.newCapture': 'New capture',
     'menu.reload': 'Reload',
     'menu.quit': 'Quit',
+    'shortcuts.title': 'Keyboard shortcuts',
     'workspace.select': 'Switch workspace',
   },
 };

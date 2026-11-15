@@ -23,6 +23,7 @@ export * from './authService/authService';
 export * from './authSubmitter/authSubmitter';
 export * from './useAuthForm/useAuthForm';
 export * from './desktopMenu/desktopMenu';
+export * from './shortcuts/shortcuts';
 export * from './appEnv/appEnv';
 export * from './connectivityStore/connectivityStore';
 export * from './connectivityMonitor/connectivityMonitor';

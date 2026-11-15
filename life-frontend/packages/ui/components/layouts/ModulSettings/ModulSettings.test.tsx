@@ -123,4 +123,14 @@ describe('ModulSettings', () => {
 
     expect(screen.getByText('Idioma')).toBeTruthy();
   });
+
+  it('muestra el acceso a los atajos solo si se entrega y lo abre al presionarlo', async () => {
+    const onPress = jest.fn();
+    const props = buildProps({ shortcuts: { label: 'Atajos', onPress } });
+    await renderWithTheme(<ModulSettings {...props} />);
+
+    await fireEvent.press(screen.getByText('Atajos'));
+
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
 });

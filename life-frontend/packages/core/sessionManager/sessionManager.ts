@@ -18,6 +18,7 @@ export type SessionManagerConfig = {
   store: SessionStore;
   delivery: RefreshTokenDelivery;
   now?: () => number;
+  splashMs?: number;
 };
 
 export type SessionManager = {
@@ -30,9 +31,13 @@ export type SessionManager = {
 
 export const DELIVERY_HEADER = 'X-Token-Delivery';
 
+const SPLASH_MS = 1200;
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 export function createSessionManager(config: SessionManagerConfig): SessionManager {
   const { client, storage, store, delivery } = config;
   const now = config.now ?? Date.now;
+  const splashMs = config.splashMs ?? SPLASH_MS;
   const headers: Record<string, string> =
     delivery === 'cookie' ? { [DELIVERY_HEADER]: 'cookie' } : {};
   let refreshing: Promise<boolean> | null = null;
@@ -98,10 +103,12 @@ export function createSessionManager(config: SessionManagerConfig): SessionManag
         body: credentials,
         headers,
       });
-      if (result.kind === 'success' && !(await start(toTokens(result.data)))) {
-        return { kind: 'unexpected', status: 200 };
-      }
-      return result;
+      if (result.kind !== 'success') return result;
+      store.startEntering();
+      const started = await start(toTokens(result.data));
+      await wait(splashMs);
+      store.finishEntering();
+      return started ? result : { kind: 'unexpected', status: 200 };
     },
 
     async restore() {

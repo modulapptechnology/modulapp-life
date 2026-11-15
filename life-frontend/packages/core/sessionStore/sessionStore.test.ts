@@ -17,7 +17,12 @@ describe('sessionStore', () => {
 
     store.signOut();
 
-    expect(store.getState()).toEqual({ user: null, pendingOperations: 0, restoring: false });
+    expect(store.getState()).toEqual({
+      user: null,
+      pendingOperations: 0,
+      restoring: false,
+      entering: false,
+    });
   });
 
   it('avisa a los suscriptores solo mientras están suscritos', () => {
@@ -50,7 +55,12 @@ describe('sessionStore expireSession', () => {
 
     store.expireSession();
 
-    expect(store.getState()).toEqual({ user: null, pendingOperations: 3, restoring: false });
+    expect(store.getState()).toEqual({
+      user: null,
+      pendingOperations: 3,
+      restoring: false,
+      entering: false,
+    });
   });
 });
 
@@ -61,5 +71,15 @@ describe('sessionStore finishRestore', () => {
     store.finishRestore();
 
     expect(store.getState().restoring).toBe(false);
+  });
+});
+
+describe('sessionStore startEntering', () => {
+  it('muestra la carga de entrada hasta que termina', () => {
+    const store = createSessionStore();
+
+    store.startEntering();
+
+    expect(store.getState().entering).toBe(true);
   });
 });
