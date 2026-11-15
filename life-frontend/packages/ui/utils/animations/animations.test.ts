@@ -1,5 +1,5 @@
 import { Animated } from 'react-native';
-import { animateTo, animationDurations, springTo } from './animations';
+import { animateTo, animationDurations, springTo, sweep  } from './animations';
 
 // Las animaciones usan temporizadores: se simulan y se descartan para que no sigan tras terminar la prueba.
 beforeEach(() => jest.useFakeTimers());
@@ -45,6 +45,22 @@ describe('springTo', () => {
     expect(spring).toHaveBeenCalledWith(
       value,
       expect.objectContaining({ toValue: { x: 0, y: 0 }, useNativeDriver: false }),
+    );
+  });
+});
+
+
+
+describe('sweep', () => {
+  it('recorre la barra de 0 a 1 en bucle con la duración del cargador', () => {
+    const timing = jest.spyOn(Animated, 'timing');
+    const value = new Animated.Value(0);
+
+    sweep(value);
+
+    expect(timing).toHaveBeenCalledWith(
+      value,
+      expect.objectContaining({ toValue: 1, duration: animationDurations.sweep }),
     );
   });
 });

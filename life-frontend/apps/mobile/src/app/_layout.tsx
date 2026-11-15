@@ -1,8 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { Audiowide_400Regular } from '@expo-google-fonts/audiowide';
 import { Comfortaa_400Regular, Comfortaa_700Bold, useFonts } from '@expo-google-fonts/comfortaa';
-import { appearanceStore, resolveReturnPath, session, useAppearance, useSession } from '@life/core';
-import { ModulMessagesProvider, ModulView, ThemeProvider } from '@life/ui';
+import {
+  appearanceStore,
+  resolveReturnPath,
+  session,
+  translate,
+  useAppearance,
+  useSession,
+} from '@life/core';
+import { ModulMessagesProvider, ModulView, ModulSplash, ThemeProvider } from '@life/ui';
 import { router, Stack, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { connectivityMonitor } from '../services/connectivity/connectivity';
@@ -24,7 +31,7 @@ const PUBLIC_PATHS = [
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Audiowide_400Regular, Comfortaa_400Regular, Comfortaa_700Bold });
   const appearance = useAppearance(appearanceStore);
-  const { user, restoring } = useSession(session);
+  const { user, restoring, entering } = useSession(session);
   const pathname = usePathname();
   const returnTo = useRef<string | null>(null);
 
@@ -37,7 +44,7 @@ export default function RootLayout() {
   }, [user]);
 
   useEffect(() => {
-    if (restoring) return;
+    if (restoring || entering) return;
     if (!user) {
       if (pathname !== '/' && !PUBLIC_PATHS.includes(pathname)) returnTo.current = pathname;
       return;
@@ -46,11 +53,22 @@ export default function RootLayout() {
       router.replace(resolveReturnPath(returnTo.current) as never);
       returnTo.current = null;
     }
-  }, [user, restoring, pathname]);
+  }, [user, restoring, entering, pathname]);
 
   useEffect(() => connectivityMonitor.start(), []);
 
   if (!fontsLoaded || restoring) return null;
+
+  if (entering) {
+    return (
+      <ThemeProvider preference={appearance.preference} accent={appearance.accent}>
+        <ModulSplash
+          brandName={translate('auth.brandName')}
+          message={translate('common.loading')}
+        />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider preference={appearance.preference} accent={appearance.accent}>
