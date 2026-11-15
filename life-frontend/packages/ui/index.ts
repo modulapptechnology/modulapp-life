@@ -23,6 +23,7 @@ export * from './components/molecules/ModulErrorState/ModulErrorState';
 export * from './components/molecules/ModulStateContainer/ModulStateContainer';
 export * from './components/molecules/ModulChipGroup/ModulChipGroup';
 export * from './components/molecules/ModulWorkspaceSelector/ModulWorkspaceSelector';
+export * from './components/molecules/ModulSplash/ModulSplash';
 export * from './components/atoms/ModulModal/ModulModal';
 export * from './components/atoms/ModulDrawer/ModulDrawer';
 export * from './components/molecules/ModulListItem/ModulListItem';
@@ -45,6 +46,7 @@ export * from './components/molecules/ModulAppearanceModal/ModulAppearanceModal'
 export * from './components/layouts/ModulLayoutWeb/ModulLayoutWeb';
 export * from './components/layouts/ModulSettings/ModulSettings';
 export * from './components/organisms/ModulDialog/ModulDialog';
+export * from './components/organisms/ModulShortcutsDialog/ModulShortcutsDialog';
 export * from './components/organisms/ModulBottomSheet/ModulBottomSheet';
 export * from './components/organisms/ModulListPattern/ModulListPattern';
 export * from './components/organisms/ModulFormContainer/ModulFormContainer';
