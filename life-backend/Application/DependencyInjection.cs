@@ -1,4 +1,5 @@
 using FluentValidation;
+using Life.Application.Sync;
 using Life.Application.Users;
 using Life.Application.Workspaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +27,7 @@ public static class DependencyInjection
         services.TryAddScoped<GetWorkspace>();
         services.TryAddScoped<UpdateWorkspace>();
         services.TryAddScoped<ArchiveWorkspace>();
+        services.TryAddScoped<SynchronizeChanges>();
 
         return services;
     }

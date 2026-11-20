@@ -33,6 +33,8 @@ public sealed class UnitOfWork(LifeDbContext context) : IUnitOfWork
         }
         catch (DbUpdateConcurrencyException exception)
         {
+            context.ChangeTracker.Clear();
+
             throw new ConcurrencyConflictException(exception);
         }
     }

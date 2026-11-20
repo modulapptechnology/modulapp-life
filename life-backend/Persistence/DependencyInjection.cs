@@ -1,7 +1,9 @@
 using Life.Application.Common;
+using Life.Application.Sync;
 using Life.Application.Users;
 using Life.Application.VersionHistory;
 using Life.Application.Workspaces;
+using Life.Persistence.Sync;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -43,6 +45,8 @@ public static class DependencyInjection
         services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
         services.AddScoped<IWorkspaceMembershipReader, WorkspaceMembershipReader>();
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+        services.AddScoped<ISyncOperationLog, SyncOperationLogRepository>();
+        services.AddScoped<ISyncEntityHandler, WorkspaceSyncHandler>();
 
         return services;
     }
