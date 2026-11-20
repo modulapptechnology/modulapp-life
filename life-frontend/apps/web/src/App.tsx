@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import {
   CAPTURE_SECTION,
@@ -7,6 +7,7 @@ import {
   PROFILE_SECTION,
   resolveReturnPath,
   SETTINGS_SECTION,
+  SHORTCUTS,
   session,
   translate,
   useConnectivity,
@@ -17,6 +18,8 @@ import {
 import {
   ModulConnectionIndicator,
   ModulLayoutWeb,
+  ModulSplash,
+  ModulShortcutsDialog,
   ModulText,
   ModulView,
   ModulWorkspaceSelector,
@@ -33,6 +36,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import { useDesktopWindow } from './desktop/useDesktopWindow';
 import { connectivityMonitor } from './services/connectivity/connectivity';
 import { sessionManager } from './services/session/session';
+import { useShortcuts } from './shortcuts/useShortcuts';
 import SettingsPage from './pages/SettingsPage';
 import { workspaceService } from './services/workspace/workspaceService';
 import { workspaceStore } from './services/workspace/workspaceStore';
@@ -55,13 +59,21 @@ function WorkspaceSelector() {
 
 export default function App() {
   const modules = useEnabledModules(moduleRegistry);
-  const { user, pendingOperations, restoring } = useSession(session);
+  const { user, pendingOperations, restoring, entering } = useSession(session);
   const { status } = useConnectivity();
   const navigate = useNavigate();
   const location = useLocation();
   const { pathname } = useLocation();
 
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
   useDesktopWindow(pathname, modules, navigate);
+
+  useShortcuts((id) => {
+    if (id === 'newCapture') navigate(CAPTURE_SECTION.path);
+    else if (id === 'openSettings') navigate(SETTINGS_SECTION.path);
+    else setShortcutsOpen(true);
+  }, !!user && !shortcutsOpen);
 
   useEffect(() => {
     void sessionManager.restore();
@@ -125,15 +137,25 @@ export default function App() {
         </ModulView>
       }
     >
-      <Outlet />
+      <Outlet context={{ openShortcuts: () => setShortcutsOpen(true) }} />
+      <ModulShortcutsDialog
+        visible={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+        title={translate('shortcuts.title')}
+        closeLabel={translate('common.close')}
+        items={SHORTCUTS.map((shortcut) => ({
+          label: translate(shortcut.labelKey),
+          keys: shortcut.key.toUpperCase(),
+        }))}
+      />
     </ModulLayoutWeb>
   );
 
-  if (restoring) {
+  if (restoring) return null;
+
+  if (entering) {
     return (
-      <ModulView flex1 justifyCenter>
-        <ModulText>{translate('common.loading')}</ModulText>
-      </ModulView>
+      <ModulSplash brandName={translate('auth.brandName')} message={translate('common.loading')} />
     );
   }
 

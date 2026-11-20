@@ -6,6 +6,7 @@ export const animationDurations = {
   fast: 150,
   standard: layout.slideDuration,
   slow: 800,
+  sweep: 1200,
 } as const;
 
 export const animationEasings = {
@@ -84,3 +85,13 @@ export const pulse = (value: Animated.Value) => {
 
   return Animated.loop(Animated.sequence([step(animationOpacities.pulseMin), step(1)]));
 };
+
+export const sweep = (value: Animated.Value) =>
+  Animated.loop(
+    Animated.timing(value, {
+      toValue: 1,
+      duration: animationDurations.sweep,
+      easing: animationEasings.soft,
+      useNativeDriver: Platform.OS !== 'web',
+    }),
+  );
