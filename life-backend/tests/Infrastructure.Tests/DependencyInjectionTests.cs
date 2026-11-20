@@ -1,10 +1,10 @@
+using Life.Application.Email;
 using Life.Application.Users;
 using Life.Application.Workspaces;
 using Life.Infrastructure.Email;
 using Life.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Life.Infrastructure.Tests;
 
@@ -54,24 +54,30 @@ public class DependencyInjectionTests
         var resolved = (
             provider.GetRequiredService<IPasswordHasher>(),
             provider.GetRequiredService<IVerificationTokenService>(),
-            provider.GetRequiredService<IVerificationEmailSender>());
+            provider.GetRequiredService<IEmailSender>(),
+            provider.GetRequiredService<IEmailTransport>());
 
         Assert.Equal(
             (
                 typeof(Pbkdf2PasswordHasher),
                 typeof(VerificationTokenService),
-                typeof(SmtpVerificationEmailSender)),
-            (resolved.Item1.GetType(), resolved.Item2.GetType(), resolved.Item3.GetType()));
+                typeof(RetryingEmailSender),
+                typeof(SmtpEmailTransport)),
+            (
+                resolved.Item1.GetType(),
+                resolved.Item2.GetType(),
+                resolved.Item3.GetType(),
+                resolved.Item4.GetType()));
     }
 
     [Fact]
-    public void AddInfrastructure_WithLogProvider_RegistersTheLoggingSender()
+    public void AddInfrastructure_WithLogProvider_RegistersTheLoggingTransport()
     {
         using var provider = BuildProvider(BuildConfiguration(("Email:Provider", "log")));
 
-        var sender = provider.GetRequiredService<IVerificationEmailSender>();
+        var transport = provider.GetRequiredService<IEmailTransport>();
 
-        Assert.IsType<LoggingVerificationEmailSender>(sender);
+        Assert.IsType<LoggingEmailTransport>(transport);
     }
 
     [Fact]
@@ -243,14 +249,50 @@ public class DependencyInjectionTests
     }
 
     [Fact]
-    public async Task LoggingSender_WhenSending_CompletesWithoutThrowing()
+    public void AddInfrastructure_WithoutRetrySettings_UsesThreeAttemptsAndHalfASecond()
     {
-        var logger = NullLogger<LoggingVerificationEmailSender>.Instance;
-        var sender = new LoggingVerificationEmailSender(logger);
+        using var provider = BuildProvider(BuildConfiguration());
 
-        var task = sender.SendAsync("person@life.test", "token");
+        var options = provider.GetRequiredService<EmailRetryOptions>();
 
-        await task;
-        Assert.True(task.IsCompletedSuccessfully);
+        Assert.Equal((3, TimeSpan.FromMilliseconds(500)), (options.MaxAttempts, options.InitialDelay));
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithRetrySettings_UsesThoseValues()
+    {
+        var configuration = BuildConfiguration(
+            ("Email:Retry:MaxAttempts", "5"),
+            ("Email:Retry:InitialDelayMilliseconds", "100"));
+        using var provider = BuildProvider(configuration);
+
+        var options = provider.GetRequiredService<EmailRetryOptions>();
+
+        Assert.Equal((5, TimeSpan.FromMilliseconds(100)), (options.MaxAttempts, options.InitialDelay));
+    }
+
+    [Theory]
+    [InlineData("Email:Retry:MaxAttempts", "0")]
+    [InlineData("Email:Retry:MaxAttempts", "many")]
+    [InlineData("Email:Retry:InitialDelayMilliseconds", "-1")]
+    public void AddInfrastructure_WithInvalidRetrySettings_ThrowsInvalidOperationException(
+        string key,
+        string value)
+    {
+        var configuration = BuildConfiguration((key, value));
+
+        var action = () => new ServiceCollection().AddInfrastructure(configuration);
+
+        Assert.Throws<InvalidOperationException>(action);
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithSenderName_ReadsItFromTheSmtpSection()
+    {
+        using var provider = BuildProvider(BuildConfiguration(("Email:Smtp:FromName", "ModulApp")));
+
+        var options = provider.GetRequiredService<SmtpOptions>();
+
+        Assert.Equal("ModulApp", options.FromName);
     }
 }

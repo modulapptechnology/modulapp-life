@@ -1,13 +1,9 @@
-using Life.Application.Users;
 using Life.Infrastructure.Email;
 
 namespace Life.Infrastructure.Tests.Email;
 
-public class SmtpVerificationEmailSenderTests
+public class SmtpEmailTransportTests
 {
-    private static readonly EmailVerificationOptions _verification =
-        new(TimeSpan.FromMinutes(15));
-
     [Fact]
     public async Task SendAsync_WithoutHost_ThrowsInvalidOperationException()
     {
@@ -18,9 +14,9 @@ public class SmtpVerificationEmailSenderTests
             string.Empty,
             string.Empty,
             "no-reply@life.test");
-        var sender = new SmtpVerificationEmailSender(smtp, _verification);
+        var sut = new SmtpEmailTransport(smtp);
 
-        var action = () => sender.SendAsync("person@life.test", "token");
+        var action = () => sut.SendAsync("person@life.test", "subject", "body");
 
         await Assert.ThrowsAsync<InvalidOperationException>(action);
     }
@@ -35,9 +31,9 @@ public class SmtpVerificationEmailSenderTests
             string.Empty,
             string.Empty,
             string.Empty);
-        var sender = new SmtpVerificationEmailSender(smtp, _verification);
+        var sut = new SmtpEmailTransport(smtp);
 
-        var action = () => sender.SendAsync("person@life.test", "token");
+        var action = () => sut.SendAsync("person@life.test", "subject", "body");
 
         await Assert.ThrowsAsync<InvalidOperationException>(action);
     }

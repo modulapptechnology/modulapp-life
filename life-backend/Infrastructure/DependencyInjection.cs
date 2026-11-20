@@ -1,4 +1,5 @@
 using System.Text;
+using Life.Application.Email;
 using Life.Application.Subscriptions;
 using Life.Application.Users;
 using Life.Application.Workspaces;
@@ -35,7 +36,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IAccessTokenIssuer, JwtAccessTokenIssuer>();
         services.AddSingleton<IVerificationTokenService, VerificationTokenService>();
-        AddVerificationEmailSender(services, configuration);
+        AddEmailSender(services, configuration);
 
         return services;
     }
@@ -82,17 +83,22 @@ public static class DependencyInjection
         return new SubscriptionReconciliationOptions(enabled, TimeSpan.FromMinutes(minutes), batchSize);
     }
 
-    private static void AddVerificationEmailSender(IServiceCollection services, IConfiguration configuration)
+    private static void AddEmailSender(IServiceCollection services, IConfiguration configuration)
     {
         var provider = configuration[EmailProviderKey] ?? SmtpProvider;
 
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton(BuildEmailRetryOptions(configuration));
+        services.AddSingleton<EmailTemplateRenderer>();
+        services.AddSingleton<IEmailSender, RetryingEmailSender>();
+
         if (provider.Equals(SmtpProvider, StringComparison.OrdinalIgnoreCase))
         {
-            services.AddSingleton<IVerificationEmailSender, SmtpVerificationEmailSender>();
+            services.AddSingleton<IEmailTransport, SmtpEmailTransport>();
         }
         else if (provider.Equals(LogProvider, StringComparison.OrdinalIgnoreCase))
         {
-            services.AddSingleton<IVerificationEmailSender, LoggingVerificationEmailSender>();
+            services.AddSingleton<IEmailTransport, LoggingEmailTransport>();
         }
         else
         {
@@ -100,6 +106,21 @@ public static class DependencyInjection
                 $"The setting '{EmailProviderKey}' must be '{SmtpProvider}' or '{LogProvider}', "
                     + $"but was '{provider}'.");
         }
+    }
+
+    private static EmailRetryOptions BuildEmailRetryOptions(IConfiguration configuration)
+    {
+        var section = configuration.GetSection(EmailRetryOptions.SectionName);
+        var attempts = ReadPositiveNumber(
+            section,
+            EmailRetryOptions.MaxAttemptsKey,
+            EmailRetryOptions.DefaultMaxAttempts);
+        var milliseconds = ReadPositiveNumber(
+            section,
+            EmailRetryOptions.InitialDelayMillisecondsKey,
+            EmailRetryOptions.DefaultInitialDelayMilliseconds);
+
+        return new EmailRetryOptions(attempts, TimeSpan.FromMilliseconds(milliseconds));
     }
 
     private static EmailVerificationOptions BuildEmailVerificationOptions(IConfiguration configuration)
@@ -225,6 +246,7 @@ public static class DependencyInjection
             enableSsl,
             section["UserName"] ?? string.Empty,
             section["Password"] ?? string.Empty,
-            section["FromAddress"] ?? string.Empty);
+            section["FromAddress"] ?? string.Empty,
+            section["FromName"] ?? string.Empty);
     }
 }

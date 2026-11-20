@@ -20,7 +20,10 @@ public class AuthController(IConfiguration configuration) : ApiControllerBase
         [FromServices] RegisterUser registerUser,
         CancellationToken cancellationToken)
     {
-        var response = await registerUser.ExecuteAsync(request, cancellationToken);
+        var response = await registerUser.ExecuteAsync(
+            request,
+            Request.GetPreferredLocale(),
+            cancellationToken);
 
         if (response is null)
         {

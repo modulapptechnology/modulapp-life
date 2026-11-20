@@ -1,4 +1,6 @@
+using System.Globalization;
 using Life.Application.Common;
+using Life.Application.Email;
 using Life.Domain.Users;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +10,7 @@ public sealed class RegisterUser(
     IUserRepository users,
     IPasswordHasher passwordHasher,
     IVerificationTokenService tokenService,
-    IVerificationEmailSender emailSender,
+    IEmailSender emailSender,
     IUnitOfWork unitOfWork,
     EmailVerificationOptions options,
     TimeProvider timeProvider,
@@ -16,6 +18,7 @@ public sealed class RegisterUser(
 {
     public async Task<RegisterUserResponse?> ExecuteAsync(
         RegisterUserRequest request,
+        string? locale = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -25,6 +28,7 @@ public sealed class RegisterUser(
         {
             Email = request.Email.Trim(),
             PasswordHash = passwordHasher.Hash(request.Password),
+            Locale = locale,
         };
         var verification = new EmailVerificationToken
         {
@@ -56,7 +60,16 @@ public sealed class RegisterUser(
     {
         try
         {
-            await emailSender.SendAsync(user.Email, token.Value, cancellationToken);
+            var minutes = (int)Math.Ceiling(options.TokenLifetime.TotalMinutes);
+            var values = new Dictionary<string, string>
+            {
+                [EmailValueKeys.Code] = token.Value,
+                [EmailValueKeys.Minutes] = minutes.ToString(CultureInfo.InvariantCulture),
+            };
+
+            await emailSender.SendAsync(
+                new EmailMessage(user.Email, EmailTemplate.EmailVerification, values, user.Locale),
+                cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

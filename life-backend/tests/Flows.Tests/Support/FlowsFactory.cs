@@ -1,3 +1,4 @@
+using Life.Application.Email;
 using Life.Application.Users;
 using Life.Persistence;
 using Life.Support;
@@ -58,7 +59,7 @@ public sealed class FlowsFactory : WebApplicationFactory<Program>, IAsyncLifetim
 
         builder.ConfigureTestServices(services =>
         {
-            services.AddSingleton<IVerificationEmailSender>(Emails);
+            services.AddSingleton<IEmailSender>(Emails);
         });
     }
 

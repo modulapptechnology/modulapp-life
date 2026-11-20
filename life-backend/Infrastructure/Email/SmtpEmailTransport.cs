@@ -1,14 +1,15 @@
 using System.Net;
 using System.Net.Mail;
-using Life.Application.Users;
 
 namespace Life.Infrastructure.Email;
 
-public sealed class SmtpVerificationEmailSender(
-    SmtpOptions smtp,
-    EmailVerificationOptions verification) : IVerificationEmailSender
+public sealed class SmtpEmailTransport(SmtpOptions smtp) : IEmailTransport
 {
-    public async Task SendAsync(string email, string code, CancellationToken cancellationToken = default)
+    public async Task SendAsync(
+        string to,
+        string subject,
+        string body,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(smtp.Host) || string.IsNullOrWhiteSpace(smtp.FromAddress))
         {
@@ -17,10 +18,12 @@ public sealed class SmtpVerificationEmailSender(
                     + "are required to send emails.");
         }
 
-        using var message = new MailMessage(smtp.FromAddress, email)
+        using var message = new MailMessage(
+            new MailAddress(smtp.FromAddress, smtp.FromName),
+            new MailAddress(to))
         {
-            Subject = VerificationEmailContent.Subject,
-            Body = VerificationEmailContent.BuildBody(code, verification.TokenLifetime),
+            Subject = subject,
+            Body = body,
         };
         using var client = new SmtpClient(smtp.Host, smtp.Port) { EnableSsl = smtp.EnableSsl };
 
