@@ -144,6 +144,45 @@ public class AuthController(IConfiguration configuration) : ApiControllerBase
 
         return NoContent();
     }
+
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting(ApiServiceCollectionExtensions.PasswordRecoveryRateLimitPolicy)]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] RequestPasswordResetRequest request,
+        [FromServices] RequestPasswordReset requestPasswordReset,
+        CancellationToken cancellationToken)
+    {
+        await requestPasswordReset.ExecuteAsync(request, Request.GetPreferredLocale(), cancellationToken);
+
+        return Accepted();
+    }
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    [EnableRateLimiting(ApiServiceCollectionExtensions.PasswordRecoveryRateLimitPolicy)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        [FromServices] ResetPassword resetPassword,
+        CancellationToken cancellationToken)
+    {
+        var reset = await resetPassword.ExecuteAsync(request, cancellationToken);
+
+        if (!reset)
+        {
+            return Problem(
+                title: "El enlace de recuperación no es válido o ya venció.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        return NoContent();
+    }
 }
 
 public sealed record RefreshBody(string? RefreshToken);

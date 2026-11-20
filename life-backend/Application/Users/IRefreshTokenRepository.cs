@@ -9,4 +9,8 @@ public interface IRefreshTokenRepository
     Task<RefreshToken?> FindByHashAsync(string tokenHash, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<RefreshToken>> ListFamilyAsync(Guid familyId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<RefreshToken>> ListActiveByUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
 }

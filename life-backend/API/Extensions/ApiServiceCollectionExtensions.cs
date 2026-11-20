@@ -15,6 +15,8 @@ public static class ApiServiceCollectionExtensions
 
     public const string LoginRateLimitPolicy = "Login";
 
+    public const string PasswordRecoveryRateLimitPolicy = "PasswordRecovery";
+
     public const string RateLimitingSectionName = "RateLimiting";
 
     public const int DefaultPermitLimit = 5;
@@ -73,12 +75,14 @@ public static class ApiServiceCollectionExtensions
     {
         var registration = ReadRateLimit(configuration, RegistrationRateLimitPolicy);
         var login = ReadRateLimit(configuration, LoginRateLimitPolicy);
+        var recovery = ReadRateLimit(configuration, PasswordRecoveryRateLimitPolicy);
 
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             AddRateLimitPolicy(options, RegistrationRateLimitPolicy, registration);
             AddRateLimitPolicy(options, LoginRateLimitPolicy, login);
+            AddRateLimitPolicy(options, PasswordRecoveryRateLimitPolicy, recovery);
         });
 
         return services;

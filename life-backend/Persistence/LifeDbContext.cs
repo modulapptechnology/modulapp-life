@@ -19,6 +19,8 @@ public class LifeDbContext(
 
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
 
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+
     public DbSet<LoginAttempt> LoginAttempts => Set<LoginAttempt>();
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

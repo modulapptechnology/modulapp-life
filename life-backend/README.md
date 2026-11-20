@@ -369,6 +369,29 @@ Cada sesión es un par: un token de acceso JWT de corta duración y un token de 
 
 `tests/API.Tests/Login/RefreshTests` y `tests/API.Tests/Security/AccessTokenValidationTests` prueban los endpoints sin base de datos; `Application.Tests/Users/RefreshSessionTests`, la rotación y la reutilización; `Application.Tests/Users/EndSessionTests`, el cierre de sesión; `Infrastructure.Tests/Persistence/RefreshTokenRepositoryTests`, el repositorio contra la base de pruebas. La migración es `AddRefreshTokens`.
 
+### Recuperación de acceso
+
+Un usuario que olvidó su contraseña la restablece con un enlace temporal enviado a su correo. Solo aplica sin sesión activa; el cambio de contraseña con sesión iniciada queda fuera.
+
+| Endpoint | Resultado |
+|---|---|
+| `POST /api/v1/auth/forgot-password` con `{ "email" }` | `202` siempre que el correo tenga formato válido, exista o no la cuenta (mismo código y mismo cuerpo). `400` si el correo está vacío o mal formado. `429` al superar el límite. |
+| `POST /api/v1/auth/reset-password` con `{ "token", "newPassword" }` | `204` y la contraseña queda cambiada. `400` si el token es desconocido, ya se usó o venció (mismo mensaje en los tres casos) o si la contraseña incumple la política del registro. `429` al superar el límite. |
+
+- **Token**: aleatorio de 32 bytes (criptográfico), de un solo uso. En `PasswordResetTokens` solo se guarda su hash SHA-256 (`TokenHash`, único entre activos) con `ExpiresAt` y `UsedAt`; el valor en claro solo viaja en el enlace del correo. Vence a los 15 minutos por defecto. Una solicitud nueva invalida los tokens pendientes del mismo usuario.
+- **Enlace**: `PasswordRecovery:ResetUrl` + `?token=<token>`. La vista que lo recibe (frontend) llama a `reset-password`.
+- **Sin enumeración de cuentas**: `forgot-password` responde igual para un correo registrado, uno inexistente o un usuario `Blocked` (a estos dos últimos no se les envía nada), y un fallo del envío se registra en el log pero no cambia la respuesta.
+- **Al restablecer**: se guarda el hash de la nueva contraseña, se consume el token, se revocan (`RevokedAt`) todos los tokens de renovación activos del usuario (todas sus sesiones), se reinician el bloqueo temporal y los intentos fallidos, y se confirma el correo si aún no lo estaba (restablecer prueba que controla el buzón). Un usuario `Blocked` no puede restablecer.
+- **Correo**: plantilla `PasswordReset` (`es` y `en`, idioma del usuario o `Accept-Language`) con `{link}` y `{minutes}`.
+
+| Configuración | Detalle |
+|---|---|
+| `PasswordRecovery:TokenLifetimeMinutes` | Vigencia del token; 15 minutos por defecto. |
+| `PasswordRecovery:ResetUrl` | URL absoluta http o https de la vista de restablecimiento; `http://localhost:8081/reset-password` por defecto. Configurarla en cada entorno. |
+| `RateLimiting:PasswordRecovery:PermitLimit` / `WindowSeconds` | Solicitudes permitidas por IP y duración de la ventana, compartidas por ambos endpoints; 5 por 600 segundos por defecto (1000 en Pruebas). |
+
+`Domain.Tests/Users/PasswordResetTokenTests` y `UserResetPasswordTests`, `Application.Tests/Users/RequestPasswordResetTests`, `ResetPasswordTests` y los validadores, y `API.Tests/Registration/PasswordRecoveryTests` prueban el flujo sin base de datos. La migración es `AddPasswordResetTokens`.
+
 ### Conciliación periódica de suscripciones
 
 El caso de uso `Application/Subscriptions/ReconcileSubscriptions` compara el estado local de cada suscripción con el del proveedor (pagos externo, Apple o Google), que es la fuente de verdad del estado de pago. `API/Subscriptions/SubscriptionReconciliationWorker` (un `BackgroundService`) lo ejecuta al arrancar y luego cada `IntervalMinutes`.
@@ -417,7 +440,7 @@ Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Passwor
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, `AddEmailVerificationAttempts` agrega `FailedAttempts` a esa tabla y quita la unicidad de `TokenHash` (los códigos de 6 dígitos se repiten entre usuarios),, `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`, `AddWorkspacesTables` crea las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations` con sus relaciones, índices únicos y restricciones `CHECK`, y `AddDescriptionToWorkspaces` agrega la columna `Description` a `Workspaces`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, `AddEmailVerificationAttempts` agrega `FailedAttempts` a esa tabla y quita la unicidad de `TokenHash` (los códigos de 6 dígitos se repiten entre usuarios),, `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`, `AddWorkspacesTables` crea las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations` con sus relaciones, índices únicos y restricciones `CHECK`, y `AddDescriptionToWorkspaces` agrega la columna `Description` a `Workspaces`, y `AddPasswordResetTokens` crea la tabla `PasswordResetTokens` de la recuperación de acceso. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 
@@ -516,7 +539,7 @@ Un origen no configurado no recibe la cabecera `Access-Control-Allow-Origin` y e
 
 Todo endpoint es privado por defecto: `AddApiAuthorization` (`API/Authorization`) define una política de respaldo (`FallbackPolicy`) que exige un usuario autenticado, de modo que un controlador o endpoint nuevo queda protegido sin declarar nada. La autorización se valida siempre en el servidor.
 
-- **Endpoints públicos**: solo responden sin sesión los marcados con `[AllowAnonymous]`, uno por acción (no por controlador): `GET /api/v1/house` y, en `AuthController`, `register`, `login`, `refresh`, `logout` y `verify-email`. En Desarrollo, `/openapi/v1.json` también es público; Swagger UI es solo la página. `GET /house/database` (solo Desarrollo) exige un token de acceso. Hacer público un endpoint nuevo exige declararlo y agregarlo a la lista de `ProtectedByDefaultTests`, que falla si la lista real cambia.
+- **Endpoints públicos**: solo responden sin sesión los marcados con `[AllowAnonymous]`, uno por acción (no por controlador): `GET /api/v1/house` y, en `AuthController`, `register`, `login`, `refresh`, `logout`, `verify-email`, `forgot-password` y `reset-password`. En Desarrollo, `/openapi/v1.json` también es público; Swagger UI es solo la página. `GET /house/database` (solo Desarrollo) exige un token de acceso. Hacer público un endpoint nuevo exige declararlo y agregarlo a la lista de `ProtectedByDefaultTests`, que falla si la lista real cambia.
 - **Respuestas estandarizadas**: `ProblemAuthorizationResultHandler` responde `application/problem+json` con `401` (sin sesión válida, con la cabecera `WWW-Authenticate`), `403` (identidad válida sin permisos suficientes) y `404` (recurso ajeno, para no revelar su existencia).
 - **Políticas reutilizables** (`AuthorizationPolicies`), que se aplican con `[Authorize(Policy = ...)]`:
 

@@ -97,6 +97,55 @@ public sealed class InMemoryRefreshTokenRepository(InMemoryUserRepository users)
 
         return Task.FromResult(family);
     }
+
+    public Task<IReadOnlyList<RefreshToken>> ListActiveByUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<RefreshToken> active = _tokens
+            .Where(token => token.UserId == userId && token.RevokedAt is null)
+            .ToList();
+
+        return Task.FromResult(active);
+    }
+}
+
+public sealed class InMemoryPasswordResetRepository(InMemoryUserRepository users) : IPasswordResetRepository
+{
+    private readonly ConcurrentQueue<PasswordResetToken> _tokens = new();
+
+    public IReadOnlyCollection<PasswordResetToken> Tokens => _tokens.ToList();
+
+    public void Add(PasswordResetToken token)
+    {
+        token.Id = Guid.NewGuid();
+        _tokens.Enqueue(token);
+    }
+
+    public Task<PasswordResetToken?> FindByHashAsync(
+        string tokenHash,
+        CancellationToken cancellationToken = default)
+    {
+        var token = _tokens.FirstOrDefault(candidate => candidate.TokenHash == tokenHash);
+
+        if (token is not null)
+        {
+            token.User = users.Users.FirstOrDefault(user => user.Id == token.UserId);
+        }
+
+        return Task.FromResult(token);
+    }
+
+    public Task<IReadOnlyList<PasswordResetToken>> ListPendingAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<PasswordResetToken> pending = _tokens
+            .Where(token => token.UserId == userId && token.UsedAt is null)
+            .ToList();
+
+        return Task.FromResult(pending);
+    }
 }
 
 public sealed class CapturingEmailSender : IEmailSender
@@ -107,7 +156,11 @@ public sealed class CapturingEmailSender : IEmailSender
 
     public Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
-        _sent.Enqueue((message.To, message.Values[EmailValueKeys.Code]));
+        var token = message.Values.TryGetValue(EmailValueKeys.Code, out var code)
+            ? code
+            : message.Values[EmailValueKeys.Link];
+
+        _sent.Enqueue((message.To, token));
 
         return Task.CompletedTask;
     }

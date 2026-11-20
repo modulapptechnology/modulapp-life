@@ -48,6 +48,32 @@ public class EmailTemplateRendererTests
     }
 
     [Theory]
+    [InlineData("es", "Recupera el acceso a tu cuenta", "vence en 15 minutos")]
+    [InlineData("en", "Recover access to your account", "expires in 15 minutes")]
+    public void Render_WithThePasswordResetTemplate_FillsTheLinkAndTheMinutes(
+        string locale,
+        string subject,
+        string expiration)
+    {
+        var values = new Dictionary<string, string>
+        {
+            [EmailValueKeys.Link] = "https://life.test/reset?token=abc",
+            [EmailValueKeys.Minutes] = "15",
+        };
+        var message = new EmailMessage("person@life.test", EmailTemplate.PasswordReset, values, locale);
+
+        var rendered = _renderer.Render(message);
+
+        Assert.Equal(
+            (subject, true, true, false),
+            (
+                rendered.Subject,
+                rendered.Body.Contains("https://life.test/reset?token=abc", StringComparison.Ordinal),
+                rendered.Body.Contains(expiration, StringComparison.Ordinal),
+                rendered.Body.Contains('{', StringComparison.Ordinal)));
+    }
+
+    [Theory]
     [InlineData("es", "vence en 15 minutos")]
     [InlineData("en", "expires in 15 minutes")]
     public void Render_WithValues_ReplacesEveryPlaceholder(string locale, string expectedPart)

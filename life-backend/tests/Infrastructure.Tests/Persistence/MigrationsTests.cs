@@ -61,6 +61,7 @@ public class MigrationsTests : IAsyncLifetime
                 "EmailVerificationTokens",
                 "ExternalAccounts",
                 "LoginAttempts",
+                "PasswordResetTokens",
                 "RefreshTokens",
                 "Users",
                 "WorkspaceInvitations",

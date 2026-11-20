@@ -12,10 +12,12 @@ public class ProtectedByDefaultTests(ApiFactory api)
     private static readonly string[] _publicEndpoints =
     [
         "GET api/v{version:apiVersion}/House",
+        "POST api/v{version:apiVersion}/Auth/forgot-password",
         "POST api/v{version:apiVersion}/Auth/login",
         "POST api/v{version:apiVersion}/Auth/logout",
         "POST api/v{version:apiVersion}/Auth/refresh",
         "POST api/v{version:apiVersion}/Auth/register",
+        "POST api/v{version:apiVersion}/Auth/reset-password",
         "POST api/v{version:apiVersion}/Auth/verify-email",
     ];
 

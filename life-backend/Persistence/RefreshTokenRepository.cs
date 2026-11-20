@@ -30,4 +30,13 @@ public sealed class RefreshTokenRepository(LifeDbContext context) : IRefreshToke
             .Where(token => token.FamilyId == familyId)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<RefreshToken>> ListActiveByUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.RefreshTokens
+            .Where(token => token.UserId == userId && token.RevokedAt == null)
+            .ToListAsync(cancellationToken);
+    }
 }

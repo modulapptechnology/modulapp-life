@@ -125,6 +125,47 @@ public class DependencyInjectionTests
     }
 
     [Fact]
+    public void AddInfrastructure_WithoutPasswordRecoverySettings_UsesTheDefaults()
+    {
+        using var provider = BuildProvider(BuildConfiguration());
+
+        var options = provider.GetRequiredService<PasswordRecoveryOptions>();
+
+        Assert.Equal(
+            (TimeSpan.FromMinutes(15), PasswordRecoveryOptions.DefaultResetUrl),
+            (options.TokenLifetime, options.ResetUrl));
+    }
+
+    [Fact]
+    public void AddInfrastructure_WithPasswordRecoverySettings_UsesThem()
+    {
+        var configuration = BuildConfiguration(
+            ("PasswordRecovery:TokenLifetimeMinutes", "30"),
+            ("PasswordRecovery:ResetUrl", "https://life.test/reset"));
+        using var provider = BuildProvider(configuration);
+
+        var options = provider.GetRequiredService<PasswordRecoveryOptions>();
+
+        Assert.Equal((TimeSpan.FromMinutes(30), "https://life.test/reset"), (options.TokenLifetime, options.ResetUrl));
+    }
+
+    [Theory]
+    [InlineData("PasswordRecovery:TokenLifetimeMinutes", "0")]
+    [InlineData("PasswordRecovery:TokenLifetimeMinutes", "soon")]
+    [InlineData("PasswordRecovery:ResetUrl", "not-a-url")]
+    [InlineData("PasswordRecovery:ResetUrl", "ftp://life.test/reset")]
+    public void AddInfrastructure_WithInvalidPasswordRecoverySetting_ThrowsInvalidOperationException(
+        string key,
+        string value)
+    {
+        var configuration = BuildConfiguration((key, value));
+
+        var action = () => new ServiceCollection().AddInfrastructure(configuration);
+
+        Assert.Throws<InvalidOperationException>(action);
+    }
+
+    [Fact]
     public void AddInfrastructure_WithoutLoginSettings_UsesFiveAttemptsAndFifteenMinutes()
     {
         using var provider = BuildProvider(BuildConfiguration());
