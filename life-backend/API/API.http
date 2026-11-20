@@ -61,6 +61,16 @@ Content-Type: application/json
   "newPassword": "NewPassword123"
 }
 
+### Change the password (requires the accessToken returned by the login; the other sessions are closed)
+POST {{API_HostAddress}}/api/v1/auth/change-password
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "currentPassword": "Abcdefgh12",
+  "newPassword": "NewPassword123"
+}
+
 ### CORS disallowed origin
 GET {{API_HostAddress}}/api/v1/house
 Origin: http://disallowed-origin.example

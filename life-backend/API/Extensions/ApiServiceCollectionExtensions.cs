@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Asp.Versioning;
+using Life.API.Authorization;
 using Life.API.Filters;
 using Life.API.OpenApi;
 using Life.API.Subscriptions;
@@ -16,6 +17,8 @@ public static class ApiServiceCollectionExtensions
     public const string LoginRateLimitPolicy = "Login";
 
     public const string PasswordRecoveryRateLimitPolicy = "PasswordRecovery";
+
+    public const string PasswordChangeRateLimitPolicy = "PasswordChange";
 
     public const string RateLimitingSectionName = "RateLimiting";
 
@@ -76,13 +79,15 @@ public static class ApiServiceCollectionExtensions
         var registration = ReadRateLimit(configuration, RegistrationRateLimitPolicy);
         var login = ReadRateLimit(configuration, LoginRateLimitPolicy);
         var recovery = ReadRateLimit(configuration, PasswordRecoveryRateLimitPolicy);
+        var change = ReadRateLimit(configuration, PasswordChangeRateLimitPolicy);
 
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            AddRateLimitPolicy(options, RegistrationRateLimitPolicy, registration);
-            AddRateLimitPolicy(options, LoginRateLimitPolicy, login);
-            AddRateLimitPolicy(options, PasswordRecoveryRateLimitPolicy, recovery);
+            AddRateLimitPolicy(options, RegistrationRateLimitPolicy, registration, PartitionByIp);
+            AddRateLimitPolicy(options, LoginRateLimitPolicy, login, PartitionByIp);
+            AddRateLimitPolicy(options, PasswordRecoveryRateLimitPolicy, recovery, PartitionByIp);
+            AddRateLimitPolicy(options, PasswordChangeRateLimitPolicy, change, PartitionByUser);
         });
 
         return services;
@@ -97,13 +102,26 @@ public static class ApiServiceCollectionExtensions
             ReadPositiveNumber(configuration, $"{section}:WindowSeconds", DefaultWindowSeconds));
     }
 
+    private static string PartitionByIp(HttpContext context)
+    {
+        return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    }
+
+    private static string PartitionByUser(HttpContext context)
+    {
+        var userId = context.User.GetUserId();
+
+        return userId is null ? PartitionByIp(context) : $"user:{userId}";
+    }
+
     private static void AddRateLimitPolicy(
         RateLimiterOptions options,
         string policy,
-        (int PermitLimit, int WindowSeconds) limit)
+        (int PermitLimit, int WindowSeconds) limit,
+        Func<HttpContext, string> partition)
     {
         options.AddPolicy(policy, context => RateLimitPartition.GetFixedWindowLimiter(
-            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            partition(context),
             _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = limit.PermitLimit,

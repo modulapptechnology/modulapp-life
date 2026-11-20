@@ -13,7 +13,7 @@ public sealed class SessionIssuer(
         ArgumentNullException.ThrowIfNull(user);
         ArgumentException.ThrowIfNullOrEmpty(deviceId);
 
-        var accessToken = accessTokenIssuer.Issue(user, now);
+        var accessToken = accessTokenIssuer.Issue(user, familyId, now);
         var refreshToken = tokenService.Create();
         var refreshExpiresAt = now.Add(options.Lifetime);
 

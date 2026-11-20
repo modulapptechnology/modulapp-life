@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Life.API.Tests.Support;
 using Life.Application.Users;
 using Life.Domain.Users;
@@ -12,11 +13,13 @@ public class AccessTokenValidationTests(ApiFactory api)
 {
     private const string _route = "/api/v1/JwtProbe";
 
-    private AccessToken IssueToken(DateTime issuedAt)
+    private AccessToken IssueToken(DateTime issuedAt, Guid? sessionId = null)
     {
         var issuer = api.Services.GetRequiredService<IAccessTokenIssuer>();
 
-        return issuer.Issue(new User { Id = Guid.NewGuid(), Email = "person@life.test" }, issuedAt);
+        var user = new User { Id = Guid.NewGuid(), Email = "person@life.test" };
+
+        return issuer.Issue(user, sessionId ?? Guid.NewGuid(), issuedAt);
     }
 
     private async Task<HttpStatusCode> GetWithTokenAsync(string? token)
@@ -41,6 +44,19 @@ public class AccessTokenValidationTests(ApiFactory api)
         var status = await GetWithTokenAsync(token.Value);
 
         Assert.Equal(HttpStatusCode.OK, status);
+    }
+
+    [Fact]
+    public async Task GetSession_WithValidAccessToken_ReadsTheSessionIdFromTheClaim()
+    {
+        var sessionId = Guid.NewGuid();
+        var token = IssueToken(DateTime.UtcNow, sessionId);
+        var client = api.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Value);
+
+        var response = await client.GetAsync($"{_route}/session");
+
+        Assert.Equal(sessionId, await response.Content.ReadFromJsonAsync<Guid>());
     }
 
     [Fact]

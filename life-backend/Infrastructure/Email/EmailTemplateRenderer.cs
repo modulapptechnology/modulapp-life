@@ -50,6 +50,20 @@ public sealed class EmailTemplateRenderer
                 string.Empty,
                 "The link can be used only once and expires in {minutes} minutes.",
                 "If it was not you, ignore this message: your password will not change.")),
+        [(EmailTemplate.PasswordChanged, "es")] = new RenderedEmail(
+            "Cambiaste tu contraseña",
+            string.Join(
+                _newLine,
+                "La contraseña de tu cuenta se cambió y se cerraron tus otras sesiones.",
+                string.Empty,
+                "Si no fuiste tú, recupera el acceso a tu cuenta de inmediato desde la opción de recuperación.")),
+        [(EmailTemplate.PasswordChanged, "en")] = new RenderedEmail(
+            "You changed your password",
+            string.Join(
+                _newLine,
+                "Your account password was changed and your other sessions were closed.",
+                string.Empty,
+                "If it was not you, recover access to your account right away from the recovery option.")),
     };
 
     public static string ResolveLanguage(string? locale)

@@ -31,7 +31,7 @@ public class LoginUserTests
     {
         _users.When(users => users.AddLoginAttempt(Arg.Any<LoginAttempt>()))
             .Do(call => _attempts.Add(call.Arg<LoginAttempt>()));
-        _issuer.Issue(Arg.Any<User>(), Arg.Any<DateTime>())
+        _issuer.Issue(Arg.Any<User>(), Arg.Any<Guid>(), Arg.Any<DateTime>())
             .Returns(new AccessToken("signed-token", _now.UtcDateTime.AddMinutes(15)));
         _tokenService.Create().Returns(new VerificationToken("plain-refresh", "hashed-refresh"));
         _refreshTokens.When(tokens => tokens.Add(Arg.Any<RefreshToken>()))
@@ -219,7 +219,7 @@ public class LoginUserTests
 
         await sut.ExecuteAsync(new LoginRequest("person@life.test", "Abcdefgh12"), null);
 
-        _issuer.DidNotReceiveWithAnyArgs().Issue(default!, default);
+        _issuer.DidNotReceiveWithAnyArgs().Issue(default!, default, default);
     }
 
     [Fact]

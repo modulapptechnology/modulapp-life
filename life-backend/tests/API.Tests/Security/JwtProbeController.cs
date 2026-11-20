@@ -1,3 +1,4 @@
+using Life.API.Authorization;
 using Life.API.Controllers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -12,5 +13,11 @@ public class JwtProbeController : ApiControllerBase
     public IActionResult Get()
     {
         return Ok();
+    }
+
+    [HttpGet("session")]
+    public IActionResult GetSession()
+    {
+        return Ok(User.GetSessionId());
     }
 }

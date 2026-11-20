@@ -10,7 +10,7 @@ public sealed class JwtAccessTokenIssuer(AccessTokenOptions options) : IAccessTo
 {
     private static readonly byte[] _header = Encoding.UTF8.GetBytes("""{"alg":"HS256","typ":"JWT"}""");
 
-    public AccessToken Issue(User user, DateTime issuedAt)
+    public AccessToken Issue(User user, Guid sessionId, DateTime issuedAt)
     {
         ArgumentNullException.ThrowIfNull(user);
 
@@ -18,6 +18,7 @@ public sealed class JwtAccessTokenIssuer(AccessTokenOptions options) : IAccessTo
         var payload = JsonSerializer.SerializeToUtf8Bytes(new Dictionary<string, object>
         {
             ["sub"] = user.Id.ToString(),
+            ["sid"] = sessionId.ToString(),
             ["email"] = user.Email,
             ["jti"] = Guid.NewGuid().ToString(),
             ["iss"] = options.Issuer,

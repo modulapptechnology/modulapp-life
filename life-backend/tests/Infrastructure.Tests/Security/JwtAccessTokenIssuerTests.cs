@@ -17,6 +17,8 @@ public class JwtAccessTokenIssuerTests
 
     private readonly User _user = new() { Id = Guid.NewGuid(), Email = "person@life.test" };
 
+    private readonly Guid _sessionId = Guid.NewGuid();
+
     private static byte[] Decode(string value)
     {
         var padded = value.Replace('-', '+').Replace('_', '/');
@@ -37,7 +39,7 @@ public class JwtAccessTokenIssuerTests
     {
         var issuer = new JwtAccessTokenIssuer(_options);
 
-        var token = issuer.Issue(_user, _now);
+        var token = issuer.Issue(_user, _sessionId, _now);
 
         var payload = ReadPayload(token.Value);
         Assert.Equal(
@@ -50,11 +52,21 @@ public class JwtAccessTokenIssuerTests
     }
 
     [Fact]
+    public void Issue_WithASessionId_IncludesItAsTheSessionClaim()
+    {
+        var issuer = new JwtAccessTokenIssuer(_options);
+
+        var token = issuer.Issue(_user, _sessionId, _now);
+
+        Assert.Equal(_sessionId.ToString(), ReadPayload(token.Value).GetProperty("sid").GetString());
+    }
+
+    [Fact]
     public void Issue_WithUser_ExpiresAfterTheConfiguredLifetime()
     {
         var issuer = new JwtAccessTokenIssuer(_options);
 
-        var token = issuer.Issue(_user, _now);
+        var token = issuer.Issue(_user, _sessionId, _now);
 
         var payload = ReadPayload(token.Value);
         Assert.Equal(
@@ -67,7 +79,7 @@ public class JwtAccessTokenIssuerTests
     {
         var issuer = new JwtAccessTokenIssuer(_options);
 
-        var token = issuer.Issue(_user, _now);
+        var token = issuer.Issue(_user, _sessionId, _now);
 
         var parts = token.Value.Split('.');
         var expected = HMACSHA256.HashData(
@@ -81,7 +93,7 @@ public class JwtAccessTokenIssuerTests
     {
         var issuer = new JwtAccessTokenIssuer(_options);
 
-        var token = issuer.Issue(_user, _now);
+        var token = issuer.Issue(_user, _sessionId, _now);
 
         using var header = JsonDocument.Parse(Decode(token.Value.Split('.')[0]));
         Assert.Equal(
@@ -94,8 +106,8 @@ public class JwtAccessTokenIssuerTests
     {
         var issuer = new JwtAccessTokenIssuer(_options);
 
-        var first = issuer.Issue(_user, _now);
-        var second = issuer.Issue(_user, _now);
+        var first = issuer.Issue(_user, _sessionId, _now);
+        var second = issuer.Issue(_user, _sessionId, _now);
 
         Assert.NotEqual(
             ReadPayload(first.Value).GetProperty("jti").GetString(),
@@ -107,7 +119,7 @@ public class JwtAccessTokenIssuerTests
     {
         var issuer = new JwtAccessTokenIssuer(_options);
 
-        var action = () => issuer.Issue(null!, _now);
+        var action = () => issuer.Issue(null!, _sessionId, _now);
 
         Assert.Throws<ArgumentNullException>(action);
     }

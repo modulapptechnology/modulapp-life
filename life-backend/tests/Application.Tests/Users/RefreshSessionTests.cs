@@ -25,7 +25,7 @@ public class RefreshSessionTests
     {
         _tokenService.Hash("old-token").Returns("old-hash");
         _tokenService.Create().Returns(new VerificationToken("new-token", "new-hash"));
-        _issuer.Issue(Arg.Any<User>(), Arg.Any<DateTime>())
+        _issuer.Issue(Arg.Any<User>(), Arg.Any<Guid>(), Arg.Any<DateTime>())
             .Returns(new AccessToken("new-access", _now.UtcDateTime.AddMinutes(15)));
         _refreshTokens.When(tokens => tokens.Add(Arg.Any<RefreshToken>()))
             .Do(call => _added.Add(call.Arg<RefreshToken>()));

@@ -52,6 +52,11 @@ public sealed class UserRepository(LifeDbContext context) : IUserRepository
         return context.Users.FirstOrDefaultAsync(user => user.Email == email, cancellationToken);
     }
 
+    public Task<User?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return context.Users.FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
+    }
+
     public void AddLoginAttempt(LoginAttempt attempt)
     {
         ArgumentNullException.ThrowIfNull(attempt);

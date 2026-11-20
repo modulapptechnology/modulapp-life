@@ -19,18 +19,6 @@ public sealed class RegisterUserRequestValidator : AbstractValidator<RegisterUse
             .WithMessage($"El correo electrónico no puede superar {EmailMaxLength} caracteres.")
             .EmailAddress().WithMessage("El correo electrónico no tiene un formato válido.");
 
-        RuleFor(request => request.Password)
-            .Cascade(CascadeMode.Stop)
-            .NotEmpty().WithMessage("La contraseña es obligatoria.")
-            .MinimumLength(PasswordMinLength)
-            .WithMessage($"La contraseña debe tener al menos {PasswordMinLength} caracteres.")
-            .MaximumLength(PasswordMaxLength)
-            .WithMessage($"La contraseña no puede superar {PasswordMaxLength} caracteres.")
-            .Must(password => password.Any(char.IsUpper))
-            .WithMessage("La contraseña debe incluir al menos una letra mayúscula.")
-            .Must(password => password.Any(char.IsLower))
-            .WithMessage("La contraseña debe incluir al menos una letra minúscula.")
-            .Must(password => password.Any(char.IsDigit))
-            .WithMessage("La contraseña debe incluir al menos un número.");
+        RuleFor(request => request.Password).MeetPasswordPolicy();
     }
 }
