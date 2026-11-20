@@ -4,4 +4,5 @@ public enum EmailTemplate
 {
     EmailVerification,
     PasswordReset,
+    PasswordChanged,
 }

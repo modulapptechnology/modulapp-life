@@ -10,6 +10,7 @@ public static class TestAuthentication
 {
     public const string Scheme = "Test";
     public const string Header = "X-Test-User";
+    public const string SessionHeader = "X-Test-Session";
 }
 
 public sealed class TestAuthenticationHandler(
@@ -26,9 +27,14 @@ public sealed class TestAuthenticationHandler(
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
-        var identity = new ClaimsIdentity(
-            [new Claim(ClaimTypes.NameIdentifier, userId.ToString())],
-            TestAuthentication.Scheme);
+        var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, userId.ToString()) };
+
+        if (Request.Headers.TryGetValue(TestAuthentication.SessionHeader, out var session))
+        {
+            claims.Add(new Claim("sid", session.ToString()));
+        }
+
+        var identity = new ClaimsIdentity(claims, TestAuthentication.Scheme);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), TestAuthentication.Scheme);
 
         return Task.FromResult(AuthenticateResult.Success(ticket));

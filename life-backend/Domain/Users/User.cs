@@ -50,6 +50,11 @@ public class User : BaseEntity
         LockedUntil = null;
     }
 
+    public void ChangePassword(string passwordHash)
+    {
+        PasswordHash = passwordHash;
+    }
+
     public void ResetPassword(string passwordHash, DateTime now)
     {
         PasswordHash = passwordHash;

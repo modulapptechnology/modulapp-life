@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.TryAddScoped<VerifyEmail>();
         services.TryAddScoped<RequestPasswordReset>();
         services.TryAddScoped<ResetPassword>();
+        services.TryAddScoped<ChangePassword>();
         services.TryAddScoped<SessionIssuer>();
         services.TryAddScoped<LoginUser>();
         services.TryAddScoped<RefreshSession>();

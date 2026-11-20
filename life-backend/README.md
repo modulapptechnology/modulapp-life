@@ -371,7 +371,7 @@ Cada sesión es un par: un token de acceso JWT de corta duración y un token de 
 
 ### Recuperación de acceso
 
-Un usuario que olvidó su contraseña la restablece con un enlace temporal enviado a su correo. Solo aplica sin sesión activa; el cambio de contraseña con sesión iniciada queda fuera.
+Un usuario que olvidó su contraseña la restablece con un enlace temporal enviado a su correo. Solo aplica sin sesión activa; el cambio de contraseña con sesión iniciada se describe en "Cambio de contraseña".
 
 | Endpoint | Resultado |
 |---|---|
@@ -391,6 +391,26 @@ Un usuario que olvidó su contraseña la restablece con un enlace temporal envia
 | `RateLimiting:PasswordRecovery:PermitLimit` / `WindowSeconds` | Solicitudes permitidas por IP y duración de la ventana, compartidas por ambos endpoints; 5 por 600 segundos por defecto (1000 en Pruebas). |
 
 `Domain.Tests/Users/PasswordResetTokenTests` y `UserResetPasswordTests`, `Application.Tests/Users/RequestPasswordResetTests`, `ResetPasswordTests` y los validadores, y `API.Tests/Registration/PasswordRecoveryTests` prueban el flujo sin base de datos. La migración es `AddPasswordResetTokens`.
+
+### Cambio de contraseña
+
+Un usuario con sesión iniciada cambia su contraseña confirmando la actual. La recuperación sin sesión es la sección anterior.
+
+| Endpoint | Resultado |
+|---|---|
+| `POST /api/v1/auth/change-password` con `{ "currentPassword", "newPassword" }` y `Authorization: Bearer <accessToken>` | `204` y la contraseña queda cambiada. `400` si la contraseña actual es incorrecta, si la nueva es igual a la actual o si incumple la política del registro. `401` sin token válido, o si el usuario ya no está `Active`. `429` al superar el límite. |
+
+- **Sesión actual**: el token de acceso lleva el claim `sid` con el identificador de la familia de la sesión (`FamilyId` del token de renovación); `JwtAccessTokenIssuer` lo emite en el login y en cada renovación. Un token emitido antes de este cambio no lo trae: en ese caso se revocan todas las sesiones, la actual incluida, y hay que iniciar sesión de nuevo.
+- **Al cambiar**: se guarda el hash de la nueva contraseña, se revocan (`RevokedAt`) los tokens de renovación activos de las demás sesiones (la actual se conserva) y se envía el aviso por correo. Los tokens de acceso ya emitidos de las otras sesiones siguen valiendo hasta su vencimiento (`Authentication:AccessToken:LifetimeMinutes`), como en el restablecimiento.
+- **Sin registros sensibles**: las contraseñas nunca se escriben en logs ni en auditoría (`EntityAuditing` solo fija fechas y la eliminación lógica). Un fallo de validación devuelve los mensajes, no los valores.
+- **Intentos fallidos**: una contraseña actual incorrecta no suma al bloqueo temporal del inicio de sesión (así un token robado no puede bloquear al dueño), pero sí al límite de frecuencia, que se aplica por usuario (o por IP si no hay usuario) con la política `PasswordChange`. Por eso `UseRateLimiter` va después de `UseAuthentication`.
+- **Correo**: plantilla `PasswordChanged` (`es` y `en`, idioma del usuario o `Accept-Language`), sin enlace. Un fallo del envío se registra en el log pero no cambia la respuesta.
+
+| Configuración | Detalle |
+|---|---|
+| `RateLimiting:PasswordChange:PermitLimit` / `WindowSeconds` | Solicitudes permitidas por usuario y duración de la ventana; 5 por 600 segundos por defecto (1000 en Pruebas). |
+
+`Domain.Tests/Users/UserChangePasswordTests`, `Application.Tests/Users/ChangePasswordTests` y `ChangePasswordRequestValidatorTests`, `Infrastructure.Tests/Security/JwtAccessTokenIssuerTests`, `API.Tests/Registration/PasswordChangeTests` y `API.Tests/Security/AccessTokenValidationTests` prueban el flujo sin base de datos. No requiere migración.
 
 ### Conciliación periódica de suscripciones
 

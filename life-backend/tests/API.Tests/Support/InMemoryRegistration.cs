@@ -51,6 +51,11 @@ public sealed class InMemoryUserRepository : IUserRepository
         return Task.FromResult(user);
     }
 
+    public Task<User?> FindByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_usersByEmail.Values.FirstOrDefault(user => user.Id == id));
+    }
+
     public void AddLoginAttempt(LoginAttempt attempt)
     {
         _loginAttempts.Enqueue(attempt);
@@ -158,7 +163,7 @@ public sealed class CapturingEmailSender : IEmailSender
     {
         var token = message.Values.TryGetValue(EmailValueKeys.Code, out var code)
             ? code
-            : message.Values[EmailValueKeys.Link];
+            : message.Values.GetValueOrDefault(EmailValueKeys.Link, string.Empty);
 
         _sent.Enqueue((message.To, token));
 

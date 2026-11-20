@@ -1,4 +1,5 @@
 using FluentValidation;
+using Life.API.Authorization;
 using Life.API.Extensions;
 using Life.Application.Users;
 using Microsoft.AspNetCore.Authorization;
@@ -182,6 +183,44 @@ public class AuthController(IConfiguration configuration) : ApiControllerBase
         }
 
         return NoContent();
+    }
+
+    [HttpPost("change-password")]
+    [EnableRateLimiting(ApiServiceCollectionExtensions.PasswordChangeRateLimitPolicy)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangePasswordRequest request,
+        [FromServices] ChangePassword changePassword,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        if (userId is null)
+        {
+            return Problem(title: "La sesión no es válida.", statusCode: StatusCodes.Status401Unauthorized);
+        }
+
+        var outcome = await changePassword.ExecuteAsync(
+            userId.Value,
+            User.GetSessionId(),
+            request,
+            Request.GetPreferredLocale(),
+            cancellationToken);
+
+        return outcome switch
+        {
+            ChangePasswordOutcome.Changed => NoContent(),
+            ChangePasswordOutcome.CurrentPasswordIncorrect => Problem(
+                title: "La contraseña actual no es correcta.",
+                statusCode: StatusCodes.Status400BadRequest),
+            ChangePasswordOutcome.NewPasswordSameAsCurrent => Problem(
+                title: "La nueva contraseña debe ser distinta de la actual.",
+                statusCode: StatusCodes.Status400BadRequest),
+            _ => Problem(title: "La sesión no es válida.", statusCode: StatusCodes.Status401Unauthorized),
+        };
     }
 }
 
