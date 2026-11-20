@@ -1,3 +1,4 @@
+using Life.Domain.Sync;
 using Life.Domain.Users;
 using Life.Domain.Workspaces;
 using Life.Persistence.Auditing;
@@ -30,6 +31,8 @@ public class LifeDbContext(
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
 
     public DbSet<WorkspaceInvitation> WorkspaceInvitations => Set<WorkspaceInvitation>();
+
+    public DbSet<SyncOperationLog> SyncOperationLogs => Set<SyncOperationLog>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {

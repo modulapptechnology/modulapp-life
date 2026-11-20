@@ -63,6 +63,7 @@ public class MigrationsTests : IAsyncLifetime
                 "LoginAttempts",
                 "PasswordResetTokens",
                 "RefreshTokens",
+                "SyncOperationLogs",
                 "Users",
                 "WorkspaceInvitations",
                 "WorkspaceMembers",

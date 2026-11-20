@@ -80,3 +80,22 @@ Accept: application/json
 GET {{API_HostAddress}}/api/v1/house
 Origin: http://localhost:5173
 Accept: application/json
+
+### Synchronize a workspace (send the operations and receive the changes after the cursor)
+POST {{API_HostAddress}}/api/v1/workspaces/<workspaceId>/sync
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{
+  "cursor": null,
+  "pageSize": 100,
+  "operations": [
+    {
+      "operationId": "6f1c7a52-5f3e-4a39-9d52-0d6a2a7a1c01",
+      "entityType": "task",
+      "entityId": "0b5d3c3e-2a1f-4c53-8f1e-3c5c9f3a7e02",
+      "kind": "Create",
+      "payload": { "title": "Buy milk" }
+    }
+  ]
+}

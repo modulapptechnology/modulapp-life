@@ -268,6 +268,29 @@ Todas las claves foráneas son obligatorias, con borrado `Restrict` e índice, y
 - **Casos de uso**: `ListWorkspaces`, `GetWorkspace`, `UpdateWorkspace` y `ArchiveWorkspace` (`Application/Workspaces`); `IWorkspaceRepository` agrega `FindAsync` (con seguimiento, para editar), `FindByMemberAsync` y `ListByMemberAsync` (proyecciones sin seguimiento que incluyen el rol del usuario).
 - **Pruebas**: `UpdateWorkspaceTests`, `ArchiveWorkspaceTests` y `UpdateWorkspaceRequestValidatorTests` (`Application.Tests`) y `WorkspaceQueryAndEditTests` de la API con repositorio en memoria (sin base de datos).
 
+### Sincronización incremental e idempotente
+
+`SyncController` expone `POST /api/v1/workspaces/{workspaceId}/sync`, que usa la política `WorkspaceMember` (sin sesión `401`; espacio ajeno `404`). En una sola llamada el cliente envía un lote de operaciones y recibe los cambios del servidor posteriores a su último punto de sincronización. La resolución de conflictos no forma parte de este endpoint.
+
+Cuerpo de la petición (`SyncRequest`):
+
+| Campo | Descripción |
+|---|---|
+| `cursor` | Punto de sincronización devuelto por la respuesta anterior. Vacío o ausente: desde el principio. Un valor inválido responde `400`. |
+| `pageSize` | Cambios por página, de 1 a 200 (100 por defecto). |
+| `operations` | Hasta 100 operaciones. Cada una lleva `operationId` (GUID generado por el cliente), `entityType`, `entityId` (GUID del registro), `kind` (`Create`, `Update` o `Delete`) y `payload` (objeto, obligatorio salvo en `Delete`). |
+
+Respuesta (`SyncResponse`): `results` (una confirmación por operación, en el mismo orden: `operationId`, `status` `Applied` o `Rejected` y `errorCode`), `changes` (`entityType`, `entityId`, `isDeleted`, `rowVersion` y `data`, nulo en las eliminaciones), `nextCursor` y `hasMore`. Mientras `hasMore` sea `true` el cliente repite la llamada con `nextCursor`.
+
+- **Punto de sincronización**: es el `RowVersion` de la fila, que SQL Server incrementa en toda la base en cada cambio y que `SyncCursor` serializa en base64 (8 bytes). Cada llamada devuelve las filas con una versión mayor que el cursor, ordenadas por versión. Las eliminaciones lógicas se incluyen con `isDeleted: true` porque la consulta usa `IgnoreQueryFilters()`.
+- **Idempotencia**: cada operación procesada se guarda en `SyncOperationLogs` (entidad `SyncOperationLog`) con su resultado; un índice único sobre `(WorkspaceId, UserId, OperationId)` impide procesarla dos veces. Reenviar una operación devuelve el resultado original sin reejecutarla, también dentro del mismo lote y ante dos peticiones simultáneas (la segunda recibe el resultado guardado). Una operación rechazada también queda registrada: para reintentarla corregida se usa un `operationId` nuevo.
+- **Unicidad de registros**: la clave primaria `Id` de `BaseEntity` impide identificadores de registro repetidos; la base rechaza la inserción duplicada.
+- **Aislamiento**: el espacio sale de la ruta y `SyncContext` lo pasa a cada manejador, que solo puede leer y escribir en ese espacio. La política exige ser miembro.
+- **Tipos de registro**: cada tipo se sincroniza con un `ISyncEntityHandler` (`Application/Sync`) registrado en `AddPersistence`; `SynchronizeChanges` reparte las operaciones por `entityType` y combina los cambios de todos los manejadores en orden de versión. Un tipo sin manejador responde `Rejected` con `unsupported_entity_type`. Hoy solo existe `workspace` (`WorkspaceSyncHandler`), de solo lectura: devuelve los cambios del espacio y rechaza las operaciones con `read_only`. Los módulos nuevos registran su manejador siguiendo ese contrato.
+- **Conflictos de versión**: si un manejador provoca un `ConcurrencyConflictException`, la operación responde `Rejected` con `version_conflict` y no se registra.
+- **Migración**: `AddSyncOperationLogs` crea la tabla con claves foráneas `Restrict` y `CHECK` en `Kind` y `Status`.
+- **Pruebas**: `SynchronizeChangesTests`, `SyncRequestValidatorTests` y `SyncCursorTests` (`Application.Tests`); `SyncPersistenceTests` (`Infrastructure.Tests`, con la base de pruebas) y `SyncFlowTests` (`Flows.Tests`).
+
 ### Registro con correo y contraseña
 
 `AuthController` expone el registro y la confirmación del correo. Los casos de uso son `RegisterUser` y `VerifyEmail` (`Application/Users`); `AddInfrastructure(configuration)` registra el hash, el generador de tokens y el envío de correo, y `AddPersistence` el `IUserRepository`.
