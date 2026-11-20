@@ -14,6 +14,8 @@ public static class DependencyInjection
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddScoped<RegisterUser>();
         services.TryAddScoped<VerifyEmail>();
+        services.TryAddScoped<RequestPasswordReset>();
+        services.TryAddScoped<ResetPassword>();
         services.TryAddScoped<SessionIssuer>();
         services.TryAddScoped<LoginUser>();
         services.TryAddScoped<RefreshSession>();

@@ -30,6 +30,26 @@ public sealed class EmailTemplateRenderer
                 "{code}",
                 string.Empty,
                 "The code can be used only once and expires in {minutes} minutes.")),
+        [(EmailTemplate.PasswordReset, "es")] = new RenderedEmail(
+            "Recupera el acceso a tu cuenta",
+            string.Join(
+                _newLine,
+                "Recibimos una solicitud para restablecer tu contraseña. Abre este enlace para elegir una nueva:",
+                string.Empty,
+                "{link}",
+                string.Empty,
+                "El enlace se puede usar una sola vez y vence en {minutes} minutos.",
+                "Si no fuiste tú, ignora este mensaje: tu contraseña no cambiará.")),
+        [(EmailTemplate.PasswordReset, "en")] = new RenderedEmail(
+            "Recover access to your account",
+            string.Join(
+                _newLine,
+                "We received a request to reset your password. Open this link to choose a new one:",
+                string.Empty,
+                "{link}",
+                string.Empty,
+                "The link can be used only once and expires in {minutes} minutes.",
+                "If it was not you, ignore this message: your password will not change.")),
     };
 
     public static string ResolveLanguage(string? locale)

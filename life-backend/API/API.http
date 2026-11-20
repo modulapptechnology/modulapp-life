@@ -44,6 +44,23 @@ Content-Type: application/json
   "code": "123456"
 }
 
+### Request the password recovery (always 202, whether or not the email exists)
+POST {{API_HostAddress}}/api/v1/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "person@example.com"
+}
+
+### Set the new password (token from the link in the recovery email)
+POST {{API_HostAddress}}/api/v1/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "<token-from-the-email-link>",
+  "newPassword": "NewPassword123"
+}
+
 ### CORS disallowed origin
 GET {{API_HostAddress}}/api/v1/house
 Origin: http://disallowed-origin.example

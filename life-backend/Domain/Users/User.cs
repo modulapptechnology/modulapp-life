@@ -50,6 +50,18 @@ public class User : BaseEntity
         LockedUntil = null;
     }
 
+    public void ResetPassword(string passwordHash, DateTime now)
+    {
+        PasswordHash = passwordHash;
+        FailedLoginAttempts = 0;
+        LockedUntil = null;
+
+        if (EmailVerifiedAt is null)
+        {
+            VerifyEmail(now);
+        }
+    }
+
     public void VerifyEmail(DateTime verifiedAt)
     {
         EmailVerifiedAt = verifiedAt;

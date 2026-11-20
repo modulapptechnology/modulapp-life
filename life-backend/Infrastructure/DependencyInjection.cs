@@ -27,6 +27,7 @@ public static class DependencyInjection
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.AddSingleton(BuildEmailVerificationOptions(configuration));
+        services.AddSingleton(BuildPasswordRecoveryOptions(configuration));
         services.AddSingleton(BuildSmtpOptions(configuration));
         services.AddSingleton(BuildLoginOptions(configuration));
         services.AddSingleton(BuildAccessTokenOptions(configuration));
@@ -143,6 +144,30 @@ public static class DependencyInjection
         }
 
         return new EmailVerificationOptions(lifetime);
+    }
+
+    private static PasswordRecoveryOptions BuildPasswordRecoveryOptions(IConfiguration configuration)
+    {
+        var section = configuration.GetSection(PasswordRecoveryOptions.SectionName);
+        var minutes = ReadPositiveNumber(
+            section,
+            PasswordRecoveryOptions.TokenLifetimeMinutesKey,
+            (int)PasswordRecoveryOptions.DefaultTokenLifetime.TotalMinutes);
+        var resetUrl = section[PasswordRecoveryOptions.ResetUrlKey];
+
+        if (string.IsNullOrWhiteSpace(resetUrl))
+        {
+            resetUrl = PasswordRecoveryOptions.DefaultResetUrl;
+        }
+        else if (!Uri.TryCreate(resetUrl, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new InvalidOperationException(
+                $"The setting '{section.Path}:{PasswordRecoveryOptions.ResetUrlKey}' must be an absolute "
+                    + $"http or https URL, but was '{resetUrl}'.");
+        }
+
+        return new PasswordRecoveryOptions(TimeSpan.FromMinutes(minutes), resetUrl);
     }
 
     private static LoginOptions BuildLoginOptions(IConfiguration configuration)
