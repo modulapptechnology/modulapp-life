@@ -279,14 +279,16 @@ Todas las claves foráneas son obligatorias, con borrado `Restrict` e índice, y
 
 - **Política de contraseña** (`RegisterUserRequestValidator`): de 10 a 128 caracteres, con al menos una mayúscula, una minúscula y un número. La contraseña nunca se guarda ni se devuelve: se almacena solo el hash PBKDF2-SHA256 con sal aleatoria y 600 000 iteraciones (`Pbkdf2PasswordHasher`, formato `PBKDF2-SHA256$<iteraciones>$<sal>$<hash>`).
 - **Código de verificación**: código numérico de 6 dígitos generado con un generador criptográfico, de un solo uso. En `EmailVerificationTokens` solo se guarda su hash SHA-256 (`TokenHash`), con `ExpiresAt`, `UsedAt` y `FailedAttempts`. Como un código de 6 dígitos tiene pocas combinaciones, el código vence a los 15 minutos y se invalida tras 5 intentos fallidos (`EmailVerificationToken.MaxFailedAttempts`); el hash no protege el código si se filtra la base, lo protegen la vigencia corta y el tope de intentos. El usuario queda `Pending` hasta confirmar; un usuario `Blocked` conserva su estado y solo registra `EmailVerifiedAt`.
-- **Correo**: se envía después de confirmar la transacción. Si el envío falla se registra el error (sin el correo ni el código en el mensaje) y el registro igual responde `201`; reenviar el código no forma parte de este cambio y, si el código vence o agota los intentos, hay que registrar otro correo.
+- **Correo**: se envía después de confirmar la transacción. Si el envío falla, tras los reintentos (ver "Correo transaccional") se registra el error (sin el correo ni el código en el mensaje) y el registro igual responde `201`; reenviar el código no forma parte de este cambio y, si el código vence o agota los intentos, hay que registrar otro correo.
+- **Idioma del correo**: el registro lee el encabezado `Accept-Language` (`HttpRequestExtensions.GetPreferredLocale`, el idioma de mayor calidad, hasta 35 caracteres), lo guarda en `Users.Locale` y envía el correo en ese idioma.
 - **Límite de frecuencia**: política `Registration` de ASP.NET Core, ventana fija por IP, que aplican los dos endpoints. Detrás de un proxy hay que configurar los encabezados reenviados para que la IP sea la del cliente.
 
 | Configuración | Detalle |
 |---|---|
 | `EmailVerification:TokenLifetimeMinutes` | Vigencia del código; 15 minutos por defecto. |
-| `Email:Provider` | `Smtp` (por defecto, y el valor en Desarrollo) o `Log`. `Log` solo escribe el código en el log y se usa en Pruebas; no se usa en Desarrollo ni en Producción. |
-| `Email:Smtp:Host`, `Port` (587), `EnableSsl` (`true`), `UserName`, `Password`, `FromAddress` | Servidor SMTP. En Desarrollo `Host`, `Port` y `EnableSsl` ya apuntan a Gmail en `appsettings.Development.json`. `UserName`, `Password` y `FromAddress` van en `user-secrets` o variables de entorno (`Email__Smtp__Password`), nunca en archivos versionados. |
+| `Email:Provider` | `Smtp` (por defecto, y el valor en Desarrollo) o `Log`. `Log` no entrega nada: solo registra el envío con la dirección enmascarada, sin código ni contenido, y se usa en Pruebas; no se usa en Desarrollo ni en Producción. |
+| `Email:Smtp:Host`, `Port` (587), `EnableSsl` (`true`), `UserName`, `Password`, `FromAddress`, `FromName` (opcional) | Servidor SMTP y remitente. En Desarrollo `Host`, `Port` y `EnableSsl` ya apuntan a Gmail en `appsettings.Development.json`. `UserName`, `Password` y `FromAddress` van en `user-secrets` o variables de entorno (`Email__Smtp__Password`), nunca en archivos versionados. |
+| `Email:Retry:MaxAttempts` / `InitialDelayMilliseconds` | Intentos totales de envío y espera inicial; 3 intentos y 500 ms por defecto. La espera se duplica en cada reintento. |
 | `RateLimiting:Registration:PermitLimit` / `WindowSeconds` | Intentos permitidos por IP y duración de la ventana; 5 por 600 segundos por defecto (1000 en Pruebas). |
 
 #### Correo en Desarrollo
@@ -299,7 +301,20 @@ dotnet user-secrets set "Email:Smtp:Password" "<contraseña de aplicación de Gm
 dotnet user-secrets set "Email:Smtp:FromAddress" "<correo Gmail de la empresa>" --project API
 ```
 
-Gmail exige una contraseña de aplicación (con la verificación en dos pasos activada en la cuenta), no la contraseña normal. Sin esos valores el registro responde `201` igual, pero el envío falla y el error queda en la consola de la API (`The verification email for user ... could not be sent`). Para no enviar correos reales basta con `dotnet user-secrets set "Email:Provider" "Log" --project API`: el código se escribe en la consola (`Verification code for <correo>: <código>`).
+Gmail exige una contraseña de aplicación (con la verificación en dos pasos activada en la cuenta), no la contraseña normal. Sin esos valores el registro responde `201` igual, pero el envío falla y el error queda en la consola de la API (`The verification email for user ... could not be sent`). Para no enviar correos reales basta con `dotnet user-secrets set "Email:Provider" "Log" --project API`: la consola solo muestra que hubo un envío (`Email to p***@dominio was not delivered ...`); el código no se escribe en ningún registro.
+
+#### Correo transaccional
+
+El envío de correo es común a todos los casos de uso (verificación hoy; recuperación de acceso e invitaciones después):
+
+| Pieza | Capa | Función |
+|---|---|---|
+| `IEmailSender`, `EmailMessage`, `EmailTemplate`, `EmailValueKeys` | `Application/Email` | Contrato: el caso de uso indica destinatario, plantilla, valores e idioma; no conoce el proveedor. |
+| `EmailTemplateRenderer` | `Infrastructure/Email` | Resuelve asunto y cuerpo por plantilla e idioma (`es` y `en`; cualquier otro idioma o ninguno usa `es`) y reemplaza los marcadores `{code}`, `{minutes}`. Una plantilla nueva se agrega a su catálogo y a `EmailTemplate`. |
+| `RetryingEmailSender` | `Infrastructure/Email` | Implementa `IEmailSender`: renderiza, envía y reintenta con espera creciente. Un error de configuración (`InvalidOperationException`) o una cancelación no se reintentan. Tras el último intento relanza el error. |
+| `IEmailTransport`: `SmtpEmailTransport`, `LoggingEmailTransport` | `Infrastructure/Email` | Entrega según `Email:Provider`. Un proveedor nuevo implementa `IEmailTransport` y se agrega en `AddInfrastructure`. |
+
+El fallo de envío no revierte la operación de negocio: el caso de uso captura el error y sigue (ver `RegisterUser`). Los registros solo llevan la plantilla, la dirección enmascarada (`p***@dominio`), el número de intento y el tipo de excepción, nunca el contenido ni el código. Para comprobar el envío real basta registrar un usuario con `Email:Provider` en `Smtp` y revisar la bandeja, con `Accept-Language: en` para recibirlo en inglés.
 
 `tests/API.Tests/Registration` prueba los endpoints sin base de datos, con un repositorio en memoria; `Infrastructure.Tests` prueba `UserRepository` contra la base de pruebas.
 

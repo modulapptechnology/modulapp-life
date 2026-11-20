@@ -1,3 +1,4 @@
+using Life.Application.Email;
 using Life.Application.Tests.Support;
 using Life.Application.Users;
 using Life.Domain.Users;
@@ -18,7 +19,7 @@ public class RegisterUserTests
 
     private readonly IVerificationTokenService _tokens = Substitute.For<IVerificationTokenService>();
 
-    private readonly IVerificationEmailSender _sender = Substitute.For<IVerificationEmailSender>();
+    private readonly IEmailSender _sender = Substitute.For<IEmailSender>();
 
     public RegisterUserTests()
     {
@@ -76,11 +77,51 @@ public class RegisterUserTests
     [Fact]
     public async Task ExecuteAsync_WithValidRequest_SendsTheVerificationEmailWithThePlainToken()
     {
+        EmailMessage? sent = null;
+        await _sender.SendAsync(Arg.Do<EmailMessage>(message => sent = message), Arg.Any<CancellationToken>());
         var sut = CreateSut();
 
         await sut.ExecuteAsync(new RegisterUserRequest("person@life.test", "Abcdefgh12"));
 
-        await _sender.Received(1).SendAsync("person@life.test", "plain-token", Arg.Any<CancellationToken>());
+        Assert.Equal(
+            ("person@life.test", EmailTemplate.EmailVerification, "plain-token", "120"),
+            (
+                sent?.To,
+                sent?.Template,
+                sent?.Values[EmailValueKeys.Code],
+                sent?.Values[EmailValueKeys.Minutes]));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithLocale_StoresItInTheUserAndSendsTheEmailInThatLocale()
+    {
+        User? stored = null;
+        await _users.AddAsync(
+            Arg.Do<User>(user => stored = user),
+            Arg.Any<EmailVerificationToken>(),
+            Arg.Any<CancellationToken>());
+        EmailMessage? sent = null;
+        await _sender.SendAsync(Arg.Do<EmailMessage>(message => sent = message), Arg.Any<CancellationToken>());
+        var sut = CreateSut();
+
+        await sut.ExecuteAsync(new RegisterUserRequest("person@life.test", "Abcdefgh12"), "en-US");
+
+        Assert.Equal(("en-US", "en-US"), (stored?.Locale, sent?.Locale));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WithoutLocale_LeavesTheUserLocaleEmpty()
+    {
+        User? stored = null;
+        await _users.AddAsync(
+            Arg.Do<User>(user => stored = user),
+            Arg.Any<EmailVerificationToken>(),
+            Arg.Any<CancellationToken>());
+        var sut = CreateSut();
+
+        await sut.ExecuteAsync(new RegisterUserRequest("person@life.test", "Abcdefgh12"));
+
+        Assert.Null(stored?.Locale);
     }
 
     [Fact]
@@ -93,13 +134,13 @@ public class RegisterUserTests
         var response = await sut.ExecuteAsync(new RegisterUserRequest("person@life.test", "Abcdefgh12"));
 
         Assert.Null(response);
-        await _sender.DidNotReceiveWithAnyArgs().SendAsync(default!, default!, default);
+        await _sender.DidNotReceiveWithAnyArgs().SendAsync(default!, default);
     }
 
     [Fact]
     public async Task ExecuteAsync_WhenTheEmailCannotBeSent_StillReturnsTheCreatedUser()
     {
-        _sender.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _sender.SendAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("SMTP is down")));
         var sut = CreateSut();
 
@@ -111,7 +152,7 @@ public class RegisterUserTests
     [Fact]
     public async Task ExecuteAsync_WhenTheSendIsCancelled_PropagatesTheCancellation()
     {
-        _sender.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _sender.SendAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new OperationCanceledException()));
         var sut = CreateSut();
 

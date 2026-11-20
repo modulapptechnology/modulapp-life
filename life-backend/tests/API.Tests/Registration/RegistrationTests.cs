@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Life.API.Tests.Support;
 using Life.Application.Common;
+using Life.Application.Email;
 using Life.Application.Users;
 using Life.Domain.Users;
 using Microsoft.AspNetCore.TestHost;
@@ -62,7 +63,7 @@ public class RegistrationTests(ApiFactory api)
             builder.ConfigureTestServices(services =>
             {
                 services.AddSingleton<IUserRepository>(users);
-                services.AddSingleton<IVerificationEmailSender>(sender);
+                services.AddSingleton<IEmailSender>(sender);
                 services.AddSingleton<IUnitOfWork, PassThroughUnitOfWork>();
             });
         });

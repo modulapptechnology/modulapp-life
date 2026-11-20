@@ -6,7 +6,8 @@ public sealed record SmtpOptions(
     bool EnableSsl,
     string UserName,
     string Password,
-    string FromAddress)
+    string FromAddress,
+    string FromName = "")
 {
     public const string SectionName = "Email:Smtp";
 

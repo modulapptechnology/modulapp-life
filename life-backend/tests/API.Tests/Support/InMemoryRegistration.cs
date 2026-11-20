@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Life.Application.Common;
+using Life.Application.Email;
 using Life.Application.Users;
 using Life.Domain.Users;
 
@@ -98,15 +99,15 @@ public sealed class InMemoryRefreshTokenRepository(InMemoryUserRepository users)
     }
 }
 
-public sealed class CapturingEmailSender : IVerificationEmailSender
+public sealed class CapturingEmailSender : IEmailSender
 {
     private readonly ConcurrentQueue<(string Email, string Token)> _sent = new();
 
     public IReadOnlyCollection<(string Email, string Token)> Sent => _sent.ToList();
 
-    public Task SendAsync(string email, string token, CancellationToken cancellationToken = default)
+    public Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
-        _sent.Enqueue((email, token));
+        _sent.Enqueue((message.To, message.Values[EmailValueKeys.Code]));
 
         return Task.CompletedTask;
     }
