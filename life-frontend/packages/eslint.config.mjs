@@ -31,7 +31,8 @@ export default defineConfig(
   },
   {
     // @life/icons es el único paquete que reexporta librerías por plataforma.
-    files: ['icons/**/*.ts', 'ui/**/*.{ts,tsx}'],
+    // Las pruebas de hooks de core necesitan un renderizador (@testing-library/react-native).
+    files: ['icons/**/*.ts', 'ui/**/*.{ts,tsx}', 'core/**/*.test.ts'],
     rules: { 'no-restricted-imports': 'off' },
   },
 );

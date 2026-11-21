@@ -70,4 +70,12 @@ describe('moduleRegistry', () => {
 
     expect(registry.getEnabled()).toBe(primera);
   });
+
+  it('devuelve solo los módulos deshabilitados', () => {
+    const registry = createModuleRegistry([TAREAS, AGENDA]);
+
+    registry.setModuleEnabled('agenda', false);
+
+    expect(registry.getDisabled()).toEqual([AGENDA]);
+  });
 });
