@@ -150,6 +150,10 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'menu.quit': 'Salir',
     'shortcuts.title': 'Atajos de teclado',
     'workspace.select': 'Cambiar de espacio',
+    'module.unavailable.title': 'Módulo no disponible',
+    'module.unavailable.description': 'Este módulo está deshabilitado o no existe en tu espacio.',
+    'module.unavailable.back': 'Volver al inicio',
+    'module.notes.label': 'Notas del módulo',
   },
   en: {
     'nav.home': 'Home',
@@ -298,6 +302,11 @@ const dictionaries: Record<Language, Record<string, string>> = {
     'menu.quit': 'Quit',
     'shortcuts.title': 'Keyboard shortcuts',
     'workspace.select': 'Switch workspace',
+    'module.unavailable.title': 'Module not available',
+    'module.unavailable.description':
+      'This module is disabled or does not exist in your workspace.',
+    'module.unavailable.back': 'Back to home',
+    'module.notes.label': 'Module notes',
   },
 };
 

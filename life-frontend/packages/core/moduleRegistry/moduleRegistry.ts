@@ -7,16 +7,15 @@ export type ModuleRegistry = {
   getEnabled: () => ModuleDefinition[];
   getAll: () => ModuleDefinition[];
   subscribe: (listener: () => void) => () => void;
+  getDisabled: () => ModuleDefinition[];
 };
 
-// Registro de módulos: la navegación lee de aquí, así que registrar o habilitar un módulo no toca el layout.
 export function createModuleRegistry(initial: ModuleDefinition[] = []): ModuleRegistry {
   const definitions = new Map<string, ModuleDefinition>();
   const enabledIds = new Set<string>();
   const listeners = new Set<() => void>();
   let enabledSnapshot: ModuleDefinition[] = [];
 
-  // Una instancia nueva solo cuando algo cambia, para que React detecte el cambio.
   function commit() {
     enabledSnapshot = [...definitions.values()].filter((definition) =>
       enabledIds.has(definition.id),
@@ -49,6 +48,8 @@ export function createModuleRegistry(initial: ModuleDefinition[] = []): ModuleRe
       commit();
     },
     getEnabled: () => enabledSnapshot,
+    getDisabled: () =>
+      [...definitions.values()].filter((definition) => !enabledIds.has(definition.id)),
     getAll: () => [...definitions.values()],
     subscribe(listener) {
       listeners.add(listener);
