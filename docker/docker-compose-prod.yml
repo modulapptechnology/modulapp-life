@@ -5,7 +5,7 @@ name: life-prod
 
 services:
   postgres:
-    image: postgres:17
+    image: postgres:16
     restart: unless-stopped
     environment:
       POSTGRES_DB: ModulLifeProd

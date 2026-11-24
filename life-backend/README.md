@@ -149,7 +149,7 @@ Todo lo de Docker vive en la carpeta `docker/` de la raíz de `modulapp-life`:
 | `docker/docker-compose-local.yml` | Desarrollo: base de datos, API, web, móvil, escritorio y pruebas |
 | `docker/docker-compose-prod.yml` | Producción: base de datos, API y web compilados |
 | `docker/backend/Dockerfile` | Imagen de la API (etapas `build`, `test` y `runtime`) |
-| `docker/frontend/Dockerfile` | Imágenes del frontend (etapas `web-dev`, `mobile-dev`, `test`, `desktop-check` y `web`) |
+| `docker/frontend/Dockerfile` | Imágenes del frontend (etapas `web-dev`, `mobile-dev`, `test`, `desktop-gui`, `desktop-check` y `web`) |
 | `docker/web/nginx.conf` | Servidor de la web de producción |
 | `docker/.env.example` | Plantilla de variables (se copia a `docker/.env`, que no se versiona) |
 
@@ -159,16 +159,17 @@ Requisito: Docker Desktop (o Docker Engine con el plugin Compose).
 
 | Servicio | Qué hace | Puerto |
 |---|---|---|
-| `postgres` | PostgreSQL 17 con la base `ModulLifeDev` (volumen `postgres-data`) | `5432` |
+| `postgres` | PostgreSQL 16 con la base `ModulLifeDev` (volumen `postgres-data`) | `5432` |
 | `migrations` | Aplica las migraciones de EF Core a la base (`dotnet ef database update`) y termina; la `api` espera a que termine bien | — |
 | `api` | La API en Desarrollo, con Swagger UI en `/swagger` | `5187` |
 | `web` | La web con Vite | `5173` |
-| `mobile` | El servidor de Expo para la app móvil | `8081` |
-| `desktop` | Comprueba el TypeScript del escritorio (`typecheck` y `lint`); la ventana nativa de Tauri necesita una sesión de escritorio y no corre en un contenedor | — |
+| `mobile` | El servidor de Expo para la app móvil; el QR sale en su log (en `docker/.env`, `HOST_IP` debe ser la IP de la PC en la red para abrirlo desde un celular) | `8081` |
+| `desktop` | La ventana de Tauri en una pantalla virtual que se ve en el navegador (`http://localhost:6080/vnc.html?autoconnect=1&resize=scale`); la primera vez compila Rust (unos 10 minutos) y los volúmenes `desktop-target` y `cargo-registry` guardan lo compilado | `6080` |
+| `desktop-check` | Comprueba el TypeScript del escritorio (`typecheck` y `lint`) y termina | — |
 | `tests-backend` | Pruebas unitarias del backend (`Life.Domain.Tests` y `Life.Application.Tests`) | — |
 | `tests-frontend` | Pruebas del frontend (`npm test`: móvil, web, escritorio y paquetes) | — |
 
-Los servicios `migrations`, `desktop`, `tests-backend` y `tests-frontend` terminan al acabar; los demás quedan en ejecución. Las migraciones son las de `Persistence/Migrations`: mientras EF Core use el proveedor de SQL Server, `migrations` falla contra PostgreSQL y la `api` no inicia; el cambio de proveedor y de las migraciones se hace aparte. En producción las migraciones no se aplican automáticamente. Las pruebas de integración y de flujos críticos (`API.Tests`, `Infrastructure.Tests`, `Flows.Tests`) no se ejecutan aquí porque usan una base SQL Server de pruebas.
+Los servicios `migrations`, `desktop-check`, `tests-backend` y `tests-frontend` terminan al acabar; los demás quedan en ejecución. Las migraciones son las de `Persistence/Migrations`: mientras EF Core use el proveedor de SQL Server, `migrations` falla contra PostgreSQL y la `api` no inicia; el cambio de proveedor y de las migraciones se hace aparte. En producción las migraciones no se aplican automáticamente. Las pruebas de integración y de flujos críticos (`API.Tests`, `Infrastructure.Tests`, `Flows.Tests`) no se ejecutan aquí porque usan una base SQL Server de pruebas.
 
 ### Variables
 

@@ -2,7 +2,7 @@ name: life-local
 
 services:
   postgres:
-    image: postgres:17
+    image: postgres:16
     container_name: life-postgres
     environment:
       POSTGRES_DB: ModulLifeDev
@@ -57,6 +57,11 @@ services:
       dockerfile: docker/frontend/Dockerfile
       target: mobile-dev
     container_name: life-mobile
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
+    # Expo only prints the QR code when it runs in an interactive terminal.
+    tty: true
+    stdin_open: true
     environment:
       REACT_NATIVE_PACKAGER_HOSTNAME: ${HOST_IP:-localhost}
       EXPO_PUBLIC_API_URL: http://${HOST_IP:-localhost}:5187
@@ -80,8 +85,27 @@ services:
     build:
       context: ..
       dockerfile: docker/frontend/Dockerfile
-      target: desktop-check
+      target: desktop-gui
     container_name: life-desktop
+    # Docker has no IPv6 route: without this, the downloads (crates.io) try IPv6 first and fail.
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
+    # The app picks Spanish or English from the system locale (Intl): the container has none by default.
+    environment:
+      LANG: es_ES.UTF-8
+      LC_ALL: es_ES.UTF-8
+    ports:
+      - "6080:6080"
+    volumes:
+      - desktop-target:/app/apps/desktop/src-tauri/target
+      - cargo-registry:/root/.cargo/registry
+
+  desktop-check:
+    build:
+      context: ..
+      dockerfile: docker/frontend/Dockerfile
+      target: desktop-check
+    container_name: life-desktop-check
     restart: "no"
 
   tests-backend:
@@ -102,3 +126,5 @@ services:
 
 volumes:
   postgres-data:
+  desktop-target:
+  cargo-registry:
