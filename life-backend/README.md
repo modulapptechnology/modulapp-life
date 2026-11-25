@@ -1,6 +1,6 @@
 # life-backend
 
-API de ModulApp Life (.NET 10, Clean Architecture, EF Core + SQL Server).
+API de ModulApp Life (.NET 10, Clean Architecture, EF Core + PostgreSQL).
 
 ## Estructura de capas
 
@@ -11,7 +11,7 @@ La solución es `life-backend.slnx` y contiene cinco proyectos de producción, m
 | `Domain` | Entidades y reglas de negocio | Ninguno |
 | `Application` | Casos de uso e interfaces que implementan las capas externas | `Domain` |
 | `Infrastructure` | Servicios externos (correo, archivos, integraciones) | `Application`, `Domain` |
-| `Persistence` | Acceso a datos con EF Core y SQL Server | `Application`, `Domain` |
+| `Persistence` | Acceso a datos con EF Core y PostgreSQL | `Application`, `Domain` |
 | `API` | Endpoints HTTP y punto de entrada | `Application`, `Infrastructure`, `Persistence` |
 
 ### Regla de dependencias
@@ -169,7 +169,7 @@ Requisito: Docker Desktop (o Docker Engine con el plugin Compose).
 | `tests-backend` | Pruebas unitarias del backend (`Life.Domain.Tests` y `Life.Application.Tests`) | — |
 | `tests-frontend` | Pruebas del frontend (`npm test`: móvil, web, escritorio y paquetes) | — |
 
-Los servicios `migrations`, `desktop-check`, `tests-backend` y `tests-frontend` terminan al acabar; los demás quedan en ejecución. Las migraciones son las de `Persistence/Migrations`: mientras EF Core use el proveedor de SQL Server, `migrations` falla contra PostgreSQL y la `api` no inicia; el cambio de proveedor y de las migraciones se hace aparte. En producción las migraciones no se aplican automáticamente. Las pruebas de integración y de flujos críticos (`API.Tests`, `Infrastructure.Tests`, `Flows.Tests`) no se ejecutan aquí porque usan una base SQL Server de pruebas.
+Los servicios `migrations`, `desktop-check`, `tests-backend` y `tests-frontend` terminan al acabar; los demás quedan en ejecución. Las migraciones son las de `Persistence/Migrations`: EF Core ya usa el proveedor de PostgreSQL, pero las migraciones existentes se generaron para SQL Server (por eso `Persistence` conserva el paquete de SQL Server, solo para compilarlas): mientras no se regeneren para PostgreSQL, `migrations` falla y la `api` no inicia. En producción las migraciones no se aplican automáticamente. Las pruebas de integración y de flujos críticos (`API.Tests`, `Infrastructure.Tests`, `Flows.Tests`) no se ejecutan aquí porque usan una base SQL Server de pruebas.
 
 ### Variables
 
@@ -214,7 +214,7 @@ dotnet user-secrets set "ConnectionStrings:Default" "Host=localhost;Port=5432;Da
 - `http://localhost:5187/swagger` abre Swagger UI (el documento está en `/openapi/v1.json`).
 - `GET http://localhost:5187/house/database` (con el `accessToken` en la cabecera `Authorization: Bearer`) responde `200` con `{"database":"ModulLifeDev","status":"connected"}` cuando la API alcanza PostgreSQL, y `500` si no puede.
 
-Esta configuración levanta los servicios y comprueba la conexión desde la API; el acceso de EF Core a PostgreSQL y las migraciones se configuran aparte.
+Esta configuración levanta los servicios y comprueba la conexión desde la API; el acceso de EF Core a PostgreSQL se describe en "Acceso a la base de datos"; las migraciones para PostgreSQL se configuran aparte.
 
 ### Ampliar los servicios
 
@@ -222,7 +222,7 @@ Cuando el proyecto necesite otro servicio (caché, cola de mensajes, correo de p
 
 ## Acceso a la base de datos
 
-`Persistence` accede a SQL Server con EF Core (`Microsoft.EntityFrameworkCore.SqlServer`). `AddPersistence(configuration)` registra `LifeDbContext` con tiempo de vida Scoped y la cadena `ConnectionStrings:Default` del ambiente (ver "Variables de entorno y secretos"). La cadena nunca se versiona. Si falta, el error se produce al pedir el `DbContext` por primera vez, con un mensaje que indica dónde configurarla; la API no falla al arrancar. El modelo de datos de los módulos se agrega después en `Persistence`.
+`Persistence` accede a PostgreSQL con EF Core (`Npgsql.EntityFrameworkCore.PostgreSQL`). `AddPersistence(configuration)` registra `LifeDbContext` con tiempo de vida Scoped y la cadena `ConnectionStrings:Default` del ambiente (ver "Variables de entorno y secretos"). La cadena nunca se versiona. Si falta, el error se produce al pedir el `DbContext` por primera vez, con un mensaje que indica dónde configurarla; la API no falla al arrancar. El modelo de datos de los módulos se agrega después en `Persistence`.
 
 ### Base común de persistencia
 
@@ -501,17 +501,17 @@ En `Users`, `CK_Users_Status` limita `Status` a los valores de `UserStatus`; la 
 
 ### Resiliencia ante fallos transitorios
 
-El `DbContext` usa `EnableRetryOnFailure`: ante un error transitorio de conexión reintenta hasta **6 veces**, con una espera máxima de **30 segundos** entre intentos (`DependencyInjection.MaxRetryCount` y `MaxRetryDelay` en `Persistence`). Un error que no es transitorio (credenciales inválidas, base inexistente) falla de inmediato sin reintentar. Para cambiar la política se modifican esas dos constantes.
+El `DbContext` usa `EnableRetryOnFailure`: ante un error transitorio de conexión (los que Npgsql reconoce como transitorios: red caída, servidor reiniciándose o sin conexiones libres) reintenta hasta **6 veces**, con una espera máxima de **30 segundos** entre intentos (`DependencyInjection.MaxRetryCount` y `MaxRetryDelay` en `Persistence`). Un error que no es transitorio (credenciales inválidas, base inexistente) falla de inmediato sin reintentar. Para cambiar la política se modifican esas dos constantes.
 
 ### Usuario de aplicación de privilegios mínimos
 
-En cada ambiente la API se conecta con un usuario propio, no con `sa` ni con una cuenta administradora. Ese usuario solo lee y escribe datos (`db_datareader` y `db_datawriter`); no es `sysadmin`, `dbcreator` ni `db_owner` y no puede cambiar el esquema. El script `Persistence/Scripts/create-application-user.sql` lo crea. Lo ejecuta una persona con una cuenta administradora, una vez por ambiente y con la base ya creada; la API nunca lo ejecuta. Desde `life-backend`, solo en tu base local:
+En cada ambiente la API se conecta con un usuario propio, no con `postgres` ni con una cuenta administradora. Ese rol puede iniciar sesión y solo lee y escribe datos (`SELECT`, `INSERT`, `UPDATE` y `DELETE` sobre las tablas del esquema `public`, y uso de sus secuencias); no es superusuario y no puede crear bases, roles ni objetos, así que no cambia el esquema. El script `Persistence/Scripts/create-application-user.sql` lo crea (es un script de `psql`) y deja esos permisos también para las tablas que creen las migraciones. Lo ejecuta una persona con una cuenta administradora, una vez por ambiente y con la base ya creada; la API nunca lo ejecuta. Recibe tres variables: `app_user`, `app_password` y `database`. Solo en tu base local, contra el contenedor `postgres` (desde `life-backend`):
 
 ```powershell
-sqlcmd -S localhost,1433 -U sa -C -i Persistence/Scripts/create-application-user.sql -v AppUser=life_app AppPassword="<contraseña>" Database=ModulLifeDev
+Get-Content Persistence/Scripts/create-application-user.sql | docker exec -i life-postgres psql -U postgres -d postgres -v app_user=life_app -v app_password="<contraseña>" -v database=ModulLifeDev
 ```
 
-Después se usa ese usuario en la cadena de conexión (`User Id=life_app;Password=<contraseña>`), guardada con `user-secrets`. La contraseña no se escribe en el repositorio. Como las migraciones cambian el esquema, se aplican con otra cuenta con permisos de esquema (en local, la del contenedor).
+Si tienes `psql` instalado, el mismo script se ejecuta con `psql -h localhost -U postgres -d postgres -f Persistence/Scripts/create-application-user.sql -v app_user=life_app -v app_password="<contraseña>" -v database=ModulLifeDev`. Después se usa ese rol en la cadena de conexión (`Username=life_app;Password=<contraseña>`), guardada con `user-secrets`. La contraseña no se escribe en el repositorio. Como las migraciones cambian el esquema, se aplican con otra cuenta con permisos de esquema (en local, la del contenedor).
 
 ## Migraciones de la base de datos
 

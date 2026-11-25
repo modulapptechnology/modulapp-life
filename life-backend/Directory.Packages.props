@@ -17,6 +17,7 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
     <PackageVersion Include="Npgsql" Version="10.0.4" />
+    <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.3.1" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.14" />

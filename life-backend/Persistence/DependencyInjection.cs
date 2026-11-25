@@ -30,12 +30,12 @@ public static class DependencyInjection
                         + "Set it with user-secrets, appsettings.Development.local.json or the "
                         + $"ConnectionStrings__{ConnectionStringName} environment variable.");
 
-            options.UseSqlServer(
+            options.UseNpgsql(
                 connectionString,
-                sqlServer => sqlServer.EnableRetryOnFailure(
+                postgres => postgres.EnableRetryOnFailure(
                     MaxRetryCount,
                     MaxRetryDelay,
-                    errorNumbersToAdd: null));
+                    errorCodesToAdd: null));
         });
 
         services.AddSingleton(BuildVersionHistoryOptions(configuration));

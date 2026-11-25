@@ -10,7 +10,7 @@ namespace Life.API.Tests.Database;
 public class PersistenceRegistrationTests
 {
     private const string _connectionString =
-        "Server=localhost;Database=life_unit;User Id=none;Password=none;TrustServerCertificate=True";
+        "Host=localhost;Database=life_unit;Username=none;Password=none";
 
     private static IConfiguration BuildConfiguration(string? connectionString, string? retentionDays = null)
     {
@@ -45,6 +45,19 @@ public class PersistenceRegistrationTests
         var context = scope.ServiceProvider.GetRequiredService<LifeDbContext>();
 
         Assert.True(context.Database.CreateExecutionStrategy().RetriesOnFailure);
+    }
+
+    [Fact]
+    public void AddPersistence_WithConnectionString_UsesThePostgreSqlProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddPersistence(BuildConfiguration(_connectionString));
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        var context = scope.ServiceProvider.GetRequiredService<LifeDbContext>();
+
+        Assert.Equal("Npgsql.EntityFrameworkCore.PostgreSQL", context.Database.ProviderName);
     }
 
     [Fact]

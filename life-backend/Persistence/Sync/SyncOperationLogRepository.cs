@@ -1,16 +1,12 @@
 using Life.Application.Sync;
 using Life.Domain.Sync;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Life.Persistence.Sync;
 
 public sealed class SyncOperationLogRepository(LifeDbContext context) : ISyncOperationLog
 {
-    private const int _duplicateKeyIndexError = 2601;
-
-    private const int _duplicateKeyConstraintError = 2627;
-
     public Task<SyncOperationLog?> FindAsync(
         Guid workspaceId,
         Guid userId,
@@ -46,9 +42,9 @@ public sealed class SyncOperationLogRepository(LifeDbContext context) : ISyncOpe
 
     private static bool IsDuplicateKey(DbUpdateException exception)
     {
-        return exception.InnerException is SqlException
+        return exception.InnerException is PostgresException
         {
-            Number: _duplicateKeyIndexError or _duplicateKeyConstraintError,
+            SqlState: PostgresErrorCodes.UniqueViolation,
         };
     }
 }

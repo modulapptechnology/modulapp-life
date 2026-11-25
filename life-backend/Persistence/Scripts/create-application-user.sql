@@ -1,23 +1,32 @@
-:on error exit
+\set ON_ERROR_STOP on
 
-USE [master];
-GO
+SELECT format(
+    'CREATE ROLE %I LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
+    :'app_user',
+    :'app_password')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'app_user')
+\gexec
 
-IF NOT EXISTS (SELECT 1 FROM sys.server_principals WHERE name = N'$(AppUser)')
-BEGIN
-    CREATE LOGIN [$(AppUser)] WITH PASSWORD = N'$(AppPassword)', CHECK_POLICY = ON;
-END
-GO
+SELECT format('GRANT CONNECT ON DATABASE %I TO %I', :'database', :'app_user')
+\gexec
 
-USE [$(Database)];
-GO
+\connect :"database"
 
-IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'$(AppUser)')
-BEGIN
-    CREATE USER [$(AppUser)] FOR LOGIN [$(AppUser)];
-END
-GO
+SELECT format('GRANT USAGE ON SCHEMA public TO %I', :'app_user')
+\gexec
 
-ALTER ROLE db_datareader ADD MEMBER [$(AppUser)];
-ALTER ROLE db_datawriter ADD MEMBER [$(AppUser)];
-GO
+SELECT format('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO %I', :'app_user')
+\gexec
+
+SELECT format('GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO %I', :'app_user')
+\gexec
+
+SELECT format(
+    'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I',
+    :'app_user')
+\gexec
+
+SELECT format(
+    'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO %I',
+    :'app_user')
+\gexec

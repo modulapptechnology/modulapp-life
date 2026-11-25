@@ -1,16 +1,12 @@
 using Life.Application.Users;
 using Life.Domain.Users;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Life.Persistence;
 
 public sealed class UserRepository(LifeDbContext context) : IUserRepository
 {
-    private const int _duplicateKeyIndexError = 2601;
-
-    private const int _duplicateKeyConstraintError = 2627;
-
     public async Task AddAsync(
         User user,
         EmailVerificationToken token,
@@ -66,9 +62,9 @@ public sealed class UserRepository(LifeDbContext context) : IUserRepository
 
     private static bool IsDuplicateKey(DbUpdateException exception)
     {
-        return exception.InnerException is SqlException
+        return exception.InnerException is PostgresException
         {
-            Number: _duplicateKeyIndexError or _duplicateKeyConstraintError,
+            SqlState: PostgresErrorCodes.UniqueViolation,
         };
     }
 }
