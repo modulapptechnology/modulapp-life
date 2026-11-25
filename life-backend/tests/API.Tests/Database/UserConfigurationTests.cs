@@ -23,7 +23,7 @@ public class UserConfigurationTests
         var entityType = GetEntityType<User>(context);
 
         Assert.Equal(
-            (true, typeof(Guid), true, "rowversion"),
+            (true, typeof(Guid), true, "bytea"),
             (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType),
                 entityType.FindPrimaryKey()!.Properties.Single().ClrType,
                 entityType.GetDeclaredQueryFilters().Count > 0,
@@ -38,7 +38,7 @@ public class UserConfigurationTests
         var index = GetEntityType<User>(context).GetIndexes()
             .Single(candidate => candidate.Properties.Single().Name == nameof(User.Email));
 
-        Assert.Equal((true, "[IsDeleted] = 0"), (index.IsUnique, index.GetFilter()));
+        Assert.Equal((true, "\"IsDeleted\" = false"), (index.IsUnique, index.GetFilter()));
     }
 
     [Fact]

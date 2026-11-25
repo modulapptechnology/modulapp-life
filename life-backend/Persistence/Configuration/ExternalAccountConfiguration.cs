@@ -24,7 +24,7 @@ public class ExternalAccountConfiguration : IEntityTypeConfiguration<ExternalAcc
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(account => new { account.Provider, account.ProviderUserId })
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = false");
         builder.HasIndex(account => account.UserId);
     }
 }

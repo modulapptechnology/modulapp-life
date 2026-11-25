@@ -31,10 +31,10 @@ public class WorkspaceMemberConfiguration : IEntityTypeConfiguration<WorkspaceMe
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(member => new { member.WorkspaceId, member.UserId })
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = false");
         builder.HasIndex(member => member.WorkspaceId)
             .IsUnique()
-            .HasFilter($"[IsDeleted] = 0 AND [Role] = {(int)WorkspaceRole.Owner}")
+            .HasFilter($"\"IsDeleted\" = false AND \"Role\" = {(int)WorkspaceRole.Owner}")
             .HasDatabaseName(SingleOwnerIndexName);
         builder.HasIndex(member => member.UserId);
     }

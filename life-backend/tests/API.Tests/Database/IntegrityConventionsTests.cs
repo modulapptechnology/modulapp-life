@@ -67,7 +67,7 @@ public class IntegrityConventionsTests
             .FindEntityType(typeof(User))!.GetCheckConstraints().Single();
 
         Assert.Equal(
-            (UserConfiguration.StatusCheckConstraintName, "[Status] IN (0, 1, 2)"),
+            (UserConfiguration.StatusCheckConstraintName, "\"Status\" IN (0, 1, 2)"),
             (constraint.Name, constraint.Sql));
     }
 }

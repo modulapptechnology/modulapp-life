@@ -40,7 +40,7 @@ public class WorkspaceConfigurationTests
             .Single(candidate => candidate.IsUnique && candidate.Properties.Count == 2);
 
         Assert.Equal(
-            ("WorkspaceId,UserId", "[IsDeleted] = 0"),
+            ("WorkspaceId,UserId", "\"IsDeleted\" = false"),
             (string.Join(",", index.Properties.Select(property => property.Name)), index.GetFilter()));
     }
 
@@ -53,7 +53,7 @@ public class WorkspaceConfigurationTests
             .Single(candidate => candidate.GetDatabaseName() == WorkspaceMemberConfiguration.SingleOwnerIndexName);
 
         Assert.Equal(
-            (true, "WorkspaceId", "[IsDeleted] = 0 AND [Role] = 2"),
+            (true, "WorkspaceId", "\"IsDeleted\" = false AND \"Role\" = 2"),
             (index.IsUnique, index.Properties.Single().Name, index.GetFilter()));
     }
 
@@ -86,11 +86,11 @@ public class WorkspaceConfigurationTests
         Assert.Equal(
             new Dictionary<string, string>
             {
-                [WorkspaceConfiguration.TypeCheckConstraintName] = "[Type] IN (0, 1, 2)",
-                [WorkspaceConfiguration.StatusCheckConstraintName] = "[Status] IN (0, 1)",
-                [WorkspaceMemberConfiguration.RoleCheckConstraintName] = "[Role] IN (0, 1, 2)",
-                [WorkspaceInvitationConfiguration.RoleCheckConstraintName] = "[Role] IN (0, 1, 2)",
-                [WorkspaceInvitationConfiguration.StatusCheckConstraintName] = "[Status] IN (0, 1, 2, 3)",
+                [WorkspaceConfiguration.TypeCheckConstraintName] = "\"Type\" IN (0, 1, 2)",
+                [WorkspaceConfiguration.StatusCheckConstraintName] = "\"Status\" IN (0, 1)",
+                [WorkspaceMemberConfiguration.RoleCheckConstraintName] = "\"Role\" IN (0, 1, 2)",
+                [WorkspaceInvitationConfiguration.RoleCheckConstraintName] = "\"Role\" IN (0, 1, 2)",
+                [WorkspaceInvitationConfiguration.StatusCheckConstraintName] = "\"Status\" IN (0, 1, 2, 3)",
             },
             constraints);
     }

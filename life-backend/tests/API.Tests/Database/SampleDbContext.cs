@@ -36,7 +36,7 @@ public sealed class SampleDbContext(DbContextOptions<LifeDbContext> options) : L
 
     public static SampleDbContext Create()
     {
-        var options = new DbContextOptionsBuilder<LifeDbContext>().UseSqlServer(_connectionString).Options;
+        var options = new DbContextOptionsBuilder<LifeDbContext>().UseNpgsql(_connectionString).Options;
 
         return new SampleDbContext(options);
     }

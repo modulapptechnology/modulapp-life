@@ -6,7 +6,7 @@ namespace Life.Persistence.Configuration;
 
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
-    public const string CaseInsensitiveCollation = "SQL_Latin1_General_CP1_CI_AS";
+    public const string CaseInsensitiveCollation = "case_insensitive";
 
     public const int EmailMaxLength = 320;
 
@@ -23,7 +23,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     public const string StatusCheckConstraintName = "CK_Users_Status";
 
     public static readonly string StatusCheckSql =
-        $"[Status] IN ({string.Join(", ", Enum.GetValues<UserStatus>().Select(status => (int)status))})";
+        EnumCheckConstraint.Sql<UserStatus>(nameof(User.Status));
 
     public void Configure(EntityTypeBuilder<User> builder)
     {
@@ -41,6 +41,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.TimeZone).HasMaxLength(TimeZoneMaxLength);
         builder.HasIndex(user => user.Email)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = false");
     }
 }

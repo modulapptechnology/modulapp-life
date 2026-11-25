@@ -44,7 +44,7 @@ public class BaseEntityConfigurationTests
         var rowVersion = GetItemEntityType(context).FindProperty("RowVersion")!;
 
         Assert.Equal(
-            (true, ValueGenerated.OnAddOrUpdate, "rowversion"),
+            (true, ValueGenerated.OnAddOrUpdate, "bytea"),
             (rowVersion.IsConcurrencyToken, rowVersion.ValueGenerated, rowVersion.GetColumnType()));
     }
 
@@ -67,7 +67,7 @@ public class BaseEntityConfigurationTests
 
         var sql = context.Items.ToQueryString();
 
-        Assert.Contains("[IsDeleted]", sql);
+        Assert.Contains("\"IsDeleted\"", sql);
     }
 
     [Fact]

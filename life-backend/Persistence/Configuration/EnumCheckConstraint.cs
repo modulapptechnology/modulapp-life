@@ -12,6 +12,6 @@ public static class EnumCheckConstraint
     {
         var values = Enum.GetValues<TEnum>().Select(value => Convert.ToInt32(value));
 
-        return $"[{column}] IN ({string.Join(", ", values)})";
+        return $"\"{column}\" IN ({string.Join(", ", values)})";
     }
 }

@@ -42,7 +42,7 @@ public class WorkspaceInvitationConfiguration : IEntityTypeConfiguration<Workspa
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(invitation => invitation.TokenHash)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = false");
         builder.HasIndex(invitation => new { invitation.WorkspaceId, invitation.Email });
     }
 }

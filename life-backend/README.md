@@ -169,7 +169,7 @@ Requisito: Docker Desktop (o Docker Engine con el plugin Compose).
 | `tests-backend` | Pruebas unitarias del backend (`Life.Domain.Tests` y `Life.Application.Tests`) | — |
 | `tests-frontend` | Pruebas del frontend (`npm test`: móvil, web, escritorio y paquetes) | — |
 
-Los servicios `migrations`, `desktop-check`, `tests-backend` y `tests-frontend` terminan al acabar; los demás quedan en ejecución. Las migraciones son las de `Persistence/Migrations`: EF Core ya usa el proveedor de PostgreSQL, pero las migraciones existentes se generaron para SQL Server (por eso `Persistence` conserva el paquete de SQL Server, solo para compilarlas): mientras no se regeneren para PostgreSQL, `migrations` falla y la `api` no inicia. En producción las migraciones no se aplican automáticamente. Las pruebas de integración y de flujos críticos (`API.Tests`, `Infrastructure.Tests`, `Flows.Tests`) no se ejecutan aquí porque usan una base SQL Server de pruebas.
+Los servicios `migrations`, `desktop-check`, `tests-backend` y `tests-frontend` terminan al acabar; los demás quedan en ejecución. Las migraciones son las de `Persistence/Migrations`, generadas para PostgreSQL: `migrations` las aplica sobre la base vacía y la `api` arranca cuando termina bien. En producción las migraciones no se aplican automáticamente. Las pruebas de integración y de flujos críticos (`API.Tests`, `Infrastructure.Tests`, `Flows.Tests`) no se ejecutan aquí porque usan una base SQL Server de pruebas.
 
 ### Variables
 
@@ -247,7 +247,7 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 
 | Campo de `User` | Detalle |
 |---|---|
-| `Email` | Obligatorio, hasta 320 caracteres. Se compara sin distinguir mayúsculas (columna con collation `SQL_Latin1_General_CP1_CI_AS`, fija y no depende de la base). Índice único filtrado `[IsDeleted] = 0`: la base rechaza dos usuarios activos con el mismo correo; el de un usuario eliminado lógicamente se puede volver a registrar. |
+| `Email` | Obligatorio, hasta 320 caracteres. Se compara sin distinguir mayúsculas (columna con collation `case_insensitive`, una collation ICU no determinista de PostgreSQL (`und-u-ks-level2`) que crea la migración, por lo que no depende de la base). Índice único filtrado `"IsDeleted" = false`: la base rechaza dos usuarios activos con el mismo correo; el de un usuario eliminado lógicamente se puede volver a registrar. |
 | `PasswordHash` | Solo el hash de la contraseña; el modelo no tiene ningún campo con la contraseña en texto plano. Es opcional para las cuentas que solo ingresan con una cuenta externa. El registro y el inicio de sesión se describen en "Registro con correo y contraseña" e "Inicio de sesión con correo y contraseña". |
 | `FailedLoginAttempts`, `LockedUntil` | Contraseñas incorrectas seguidas (0 por defecto) y fin del bloqueo temporal (vacío si no está bloqueado). |
 | `EmailVerifiedAt` | Momento en que el usuario confirmó su correo; vacío mientras no lo confirme. |
@@ -264,7 +264,7 @@ Todas las propiedades `DateTime` del modelo se guardan en UTC y se leen con `Kin
 | Entidad | Campos y reglas |
 |---|---|
 | `Workspace` | `Name` (obligatorio, hasta 200), `Description` (opcional, hasta 1000), `Type` (`WorkspaceType`: `Personal`, `Household`, `Other`; `Personal` por defecto), `Status` (`WorkspaceStatus`: `Active`, `Archived`; `Active` por defecto) y `OwnerId`, obligatorio con clave foránea a `Users`. Como `OwnerId` no admite nulos, la base impide un espacio sin propietario. |
-| `WorkspaceMember` | `WorkspaceId`, `UserId` y `Role` (`WorkspaceRole`: `Member`, `Admin`, `Owner`; `Member` por defecto). Índice único `(WorkspaceId, UserId)` filtrado `[IsDeleted] = 0`: un usuario pertenece una sola vez a un mismo espacio, y quien salió (eliminación lógica) puede volver a unirse. Un segundo índice único sobre `WorkspaceId` filtrado `[IsDeleted] = 0 AND [Role] = 2` admite como máximo un miembro `Owner` por espacio. |
+| `WorkspaceMember` | `WorkspaceId`, `UserId` y `Role` (`WorkspaceRole`: `Member`, `Admin`, `Owner`; `Member` por defecto). Índice único `(WorkspaceId, UserId)` filtrado `"IsDeleted" = false`: un usuario pertenece una sola vez a un mismo espacio, y quien salió (eliminación lógica) puede volver a unirse. Un segundo índice único sobre `WorkspaceId` filtrado `"IsDeleted" = false AND "Role" = 2` admite como máximo un miembro `Owner` por espacio. |
 | `WorkspaceInvitation` | `WorkspaceId`, `Email` (hasta 320, sin distinguir mayúsculas), `Role`, `TokenHash` (solo el hash, hasta 64; único entre activos), `Status` (`InvitationStatus`: `Pending`, `Accepted`, `Revoked`, `Expired`) y `ExpiresAt`. |
 
 Todas las claves foráneas son obligatorias, con borrado `Restrict` e índice, y cada columna `enum` tiene su `CHECK` (`CK_Workspaces_Type`, `CK_Workspaces_Status`, `CK_WorkspaceMembers_Role`, `CK_WorkspaceInvitations_Role`, `CK_WorkspaceInvitations_Status`), generado con `EnumCheckConstraint`. Que el propietario de un espacio figure también como miembro `Owner` lo garantiza la lógica de negocio, no la base. La migración es `AddWorkspacesTables`.
@@ -493,7 +493,7 @@ La base impide los estados inconsistentes sin depender del código. Toda entidad
 | Claves foráneas | Una por relación, `IsRequired()` salvo que la relación sea opcional por negocio. Nombre `FK_<Tabla>_<Principal>_<Columna>`, el que genera EF. |
 | Borrado | Restringido (`Restrict`) por defecto: la base rechaza borrar un registro con dependientes. `ApplyIntegrityConventions` (en `LifeDbContext`) cambia a `Restrict` toda relación que no declare su comportamiento, en lugar de la cascada que EF asigna a las claves obligatorias. La cascada solo se admite declarándola con `OnDelete(DeleteBehavior.Cascade)` y justificándola en el cambio. |
 | Índices | Toda clave foránea tiene un índice sobre sus columnas (EF lo crea, `IX_<Tabla>_<Columna>`), y las columnas de búsqueda frecuente declaran el suyo con `HasIndex`. Una prueba de `API.Tests` falla si una clave foránea queda sin índice. |
-| Unicidad | Índice único con `HasFilter("[IsDeleted] = 0")`: la unicidad solo rige entre los registros activos, para que uno eliminado lógicamente no bloquee su reutilización. |
+| Unicidad | Índice único con `HasFilter("\"IsDeleted\" = false")`: la unicidad solo rige entre los registros activos, para que uno eliminado lógicamente no bloquee su reutilización. |
 | Nulabilidad | Las columnas son obligatorias salvo que el dato sea opcional por negocio; los textos declaran siempre `HasMaxLength`. |
 | Valores enumerados | Una columna `enum` lleva una restricción `CHECK` (`CK_<Tabla>_<Columna>`) con sus valores válidos. |
 
@@ -515,7 +515,7 @@ Si tienes `psql` instalado, el mismo script se ejecuta con `psql -h localhost -U
 
 ## Migraciones de la base de datos
 
-Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y la migración inicial es `InitialCreate` y solo crea la tabla de historial `__EFMigrationsHistory`. `AddUsersAndExternalAccountsTables` crea las tablas de usuarios y cuentas externas, `AddUserStatusCheckConstraint` agrega la restricción de `Status` de usuarios y `AddEmailVerificationTokens` agrega `EmailVerifiedAt` a `Users` y la tabla `EmailVerificationTokens`, `AddEmailVerificationAttempts` agrega `FailedAttempts` a esa tabla y quita la unicidad de `TokenHash` (los códigos de 6 dígitos se repiten entre usuarios),, `AddLoginLockoutAndAttempts` agrega `FailedLoginAttempts` y `LockedUntil` a `Users` y la tabla de auditoría `LoginAttempts`, `AddWorkspacesTables` crea las tablas `Workspaces`, `WorkspaceMembers` y `WorkspaceInvitations` con sus relaciones, índices únicos y restricciones `CHECK`, y `AddDescriptionToWorkspaces` agrega la columna `Description` a `Workspaces`, y `AddPasswordResetTokens` crea la tabla `PasswordResetTokens` de la recuperación de acceso. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
+Todo cambio de esquema se hace con una migración de EF Core, nunca modificando la base a mano. Las migraciones viven en `Persistence/Migrations` y el historial se generó íntegramente para PostgreSQL: una sola migración inicial, `InitialCreate`, crea el esquema base que hoy define el modelo (`Users`, `ExternalAccounts`, `EmailVerificationTokens`, `PasswordResetTokens`, `LoginAttempts`, `RefreshTokens`, `Workspaces`, `WorkspaceMembers`, `WorkspaceInvitations` y `SyncOperationLogs`, con sus relaciones, índices únicos filtrados y restricciones `CHECK`). Las migraciones usan los tipos de PostgreSQL (`uuid`, `timestamp with time zone`, `boolean`, `bytea`, `character varying`) y los nombres entre comillas dobles; ninguna contiene tipos de otro motor (`nvarchar`, `rowversion`, `uniqueidentifier`, `datetime2`), y una prueba lo comprueba. En SQL de las configuraciones (`HasFilter`, `HasCheckConstraint`) las columnas se escriben entre comillas dobles y los booleanos como `false`/`true`. Los modelos de cada módulo se agregan después con sus propias migraciones. Aplicarlas en producción queda fuera de esta configuración.
 
 ### Convención de nombres
 
@@ -559,7 +559,20 @@ Sobre una base vacía o inexistente, aplica todas las migraciones en orden y ter
 dotnet ef migrations list --project Persistence --startup-project API
 ```
 
-Las pruebas de `MigrationsTests` (en `API.Tests`) comprueban que la migración inicial existe y que el modelo coincide con el snapshot; si falla la segunda, falta generar una migración. Las de `MigrationsTests` en `Infrastructure.Tests` aplican todas las migraciones sobre una base vacía de pruebas.
+Las pruebas de `MigrationsTests` (en `API.Tests`) comprueban que la migración inicial existe, que el modelo coincide con el snapshot (si falla, falta generar una migración) y que el SQL de todas las migraciones no contiene tipos de SQL Server. Las de `MigrationsTests` en `Infrastructure.Tests` aplican todas las migraciones sobre una base vacía de pruebas; esa infraestructura de pruebas todavía usa SQL Server y está pendiente de pasar a PostgreSQL.
+
+### Verificar las migraciones con Docker
+
+Desde `docker`, con `docker/.env` configurado (ver "Variables"):
+
+```powershell
+docker compose -f docker-compose-local.yml up -d postgres
+docker compose -f docker-compose-local.yml run --rm migrations
+docker exec -it life-postgres psql -U postgres -d ModulLifeDev -c "\dt"
+docker exec -it life-postgres psql -U postgres -d ModulLifeDev -c "SELECT \"MigrationId\" FROM \"__EFMigrationsHistory\";"
+```
+
+`migrations` debe terminar con `Done.`, `\dt` lista las tablas del esquema y el historial muestra una sola fila, `..._InitialCreate`. `docker compose ... down -v` borra el volumen y deja la base vacía para repetir la prueba.
 
 ## Estructura de la API
 

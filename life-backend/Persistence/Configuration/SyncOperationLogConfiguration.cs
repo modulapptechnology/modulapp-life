@@ -47,7 +47,7 @@ public class SyncOperationLogConfiguration : IEntityTypeConfiguration<SyncOperat
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(entry => new { entry.WorkspaceId, entry.UserId, entry.OperationId })
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = false");
         builder.HasIndex(entry => entry.UserId);
     }
 }

@@ -11,7 +11,7 @@ public class LoginAttemptConfiguration : IEntityTypeConfiguration<LoginAttempt>
     public const string OutcomeCheckConstraintName = "CK_LoginAttempts_Outcome";
 
     public static readonly string OutcomeCheckSql =
-        $"[Outcome] IN ({string.Join(", ", Enum.GetValues<LoginOutcome>().Select(outcome => (int)outcome))})";
+        EnumCheckConstraint.Sql<LoginOutcome>(nameof(LoginAttempt.Outcome));
 
     public void Configure(EntityTypeBuilder<LoginAttempt> builder)
     {

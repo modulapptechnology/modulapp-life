@@ -57,6 +57,11 @@ public class LifeDbContext(
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasCollation(
+            UserConfiguration.CaseInsensitiveCollation,
+            locale: "und-u-ks-level2",
+            provider: "icu",
+            deterministic: false);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LifeDbContext).Assembly);
         modelBuilder.ApplyBaseEntityConfiguration();
         modelBuilder.ApplyIntegrityConventions();

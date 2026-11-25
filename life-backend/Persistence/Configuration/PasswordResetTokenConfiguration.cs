@@ -20,7 +20,7 @@ public class PasswordResetTokenConfiguration : IEntityTypeConfiguration<Password
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(token => token.TokenHash)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("\"IsDeleted\" = false");
         builder.HasIndex(token => token.UserId);
     }
 }
